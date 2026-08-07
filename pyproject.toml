@@ -1,0 +1,20 @@
+[project]
+name = "tallertrack"
+version = "0.1.0"
+description = "Backend de TallerTrack - gestion de ordenes de trabajo para talleres mecanicos"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic-settings",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "httpx",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

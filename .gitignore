@@ -1,0 +1,23 @@
+# Entorno virtual de Python
+.venv/
+venv/
+
+# Secretos: nunca al repositorio (este repo es publico)
+.env
+.env.local
+*.pem
+
+# Cache de Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Editores y sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Configuracion local de Claude Code
+.claude/settings.local.json
