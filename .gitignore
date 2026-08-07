@@ -7,6 +7,9 @@ venv/
 .env.local
 *.pem
 
+# Bases de datos locales
+*.db
+
 # Cache de Python
 __pycache__/
 *.py[cod]

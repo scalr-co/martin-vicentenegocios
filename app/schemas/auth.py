@@ -1,4 +1,4 @@
-from pydantic import EmailStr
+from pydantic import EmailStr, Field
 
 from app.schemas.base import Esquema
 
@@ -6,6 +6,16 @@ from app.schemas.base import Esquema
 class LoginEntrada(Esquema):
     email: EmailStr
     password: str
+
+
+class AltaTallerEntrada(Esquema):
+    """Crea el taller y su usuario dueno de una sola vez."""
+
+    workshop_name: str = Field(min_length=2, max_length=120)
+    workshop_phone: str = Field(min_length=8, max_length=20)
+    owner_name: str = Field(min_length=2, max_length=120)
+    email: EmailStr
+    password: str = Field(min_length=8)
 
 
 class WorkshopSalida(Esquema):

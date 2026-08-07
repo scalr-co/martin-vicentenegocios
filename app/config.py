@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # El valor por defecto sirve solo para desarrollo y tests.
     jwt_secret: str = CLAVE_DE_DESARROLLO
 
+    # Clave para dar de alta talleres. Vacia significa que el alta esta cerrada.
+    admin_api_key: str = ""
+
     @property
     def es_produccion(self) -> bool:
         return self.entorno == "produccion"

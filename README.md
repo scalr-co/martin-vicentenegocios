@@ -75,4 +75,25 @@ este repositorio es publico.
 
 | Variable | Para que sirve |
 |---|---|
+| `ENTORNO` | `desarrollo` o `produccion` |
+| `DATABASE_URL` | Conexion a la base de datos |
 | `FRONTEND_ORIGINS` | Dominios autorizados a llamar la API, separados por coma |
+| `JWT_SECRET` | Clave con que se firman los tokens de sesion |
+| `ADMIN_API_KEY` | Clave para dar de alta talleres. Vacia deja el alta cerrada |
+
+En produccion la aplicacion **no arranca** si `JWT_SECRET` sigue siendo el valor de ejemplo:
+esta escrito en este repositorio publico, asi que cualquiera podria fabricarse un token.
+
+## Migraciones
+
+Crear o actualizar las tablas:
+
+```bash
+.venv/Scripts/python.exe -m alembic upgrade head
+```
+
+Despues de cambiar un modelo, generar la migracion correspondiente:
+
+```bash
+.venv/Scripts/python.exe -m alembic revision --autogenerate -m "que cambio"
+```
