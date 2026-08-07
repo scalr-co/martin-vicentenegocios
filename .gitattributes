@@ -1,0 +1,4 @@
+# Guardar todo con saltos de linea de Unix.
+# Sin esto, un Dockerfile o un script guardado desde Windows puede fallar
+# dentro del contenedor Linux.
+* text=auto eol=lf

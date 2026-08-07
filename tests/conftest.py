@@ -1,0 +1,89 @@
+"""Andamiaje comun de los tests.
+
+Cada test recibe una base de datos SQLite en memoria, recien creada y vacia. Es rapida
+y no necesita que haya un Postgres corriendo. Produccion usa Postgres; las tablas de
+TallerTrack no usan nada especifico de un motor, asi que la diferencia no nos afecta.
+"""
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from app.db import Base, obtener_sesion
+from app.main import app
+from app.models import User, Workshop
+from app.security.passwords import hashear
+
+CLAVE_DE_PRUEBA = "clave-de-prueba"
+
+
+@pytest.fixture
+def sesion():
+    motor = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(motor)
+    fabrica = sessionmaker(bind=motor, expire_on_commit=False)
+    with fabrica() as abierta:
+        yield abierta
+    motor.dispose()
+
+
+@pytest.fixture
+def cliente(sesion):
+    app.dependency_overrides[obtener_sesion] = lambda: sesion
+    with TestClient(app) as abierto:
+        yield abierto
+    app.dependency_overrides.clear()
+
+
+def crear_taller(sesion: Session, nombre: str = "Taller Los Alerces") -> Workshop:
+    taller = Workshop(name=nombre, phone="56912345678")
+    sesion.add(taller)
+    sesion.commit()
+    return taller
+
+
+def crear_usuario(
+    sesion: Session,
+    taller: Workshop,
+    email: str,
+    role: str = "owner",
+    nombre: str = "Vicente",
+) -> User:
+    usuario = User(
+        workshop_id=taller.id,
+        name=nombre,
+        email=email,
+        password_hash=hashear(CLAVE_DE_PRUEBA),
+        role=role,
+    )
+    sesion.add(usuario)
+    sesion.commit()
+    return usuario
+
+
+def entrar(cliente, email: str, clave: str = CLAVE_DE_PRUEBA) -> str:
+    """Hace login de verdad y devuelve el token. Nada de fabricar tokens a mano."""
+    respuesta = cliente.post("/auth/login", json={"email": email, "password": clave})
+    assert respuesta.status_code == 200, respuesta.text
+    return respuesta.json()["data"]["token"]
+
+
+@pytest.fixture
+def taller(sesion):
+    return crear_taller(sesion)
+
+
+@pytest.fixture
+def dueno(sesion, taller):
+    return crear_usuario(sesion, taller, email="dueno@taller.cl", role="owner")
+
+
+@pytest.fixture
+def mecanico(sesion, taller):
+    return crear_usuario(sesion, taller, email="mecanico@taller.cl", role="mechanic", nombre="Pedro")

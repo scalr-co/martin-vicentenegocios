@@ -7,13 +7,13 @@ Frontend: Next.js, a cargo de Martin. Backend: este repositorio.
 
 ## Estado
 
-**Fase 0 — esqueleto.** Funciona `/health`, la documentacion en `/docs` y el CORS.
-Las entidades (talleres, usuarios, clientes, vehiculos, ordenes) vienen en las fases siguientes.
+**Fase 1 — identidad.** Ya se puede entrar: `POST /auth/login` y `GET /auth/me` funcionan,
+con talleres, usuarios y roles. Clientes, vehiculos y ordenes vienen en las fases siguientes.
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| F0 | Esqueleto, `/health`, `/docs`, CORS, despliegue | 🟡 en curso |
-| F1 | workshops, users, login, roles | ⬜ |
+| F0 | Esqueleto, `/health`, `/docs`, CORS | ✅ (falta desplegar) |
+| F1 | workshops, users, login, roles | 🟡 en curso |
 | F2 | clients, vehicles, historial por patente | ⬜ |
 | F3 | orders, `POST /orders/:id/status`, eventos y avisos | ⬜ |
 | F4 | Fotos en Cloudflare R2 | ⬜ |
