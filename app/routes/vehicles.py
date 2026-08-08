@@ -10,7 +10,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
-from app.models import Client, User, Vehicle
+from app.models import Client, Order, User, Vehicle
+from app.schemas.order import OrdenSalida
 from app.schemas.vehicle import VehiculoEdicion, VehiculoEntrada, VehiculoSalida
 from app.security.dependencias import usuario_actual
 
@@ -127,6 +128,39 @@ def obtener(
     sesion: Session = Depends(obtener_sesion),
 ):
     return {"data": _salida(_del_taller(sesion, usuario, vehiculo_id))}
+
+
+@router.get("/{vehiculo_id}/history")
+def historial(
+    vehiculo_id: str,
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=TOPE_POR_PAGINA),
+    usuario: User = Depends(usuario_actual),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Todo lo que se le ha hecho a este auto, de lo mas nuevo a lo mas viejo.
+
+    Es la pregunta de siempre cuando el auto vuelve: que le hicimos la vez pasada.
+    """
+    vehiculo = _del_taller(sesion, usuario, vehiculo_id)
+    condiciones = [Order.vehicle_id == vehiculo.id, Order.workshop_id == usuario.workshop_id]
+
+    total = sesion.scalar(select(func.count()).select_from(Order).where(*condiciones))
+    ordenes = sesion.scalars(
+        select(Order)
+        .where(*condiciones)
+        .order_by(Order.created_at.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+    ).all()
+
+    return {
+        "data": [
+            OrdenSalida.model_validate(orden).model_dump(by_alias=True, mode="json")
+            for orden in ordenes
+        ],
+        "meta": {"page": page, "limit": limit, "total": total},
+    }
 
 
 @router.patch("/{vehiculo_id}")

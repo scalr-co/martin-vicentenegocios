@@ -7,21 +7,29 @@ Frontend: Next.js, a cargo de Martin. Backend: este repositorio.
 
 ## Estado
 
-**Fase 2 — la agenda del taller.** Ya se administran clientes y vehiculos: `/clients` y
-`/vehicles` crean, listan, buscan y editan, siempre dentro del taller del token. El
-historial por patente espera a que existan las ordenes, en F3. Ahi viene lo importante:
-mover una orden de estado y que al cliente le llegue el aviso.
+**Fase 3 — el producto funcionando.** El taller ya opera de punta a punta: se abre la orden,
+se mueve de estado, queda registrado quien la movio y el aviso al cliente sale escrito. Falta
+subir fotos y desplegar.
 
 | Fase | Contenido | Estado |
 |---|---|---|
 | F0 | Esqueleto, `/health`, `/docs`, CORS | ✅ (falta desplegar) |
 | F1 | workshops, users, login, roles | ✅ |
-| F2 | clients ✅, vehicles ✅, historial por patente (con F3) | ✅ |
-| F3 | orders, `POST /orders/:id/status`, eventos y avisos | ⬜ |
+| F2 | clients, vehicles, historial por patente | ✅ |
+| F3 | orders, `POST /orders/:id/status`, eventos y avisos | ✅ |
 | F4 | Fotos en Cloudflare R2 | ⬜ |
 | F5 | Paginacion fina, filtros, `GET /statuses` | ⬜ |
+| F6 | Envio automatico por WhatsApp API (modo `api`) | ⬜ |
 
-### Como se avisa al cliente (definido para F3)
+Los estados de una orden, en orden: `recibido`, `en_diagnostico`, `esperando_aprobacion`,
+`en_reparacion`, `esperando_repuesto`, `listo`, `entregado`. `GET /orders?open=true` trae
+todo lo que no este `entregado`.
+
+Dos cosas que **todavia no** estan y conviene no esperar: el campo `photos` de las ordenes
+(llega en F4, con las fotos de verdad) y el envio automatico de WhatsApp (F6: hoy todos los
+talleres funcionan en modo `link`).
+
+### Como se avisa al cliente
 
 Cada estado trae un mensaje escrito por defecto. Al mover la orden, el backend deja ese texto
 listo en `notifications` y el frontend abre `wa.me` con el.
@@ -31,6 +39,27 @@ cuando aparece un imprevisto —"le encontramos una fuga en el radiador"— tien
 contarlo. Por eso `POST /orders/:id/status` acepta un `message` opcional que reemplaza la
 plantilla, y en `notifications` se guarda siempre el texto que de verdad salio, no el
 predeterminado.
+
+`POST /orders/:id/status` responde con las dos cosas juntas, para no tener que pedir nada mas
+antes de abrir WhatsApp:
+
+```jsonc
+{
+  "data": {
+    "order": { "id": "...", "status": "listo", "vehicleOrItem": "Toyota Corolla · Patente ABCD12" },
+    "notification": {
+      "id": "...",
+      "toPhone": "56911111111",
+      "message": "Hola Juan, tu Toyota Corolla (ABCD12) ya está listo para retirar en Taller Los Alerces.",
+      "status": "link_ready"
+    }
+  }
+}
+```
+
+Con eso el frontend arma `https://wa.me/{toPhone}?text={message}`. Si la orden ya estaba en
+ese estado, `notification` viene en `null` y no se crea nada: repetirlo seria mandarle al
+cliente el mismo mensaje dos veces.
 
 ## Para Martin
 

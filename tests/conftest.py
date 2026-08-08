@@ -71,6 +71,30 @@ def con_token(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
+def crear_cliente_api(cliente, token, nombre="Juan Perez", telefono="56911111111") -> str:
+    """Crea el cliente por la API, como lo haria el mecanico, y devuelve su id."""
+    respuesta = cliente.post(
+        "/clients",
+        json={"name": nombre, "phone": telefono},
+        headers=con_token(token),
+    )
+    assert respuesta.status_code == 201, respuesta.text
+    return respuesta.json()["data"]["id"]
+
+
+def crear_vehiculo_api(
+    cliente, token, cliente_id, patente="ABCD12", marca=None, modelo=None
+) -> str:
+    cuerpo = {"clientId": cliente_id, "plate": patente}
+    if marca is not None:
+        cuerpo["brand"] = marca
+    if modelo is not None:
+        cuerpo["model"] = modelo
+    respuesta = cliente.post("/vehicles", json=cuerpo, headers=con_token(token))
+    assert respuesta.status_code == 201, respuesta.text
+    return respuesta.json()["data"]["id"]
+
+
 def entrar(cliente, email: str, clave: str = CLAVE_DE_PRUEBA) -> str:
     """Hace login de verdad y devuelve el token. Nada de fabricar tokens a mano."""
     respuesta = cliente.post("/auth/login", json={"email": email, "password": clave})

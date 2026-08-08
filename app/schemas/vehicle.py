@@ -4,6 +4,7 @@ from pydantic import Field, computed_field, field_validator
 
 from app.schemas.base import Esquema
 from app.services.normalizacion import DatoInvalido, normalizar_patente
+from app.services.presentacion import describir_vehiculo
 
 
 def _patente_de_una_sola_forma(valor: str) -> str:
@@ -55,7 +56,4 @@ class VehiculoSalida(Esquema):
         Asi el texto que ve el cliente en el aviso de WhatsApp y el que ve el mecanico
         en pantalla salen del mismo lugar y no se van separando con el tiempo.
         """
-        descripcion = " ".join(parte for parte in (self.brand, self.model) if parte)
-        if not descripcion:
-            return f"Patente {self.plate}"
-        return f"{descripcion} · Patente {self.plate}"
+        return describir_vehiculo(self.plate, self.brand, self.model)
