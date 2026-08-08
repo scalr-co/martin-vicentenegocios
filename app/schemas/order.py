@@ -89,3 +89,4 @@ class AvisoSalida(Esquema):
     message: str
     status: str
     created_at: datetime
+    sent_at: datetime | None = None

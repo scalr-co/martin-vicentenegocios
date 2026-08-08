@@ -24,6 +24,22 @@ def describir_para_el_cliente(patente: str, marca: str | None, modelo: str | Non
     return f"{descripcion} ({patente})"
 
 
+"""Como se escribe cada estado en pantalla.
+
+Vive junto al resto de la presentacion y se sirve por `GET /statuses`, para que el
+frontend no tenga que escribir los estados a mano y quedarse viejo cuando cambien.
+"""
+ETIQUETAS_DE_ESTADO = {
+    "recibido": "Recibido",
+    "en_diagnostico": "En diagnóstico",
+    "esperando_aprobacion": "Esperando aprobación",
+    "en_reparacion": "En reparación",
+    "esperando_repuesto": "Esperando repuesto",
+    "listo": "Listo",
+    "entregado": "Entregado",
+}
+
+
 def primer_nombre(nombre_completo: str) -> str:
     """Al cliente se le habla por su nombre, no por su nombre y sus dos apellidos."""
     partes = nombre_completo.strip().split()

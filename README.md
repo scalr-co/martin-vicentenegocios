@@ -18,7 +18,7 @@ subir fotos y desplegar.
 | F2 | clients, vehicles, historial por patente | ✅ |
 | F3 | orders, `POST /orders/:id/status`, eventos y avisos | ✅ |
 | F4 | Fotos en Cloudflare R2 | ⬜ |
-| F5 | Paginacion fina, filtros, `GET /statuses` | ⬜ |
+| F5 | `GET /statuses` ✅, filtros y paginacion fina | 🟡 |
 | F6 | Envio automatico por WhatsApp API (modo `api`) | ⬜ |
 
 Los estados de una orden, en orden: `recibido`, `en_diagnostico`, `esperando_aprobacion`,
@@ -60,6 +60,18 @@ antes de abrir WhatsApp:
 Con eso el frontend arma `https://wa.me/{toPhone}?text={message}`. Si la orden ya estaba en
 ese estado, `notification` viene en `null` y no se crea nada: repetirlo seria mandarle al
 cliente el mismo mensaje dos veces.
+
+Despues de abrir WhatsApp, el frontend cierra el ciclo con `POST /notifications/:id/sent`.
+El aviso pasa de `link_ready` a `sent` y queda la hora. Sin ese paso ningun aviso llega
+nunca a `sent`, y el registro no puede responder "esto se le dijo, y cuando". Llamarlo dos
+veces no cambia la hora original, asi que el frontend puede reintentar sin miedo.
+
+Los estados no se escriben a mano en el frontend: `GET /statuses` devuelve la lista con su
+etiqueta y si cierra la orden.
+
+```jsonc
+{ "data": [ { "key": "en_diagnostico", "label": "En diagnóstico", "isOpen": true } ] }
+```
 
 ## Para Martin
 
