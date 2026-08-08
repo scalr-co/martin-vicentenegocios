@@ -4,10 +4,19 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Contra el Postgres de al lado, no contra SQLite: asi lo que se prueba en local
+      # es el mismo motor que corre en produccion.
+      DATABASE_URL: postgresql+psycopg://tallertrack:tallertrack@db:5432/tallertrack
       FRONTEND_ORIGINS: http://localhost:3000
+      ADMIN_API_KEY: clave-de-desarrollo-para-dar-de-alta-talleres
     volumes:
       - ./app:/srv/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   db:
     image: postgres:16-alpine
@@ -19,6 +28,12 @@ services:
       - "5432:5432"
     volumes:
       - datos_postgres:/var/lib/postgresql/data
+    # La API arranca migrando: si Postgres todavia no acepta conexiones, se cae.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tallertrack"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
 
 volumes:
   datos_postgres:

@@ -8,6 +8,15 @@ RUN pip install --no-cache-dir .
 
 COPY app ./app
 
+# Las migraciones viajan con la imagen: al desplegar hay que poder crear o actualizar
+# las tablas, y sin estos archivos el contenedor no sabria como.
+COPY alembic ./alembic
+COPY alembic.ini ./
+
+COPY docker/arrancar.sh ./docker/arrancar.sh
+RUN chmod +x ./docker/arrancar.sh
+
+# En local es 8000; en Railway y compania el puerto lo asigna el hosting por $PORT.
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./docker/arrancar.sh"]

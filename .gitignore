@@ -10,6 +10,11 @@ venv/
 # Bases de datos locales
 *.db
 
+# Artefactos de empaquetado (los deja `pip install .`)
+build/
+dist/
+*.egg-info/
+
 # Cache de Python
 __pycache__/
 *.py[cod]

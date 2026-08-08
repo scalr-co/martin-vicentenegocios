@@ -138,6 +138,21 @@ este repositorio es publico.
 En produccion la aplicacion **no arranca** si `JWT_SECRET` sigue siendo el valor de ejemplo:
 esta escrito en este repositorio publico, asi que cualquiera podria fabricarse un token.
 
+## Desplegar
+
+Paso a paso en [docs/desplegar-en-railway.md](docs/desplegar-en-railway.md): crear el
+proyecto, enchufar Postgres, las variables que hay que poner y como dar de alta el primer
+taller.
+
+Lo que conviene saber de antemano:
+
+- La imagen corre `alembic upgrade head` antes de levantar la API. Si las migraciones
+  fallan, el contenedor no arranca: mejor eso que una API respondiendo 500 contra una base
+  que no calza con el codigo.
+- El puerto lo decide el hosting por la variable `PORT`; en local sigue siendo 8000.
+- La URL de Postgres que entregan los proveedores (`postgresql://...`) se traduce sola al
+  driver instalado. No hay que editarla a mano.
+
 ## Migraciones
 
 Crear o actualizar las tablas:

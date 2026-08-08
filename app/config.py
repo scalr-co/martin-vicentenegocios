@@ -1,8 +1,13 @@
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 CLAVE_DE_DESARROLLO = "desarrollo-inseguro-cambiar-en-produccion"
 LARGO_MINIMO_DE_CLAVE = 32
+
+# El driver de Postgres que instala este proyecto. Los proveedores de hosting entregan
+# la URL sin decir el driver, y SQLAlchemy entonces asume psycopg2, que no esta instalado.
+DRIVER_DE_POSTGRES = "postgresql+psycopg://"
+PREFIJOS_DE_POSTGRES = ("postgresql://", "postgres://")
 
 
 class ConfiguracionInvalida(Exception):
@@ -29,6 +34,19 @@ class Settings(BaseSettings):
 
     # Clave para dar de alta talleres. Vacia significa que el alta esta cerrada.
     admin_api_key: str = ""
+
+    @field_validator("database_url")
+    @classmethod
+    def _con_el_driver_que_tenemos(cls, valor: str) -> str:
+        """Deja la URL del hosting en la forma que este proyecto sabe abrir.
+
+        Railway y compania entregan "postgresql://..." tal cual; si se usa asi, la
+        aplicacion no levanta y el error habla de psycopg2, que no tiene nada que ver.
+        """
+        for prefijo in PREFIJOS_DE_POSTGRES:
+            if valor.startswith(prefijo):
+                return DRIVER_DE_POSTGRES + valor[len(prefijo) :]
+        return valor
 
     @property
     def es_produccion(self) -> bool:
