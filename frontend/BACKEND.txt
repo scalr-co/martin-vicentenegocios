@@ -1,0 +1,153 @@
+CONTRATO API — TallerTrack (v2)
+Para el backend (Claude + amigo)
+
+Teléfonos: siempre sin +, solo digitos (ej: 56912345678)
+Auth: JWT Bearer
+Register: NO publico. Ustedes dan de alta talleres.
+
+========================================
+WHATSAPP (ARQUITECTURA)
+========================================
+El corazon del producto es que el cliente se entere del estado.
+
+HOY (modo link):
+- Al cambiar status, el backend CREA una fila en notifications
+- El frontend abre wa.me con ese mensaje (el mecanico aprieta enviar)
+
+DESPUES (modo api):
+- Misma tabla notifications
+- El backend envia solo por WhatsApp Business API (Meta)
+- Switch por taller: whatsappMode = "link" | "api"
+
+Asi no se rehace el frontend de Martin.
+
+Tabla notifications:
+- id, workshopId, orderId, clientId
+- channel (whatsapp), toPhone, message
+- status: pending | link_ready | sent | failed
+- triggeredByUserId, createdAt, sentAt?
+
+========================================
+USERS (NO solo workshop)
+========================================
+workshops: id, name, phone, whatsappMode, createdAt
+
+users:
+- id, workshopId, name, email, passwordHash
+- role: owner | mechanic
+
+AUTH
+- POST /auth/login → { token, workshop, user }
+- GET /auth/me → { workshop, user }
+- POST /auth/register → SOLO admin/interno (no abierto a internet)
+
+========================================
+VEHICULO ESTRUCTURADO
+========================================
+vehicles:
+- id, workshopId, clientId
+- plate (mayusculas, sin espacios)
+- brand?, model?
+
+La orden usa vehicleId.
+La API SIEMPRE devuelve tambien:
+vehicleOrItem = "Toyota Corolla · Patente ABCD12"
+(armado en backend para no romper el frontend)
+
+Historial clave:
+GET /vehicles/:id/history → ordenes previas de esa patente
+
+========================================
+ESTADOS (lista completa)
+========================================
+recibido
+en_diagnostico
+esperando_aprobacion
+en_reparacion
+esperando_repuesto
+listo
+entregado
+
+?open=true = todo lo que NO sea entregado
+
+========================================
+ENDPOINTS
+========================================
+
+CLIENTES
+- GET /clients
+- POST /clients  { name, phone, notes? }
+- GET /clients/:id
+- PATCH /clients/:id
+
+VEHICULOS
+- GET /vehicles?clientId=
+- POST /vehicles  { clientId, plate, brand?, model? }
+- GET /vehicles/:id
+- PATCH /vehicles/:id
+- GET /vehicles/:id/history
+
+ORDENES
+- GET /orders?open=true&page=1&limit=20
+  Cada orden INCLUYE:
+  client: { id, name, phone }
+  vehicle: { id, plate, brand, model }
+  vehicleOrItem: "string armado"
+  photos: [{ id, url, createdAt }]
+
+- POST /orders
+  { clientId, vehicleId, title, description, estimatedAt?, status? }
+  (alternativa: enviar plate/brand/model y el backend crea/asocia vehiculo)
+
+- GET /orders/:id
+
+- PATCH /orders/:id
+  SOLO editar campos (title, description, etc.)
+  NO cambia status. NO dispara aviso.
+
+- POST /orders/:id/status
+  body: { "status": "listo" }
+  → cambia estado + historial + crea notification
+  → si whatsappMode=api, envia automatico
+
+FOTOS (varias, no una)
+- Storage: Cloudflare R2 (no disco del servidor)
+- POST /orders/:id/photos  (multipart)
+- Ya no usar photoUrl singular
+
+========================================
+HISTORIAL
+========================================
+Tabla order_events:
+- orderId, userId, type
+- fromStatus?, toStatus?, meta?, createdAt
+Responde: quien movio la orden a listo
+
+========================================
+RESPUESTAS
+========================================
+Exito: { "data": { ... } }
+Lista: { "data": [...], "meta": { page, limit, total } }
+Error: { "error": { "message": "...", "code": "NOT_FOUND" } }
+
+========================================
+PRIORIDAD BACKEND
+========================================
+1. workshops + users + login
+2. clients + vehicles
+3. orders + POST /status + order_events + notifications
+4. photos en R2
+5. paginacion + CORS
+6. (despues) WhatsApp API Meta + switch
+
+========================================
+FRONTEND MARTIN (ya listo)
+========================================
+/                  Landing
+/login             Login (sin /register publico)
+/panel             Ordenes abiertas
+/panel/clientes
+/panel/nueva-orden
+/panel/ordenes/[id]  Detalle + boton wa.me
+
+Cuando la API este up: avisar URL base + formato del token.
