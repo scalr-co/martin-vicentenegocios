@@ -67,6 +67,10 @@ def crear_usuario(
     return usuario
 
 
+def con_token(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
 def entrar(cliente, email: str, clave: str = CLAVE_DE_PRUEBA) -> str:
     """Hace login de verdad y devuelve el token. Nada de fabricar tokens a mano."""
     respuesta = cliente.post("/auth/login", json={"email": email, "password": clave})
@@ -87,3 +91,14 @@ def dueno(sesion, taller):
 @pytest.fixture
 def mecanico(sesion, taller):
     return crear_usuario(sesion, taller, email="mecanico@taller.cl", role="mechanic", nombre="Pedro")
+
+
+@pytest.fixture
+def taller_vecino(sesion):
+    """Un segundo taller, para comprobar que ninguno ve los datos del otro."""
+    return crear_taller(sesion, nombre="Taller El Vecino")
+
+
+@pytest.fixture
+def dueno_vecino(sesion, taller_vecino):
+    return crear_usuario(sesion, taller_vecino, email="dueno@vecino.cl", role="owner", nombre="Ana")

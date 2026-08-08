@@ -7,17 +7,30 @@ Frontend: Next.js, a cargo de Martin. Backend: este repositorio.
 
 ## Estado
 
-**Fase 1 — identidad.** Ya se puede entrar: `POST /auth/login` y `GET /auth/me` funcionan,
-con talleres, usuarios y roles. Clientes, vehiculos y ordenes vienen en las fases siguientes.
+**Fase 2 — la agenda del taller.** Ya se administran clientes y vehiculos: `/clients` y
+`/vehicles` crean, listan, buscan y editan, siempre dentro del taller del token. El
+historial por patente espera a que existan las ordenes, en F3. Ahi viene lo importante:
+mover una orden de estado y que al cliente le llegue el aviso.
 
 | Fase | Contenido | Estado |
 |---|---|---|
 | F0 | Esqueleto, `/health`, `/docs`, CORS | ✅ (falta desplegar) |
-| F1 | workshops, users, login, roles | 🟡 en curso |
-| F2 | clients, vehicles, historial por patente | ⬜ |
+| F1 | workshops, users, login, roles | ✅ |
+| F2 | clients ✅, vehicles ✅, historial por patente (con F3) | ✅ |
 | F3 | orders, `POST /orders/:id/status`, eventos y avisos | ⬜ |
 | F4 | Fotos en Cloudflare R2 | ⬜ |
 | F5 | Paginacion fina, filtros, `GET /statuses` | ⬜ |
+
+### Como se avisa al cliente (definido para F3)
+
+Cada estado trae un mensaje escrito por defecto. Al mover la orden, el backend deja ese texto
+listo en `notifications` y el frontend abre `wa.me` con el.
+
+El mecanico puede **editarlo antes de enviarlo**. Casi siempre sirve el de siempre, pero
+cuando aparece un imprevisto —"le encontramos una fuga en el radiador"— tiene que poder
+contarlo. Por eso `POST /orders/:id/status` acepta un `message` opcional que reemplaza la
+plantilla, y en `notifications` se guarda siempre el texto que de verdad salio, no el
+predeterminado.
 
 ## Para Martin
 
