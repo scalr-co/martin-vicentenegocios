@@ -18,12 +18,16 @@ subir fotos y desplegar.
 | F2 | clients, vehicles, historial por patente | ✅ |
 | F3 | orders, `POST /orders/:id/status`, eventos y avisos | ✅ |
 | F4 | Fotos en Cloudflare R2 | ⬜ |
-| F5 | `GET /statuses` ✅, filtros y paginacion fina | 🟡 |
+| F5 | `GET /statuses`, filtros y paginacion | ✅ |
 | F6 | Envio automatico por WhatsApp API (modo `api`) | ⬜ |
 
 Los estados de una orden, en orden: `recibido`, `en_diagnostico`, `esperando_aprobacion`,
 `en_reparacion`, `esperando_repuesto`, `listo`, `entregado`. `GET /orders?open=true` trae
 todo lo que no este `entregado`.
+
+El panel busca con `GET /orders?search=`, por **patente o por nombre del cliente**, con un
+pedazo basta y da igual como se escriba: `?search=abcd12` y `?search=perez` sirven. Se
+combina con `?status=` y con `?open=true`. El `total` del `meta` cuenta lo filtrado.
 
 Dos cosas que **todavia no** estan y conviene no esperar: el campo `photos` de las ordenes
 (llega en F4, con las fotos de verdad) y el envio automatico de WhatsApp (F6: hoy todos los

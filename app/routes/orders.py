@@ -6,7 +6,7 @@ lo movio y escribe el aviso para el cliente.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
@@ -14,6 +14,7 @@ from app.models import (
     AVISO_LISTO_PARA_ENVIAR,
     ESTADO_CERRADO,
     ESTADO_INICIAL,
+    ESTADOS,
     TIPO_CAMBIO_DE_ESTADO,
     Client,
     Notification,
@@ -86,23 +87,54 @@ def _cliente_y_vehiculo(
     return cliente, vehiculo
 
 
+def _filtrar(consulta, usuario: User, abiertas: bool, search: str | None, estado: str | None):
+    """Los mismos filtros para la lista y para el total.
+
+    Si el total se contara sin filtrar, el paginador del frontend ofreceria paginas que
+    estan vacias.
+    """
+    consulta = consulta.where(Order.workshop_id == usuario.workshop_id)
+
+    if abiertas:
+        # Lo que el taller tiene entre manos: todo lo que todavia no se entrego.
+        consulta = consulta.where(Order.status != ESTADO_CERRADO)
+
+    if estado:
+        consulta = consulta.where(Order.status == estado)
+
+    if search and search.strip():
+        # El mecanico busca por lo que tiene delante: la patente del auto o el cliente.
+        patron = f"%{search.strip()}%"
+        consulta = (
+            consulta.join(Client, Order.client_id == Client.id)
+            .join(Vehicle, Order.vehicle_id == Vehicle.id)
+            .where(or_(Vehicle.plate.ilike(patron), Client.name.ilike(patron)))
+        )
+
+    return consulta
+
+
 @router.get("")
 def listar(
     abiertas: bool = Query(default=False, alias="open"),
+    search: str | None = Query(default=None, max_length=120),
+    estado: str | None = Query(default=None, alias="status"),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=TOPE_POR_PAGINA),
     usuario: User = Depends(usuario_actual),
     sesion: Session = Depends(obtener_sesion),
 ):
-    condiciones = [Order.workshop_id == usuario.workshop_id]
-    if abiertas:
-        # Lo que el taller tiene entre manos: todo lo que todavia no se entrego.
-        condiciones.append(Order.status != ESTADO_CERRADO)
+    if estado is not None and estado not in ESTADOS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"'{estado}' no es un estado de orden. Son: {', '.join(ESTADOS)}",
+        )
 
-    total = sesion.scalar(select(func.count()).select_from(Order).where(*condiciones))
+    total = sesion.scalar(
+        _filtrar(select(func.count()).select_from(Order), usuario, abiertas, search, estado)
+    )
     encontradas = sesion.scalars(
-        select(Order)
-        .where(*condiciones)
+        _filtrar(select(Order), usuario, abiertas, search, estado)
         .order_by(Order.created_at.desc())
         .offset((page - 1) * limit)
         .limit(limit)
