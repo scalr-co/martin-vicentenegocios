@@ -46,6 +46,7 @@ def _exigir_cliente_propio(sesion: Session, usuario: User, client_id: str) -> No
         select(Client.id).where(
             Client.id == client_id,
             Client.workshop_id == usuario.workshop_id,
+            Client.deleted_at.is_(None),
         )
     )
     if existe is None:
@@ -84,8 +85,15 @@ def listar(
 
     La patente es el unico dato que el mecanico tiene en la mano cuando el auto entra
     por la puerta, y un auto que vuelve es el caso normal de un taller, no la excepcion.
+
+    Los autos de un cliente archivado no salen. Si salieran, buscar la patente llevaria a
+    una ficha que el taller ya no ve y armar la orden fallaria sin explicar por que. Por
+    id si se pueden seguir pidiendo: es como los muestra una orden vieja.
     """
-    condiciones = [Vehicle.workshop_id == usuario.workshop_id]
+    condiciones = [
+        Vehicle.workshop_id == usuario.workshop_id,
+        Vehicle.client_id.in_(select(Client.id).where(Client.deleted_at.is_(None))),
+    ]
     if client_id:
         condiciones.append(Vehicle.client_id == client_id)
     if plate:
@@ -157,7 +165,11 @@ def historial(
     Es la pregunta de siempre cuando el auto vuelve: que le hicimos la vez pasada.
     """
     vehiculo = _del_taller(sesion, usuario, vehiculo_id)
-    condiciones = [Order.vehicle_id == vehiculo.id, Order.workshop_id == usuario.workshop_id]
+    condiciones = [
+        Order.vehicle_id == vehiculo.id,
+        Order.workshop_id == usuario.workshop_id,
+        Order.deleted_at.is_(None),
+    ]
 
     total = sesion.scalar(select(func.count()).select_from(Order).where(*condiciones))
     ordenes = sesion.scalars(

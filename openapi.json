@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "TallerTrack API",
+    "title": "Motor Ping API",
     "version": "0.1.0"
   },
   "paths": {
@@ -196,6 +196,7 @@
           "clients"
         ],
         "summary": "Crear",
+        "description": "Dar de alta al cliente. Si su ficha estaba archivada, la revive en vez de duplicarla.\n\nRevivir no es un atajo: el telefono es unico dentro del taller, asi que sin esto\narchivar dejaria ese numero inservible para siempre. Y es lo que el taller espera del\ncliente que vuelve -llega con el historial de su auto, no de cero-.",
         "operationId": "crear_clients_post",
         "requestBody": {
           "required": true,
@@ -315,6 +316,40 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Archivar",
+        "description": "Saca la ficha de circulacion sin borrar nada de lo que se le hizo a sus autos.\n\nCon una orden abierta no se deja: el auto esta en el taller ahora mismo, y archivar\nal dueno lo dejaria fuera de la lista con el trabajo a medias. Primero se cierra o se\narchiva la orden.",
+        "operationId": "archivar_clients__cliente_id__delete",
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cliente Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/vehicles": {
@@ -323,6 +358,7 @@
           "vehicles"
         ],
         "summary": "Listar",
+        "description": "Buscar por `plate` es como se llega a un auto que ya estuvo aca.\n\nLa patente es el unico dato que el mecanico tiene en la mano cuando el auto entra\npor la puerta, y un auto que vuelve es el caso normal de un taller, no la excepcion.\n\nLos autos de un cliente archivado no salen. Si salieran, buscar la patente llevaria a\nuna ficha que el taller ya no ve y armar la orden fallaria sin explicar por que. Por\nid si se pueden seguir pidiendo: es como los muestra una orden vieja.",
         "operationId": "listar_vehicles_get",
         "parameters": [
           {
@@ -339,6 +375,22 @@
                 }
               ],
               "title": "Clientid"
+            }
+          },
+          {
+            "name": "plate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Plate"
             }
           },
           {
@@ -784,6 +836,40 @@
                 "schema": {}
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Archivar",
+        "description": "Saca la orden del tablero. Es para la que se creo mal, no para la que se termino.\n\nLa que se termino se cierra moviendola a entregado, que es lo que le avisa al cliente.",
+        "operationId": "archivar_orders__orden_id__delete",
+        "parameters": [
+          {
+            "name": "orden_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Orden Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",

@@ -3,9 +3,12 @@
 Dos caminos separados a proposito: `PATCH /orders/:id` corrige el texto de la ficha y no
 toca el estado; `POST /orders/:id/status` mueve el estado y por eso deja registrado quien
 lo movio y escribe el aviso para el cliente.
+
+`DELETE /orders/:id` no borra: archiva. La orden sale del tablero pero la fila se queda,
+porque de ella cuelgan los avisos que ya salieron por WhatsApp.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -23,6 +26,7 @@ from app.models import (
     User,
     Vehicle,
 )
+from app.models.base import ahora
 from app.schemas.order import AvisoSalida, CambioDeEstado, OrdenEdicion, OrdenEntrada, OrdenSalida
 from app.security.dependencias import usuario_actual
 from app.services.mensajes import mensaje_para
@@ -63,6 +67,7 @@ def _del_taller(sesion: Session, usuario: User, orden_id: str) -> Order:
         select(Order).where(
             Order.id == orden_id,
             Order.workshop_id == usuario.workshop_id,
+            Order.deleted_at.is_(None),
         )
     )
     if orden is None:
@@ -82,6 +87,7 @@ def _cliente_y_vehiculo(
         select(Client).where(
             Client.id == client_id,
             Client.workshop_id == usuario.workshop_id,
+            Client.deleted_at.is_(None),
         )
     )
     if cliente is None:
@@ -111,7 +117,10 @@ def _filtrar(consulta, usuario: User, abiertas: bool, search: str | None, estado
     Si el total se contara sin filtrar, el paginador del frontend ofreceria paginas que
     estan vacias.
     """
-    consulta = consulta.where(Order.workshop_id == usuario.workshop_id)
+    consulta = consulta.where(
+        Order.workshop_id == usuario.workshop_id,
+        Order.deleted_at.is_(None),
+    )
 
     if abiertas:
         # Lo que el taller tiene entre manos: todo lo que todavia no se entrego.
@@ -213,6 +222,23 @@ def editar(
     sesion.commit()
 
     return {"data": salida_de_orden(orden)}
+
+
+@router.delete("/{orden_id}", status_code=status.HTTP_204_NO_CONTENT)
+def archivar(
+    orden_id: str,
+    usuario: User = Depends(usuario_actual),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Saca la orden del tablero. Es para la que se creo mal, no para la que se termino.
+
+    La que se termino se cierra moviendola a entregado, que es lo que le avisa al cliente.
+    """
+    orden = _del_taller(sesion, usuario, orden_id)
+    orden.deleted_at = ahora()
+    sesion.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{orden_id}/status")

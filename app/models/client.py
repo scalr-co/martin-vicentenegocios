@@ -31,3 +31,8 @@ class Client(Base):
 
     notes: Mapped[str | None] = mapped_column(String(1000), default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora)
+
+    # Archivada. La ficha sale de las listas del taller, pero la fila se queda: de ella
+    # cuelgan los vehiculos, las ordenes y los avisos, y borrarla de verdad le partiria
+    # el historial al taller. Nulo es el caso normal, un cliente vigente.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)

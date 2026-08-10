@@ -56,6 +56,10 @@ class Order(Base):
         DateTime(timezone=True), default=ahora, onupdate=ahora
     )
 
+    # Archivada: sale del tablero pero la fila se queda. De la orden cuelgan los avisos
+    # que ya se le mandaron al cliente, y una orden entregada es lo que se cobro.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
     # Se traen juntos porque la orden nunca se muestra sin ellos.
     client: Mapped[Client] = relationship(lazy="joined")
     vehicle: Mapped[Vehicle] = relationship(lazy="joined")

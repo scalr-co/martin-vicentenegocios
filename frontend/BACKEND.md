@@ -166,8 +166,13 @@ Son los momentos con más llamadas desesperadas.
 ### Clientes
 - `GET /clients`
 - `POST /clients` — `{ name, phone, notes? }`
+  - si el teléfono es el de una ficha **archivada**, la revive (mismo `id`, historial intacto) y responde `201`
 - `GET /clients/:id`
 - `PATCH /clients/:id`
+- `DELETE /clients/:id` — **archiva** la ficha → `204` sin cuerpo
+  - no borra: la ficha desaparece de `GET /clients` y de sus autos en `GET /vehicles`, pero sus órdenes quedan
+  - `409` si el cliente tiene órdenes abiertas (hay que cerrarlas o archivarlas primero)
+  - `404` si ya estaba archivada
 
 ### Vehículos
 - `GET /vehicles?clientId=`
@@ -204,6 +209,10 @@ Son los momentos con más llamadas desesperadas.
 
 - `PATCH /orders/:id` — **solo campos** (title, description, estimatedAt, etc.)  
   **No cambia status. No dispara aviso.**
+
+- `DELETE /orders/:id` — **archiva** la orden → `204` sin cuerpo  
+  Es para la orden que se creó mal, no para la que se terminó (esa se cierra con `status: entregado`).  
+  Sale del tablero y del historial del vehículo; los avisos ya enviados quedan. `404` si ya estaba archivada.
 
 - `POST /orders/:id/status` — body: `{ "status": "listo" }`  
   - valida transición  
