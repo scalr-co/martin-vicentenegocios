@@ -62,6 +62,8 @@ function OrdenDetailContent() {
   const [notificationId, setNotificationId] = useState<string | null>(null);
   const [messageSent, setMessageSent] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   function applyDraftFrom(payload: unknown, fallbackPhone?: string) {
     const draft = extractNotificationDraft(payload);
@@ -167,6 +169,24 @@ function OrdenDetailContent() {
       setFlash("Aviso marcado como enviado.");
     } catch {
       // No bloquea el WhatsApp; el link ya se abrió.
+    }
+  }
+
+  async function deleteOrder() {
+    if (!order) return;
+    setDeleting(true);
+    try {
+      await apiFetch(`/orders/${order.id}`, { method: "DELETE" });
+      router.replace("/panel");
+    } catch (err) {
+      setDeleteConfirmOpen(false);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo eliminar la orden. Si el backend aún no tiene DELETE, avísale a Claude.",
+      );
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -306,6 +326,19 @@ function OrdenDetailContent() {
         </div>
       </div>
 
+      <div className="mt-8 border-t border-line pt-6">
+        <p className="text-sm text-muted">
+          ¿Creaste esta orden por error o ya no corresponde?
+        </p>
+        <button
+          type="button"
+          onClick={() => setDeleteConfirmOpen(true)}
+          className="tap-target mt-3 inline-flex items-center justify-center rounded-md border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50"
+        >
+          Eliminar orden
+        </button>
+      </div>
+
       {leaveConfirmOpen && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
@@ -338,6 +371,48 @@ function OrdenDetailContent() {
                 className="tap-target inline-flex items-center justify-center rounded-md border border-line bg-white px-4 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-50"
               >
                 No, volver a estado
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-confirm-title"
+        >
+          <div className="w-full max-w-md rounded-lg border border-line bg-surface p-5 shadow-xl">
+            <h2
+              id="delete-confirm-title"
+              className="font-[family-name:var(--font-display)] text-lg font-bold text-ink"
+            >
+              ¿Eliminar esta orden?
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Se borrará “{order.title}”. Esta acción no se puede deshacer. El
+              cliente y el vehículo se mantienen.
+            </p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => {
+                  void deleteOrder();
+                }}
+                className="tap-target inline-flex items-center justify-center rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-60"
+              >
+                {deleting ? "Eliminando…" : "Sí, eliminar orden"}
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setDeleteConfirmOpen(false)}
+                className="tap-target inline-flex items-center justify-center rounded-md border border-line bg-white px-4 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+              >
+                Cancelar
               </button>
             </div>
           </div>
