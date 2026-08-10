@@ -14,7 +14,7 @@ const display = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "TallerTrack — Órdenes de trabajo para talleres",
+  title: "Motor Ping — Órdenes de trabajo para talleres",
   description:
     "Registra cada trabajo, sigue el estado y avisa al cliente por WhatsApp. Hecho para talleres de Chile.",
 };

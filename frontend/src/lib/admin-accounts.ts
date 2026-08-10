@@ -11,7 +11,7 @@ export type WorkshopAccount = {
   createdAt: string;
 };
 
-const STORAGE_KEY = "tallertrack_admin_accounts_demo";
+const STORAGE_KEY = "motorping_admin_accounts_demo";
 
 /** Cuentas demo locales hasta que exista la API de admin. */
 const SEED: WorkshopAccount[] = [

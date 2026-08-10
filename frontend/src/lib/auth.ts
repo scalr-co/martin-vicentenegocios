@@ -1,6 +1,6 @@
-const TOKEN_KEY = "tallertrack_token";
-const WORKSHOP_KEY = "tallertrack_workshop";
-const USER_KEY = "tallertrack_user";
+const TOKEN_KEY = "motorping_token";
+const WORKSHOP_KEY = "motorping_workshop";
+const USER_KEY = "motorping_user";
 
 export type SessionWorkshop = {
   id?: string;
@@ -47,7 +47,7 @@ export function enterAdminDemo() {
     null,
     {
       id: "admin_demo",
-      email: "admin@tallertrack.cl",
+      email: "admin@motorping.cl",
       name: "Admin demo",
       role: "admin",
     },
@@ -91,7 +91,7 @@ export function isAdmin(): boolean {
   const email = (user?.email || "").toLowerCase();
   // Fallback temporal hasta que la API marque el rol.
   return (
-    email.endsWith("@tallertrack.cl") &&
+    (email.endsWith("@motorping.cl") || email.endsWith("@tallertrack.cl")) &&
     (email.startsWith("admin") ||
       email.startsWith("martin") ||
       email.startsWith("vicente") ||

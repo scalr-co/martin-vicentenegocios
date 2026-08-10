@@ -83,11 +83,11 @@ export function PanelShell({
           <div className="flex min-w-0 items-center gap-6">
             <Link href="/panel" className="min-w-0">
               <span className="block truncate font-[family-name:var(--font-display)] text-lg font-bold tracking-tight text-ink">
-                {admin ? "TallerTrack Admin" : workshop}
+                {admin ? "Motor Ping Admin" : workshop}
               </span>
               {!admin && (
                 <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-muted">
-                  TallerTrack
+                  Motor Ping
                 </span>
               )}
             </Link>

@@ -1,11 +1,11 @@
-# TallerTrack
+# Motor Ping
 
 Frontend del sistema de órdenes de trabajo para talleres (Chillán + Temuco).
 
 ## Stack
 
 - Next.js (App Router) + TypeScript + Tailwind
-- Datos mock por ahora (sin backend)
+- Conectado a la API en Railway
 
 ## Correr en local
 
@@ -19,11 +19,12 @@ Abre [http://localhost:3000](http://localhost:3000)
 ## Rutas
 
 - `/` — Landing
-- `/login` — Ingreso (visual)
+- `/login` — Ingreso
 - `/panel` — Órdenes de hoy
 - `/panel/clientes`
 - `/panel/nueva-orden`
 - `/panel/ordenes/[id]` — Detalle + WhatsApp
+- `/panel/admin` — Admin (solo Martín / Vicente)
 
 ## Backend
 

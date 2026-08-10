@@ -43,7 +43,7 @@ export default function HomePage() {
         <div className="relative z-10 mx-auto flex min-h-svh max-w-6xl flex-col justify-end px-5 pb-16 pt-28 md:justify-center md:px-8 md:pb-24">
           <div className="max-w-2xl">
             <p className="animate-rise mb-4 font-[family-name:var(--font-display)] text-sm font-semibold uppercase tracking-[0.22em] text-brand">
-              TallerTrack
+              Motor Ping
             </p>
             <h1 className="animate-rise-delay font-[family-name:var(--font-display)] text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl">
               El cliente sabe en qué va.
@@ -62,7 +62,7 @@ export default function HomePage() {
                 Ingresar
               </Link>
               <a
-                href="https://wa.me/56981875498?text=Hola%2C%20quiero%20saber%20de%20TallerTrack"
+                href="https://wa.me/56981875498?text=Hola%2C%20quiero%20saber%20de%20Motor%20Ping"
                 className="tap-target inline-flex items-center justify-center rounded-md border border-white/30 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/10"
               >
                 Hablar por WhatsApp
@@ -171,7 +171,7 @@ export default function HomePage() {
             </p>
           </div>
           <p className="text-xs leading-relaxed text-muted sm:text-right">
-            © {new Date().getFullYear()} TallerTrack
+            © {new Date().getFullYear()} Motor Ping
             <br />
             Un producto de Martin Web Studio &amp; Solve
           </p>

@@ -26,7 +26,7 @@ export function BrandMark({
         light ? "text-white" : "text-ink"
       } ${className}`}
     >
-      TallerTrack
+      Motor Ping
     </Link>
   );
 }

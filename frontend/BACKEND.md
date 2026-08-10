@@ -1,7 +1,7 @@
-# Contrato API — TallerTrack (v2)
+# Contrato API — Motor Ping (v2)
 
 Documento para el backend (Claude + amigo) y alineación con el frontend.  
-Frontend: Next.js con datos mock. Marca: **TallerTrack**.
+Frontend: Next.js. Marca: **Motor Ping**.
 
 **Base URL sugerida:** la que usen en Railway/Render  
 **Auth:** JWT Bearer  
