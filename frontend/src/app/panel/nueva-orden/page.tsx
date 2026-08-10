@@ -11,6 +11,10 @@ import type { ApiClient, ApiVehicle } from "@/lib/types";
 const fieldClass =
   "mt-1 box-border block w-full min-w-0 max-w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30";
 
+function formatRutNotes(rut: string) {
+  return `RUT: ${rut}`;
+}
+
 export default function NuevaOrdenPage() {
   return (
     <AuthGuard>
@@ -74,21 +78,37 @@ function NuevaOrdenContent() {
         const phone = String(form.get("clientPhone") || "").replace(/\D/g, "");
         const { data: client } = await apiFetch<ApiClient>("/clients", {
           method: "POST",
-          body: JSON.stringify({ name, phone, rut: rut || null }),
+          body: JSON.stringify({
+            name,
+            phone,
+            // La API aún no tiene campo rut; lo guardamos en notes.
+            notes: rut ? formatRutNotes(rut) : null,
+          }),
         });
         clientId = client.id;
       } else if (rut) {
-        // Solo el rut: mandar notes acá borraría lo que el mecánico ya tenía escrito.
         await apiFetch(`/clients/${clientId}`, {
           method: "PATCH",
-          body: JSON.stringify({ rut }),
+          body: JSON.stringify({ notes: formatRutNotes(rut) }),
         });
       }
 
-      const { data: vehicle } = await apiFetch<ApiVehicle>("/vehicles", {
-        method: "POST",
-        body: JSON.stringify({ clientId, plate, brand, model }),
-      });
+      // Reutilizar vehículo si la patente ya existe (cliente que vuelve).
+      const existentes = await apiList<ApiVehicle>(
+        `/vehicles?plate=${encodeURIComponent(plate)}&limit=20`,
+      );
+      let vehicle = existentes[0];
+
+      if (!vehicle) {
+        ({ data: vehicle } = await apiFetch<ApiVehicle>("/vehicles", {
+          method: "POST",
+          body: JSON.stringify({ clientId, plate, brand, model }),
+        }));
+      } else if (vehicle.clientId && vehicle.clientId !== clientId) {
+        setError("Esa patente ya está registrada a otro cliente del taller.");
+        setSaving(false);
+        return;
+      }
 
       const { data: order } = await apiFetch<{ id: string }>("/orders", {
         method: "POST",
