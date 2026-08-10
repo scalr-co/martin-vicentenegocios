@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BrandMark } from "@/components/ui";
-import { clearSession, getWorkshopName } from "@/lib/auth";
+import { useSyncExternalStore } from "react";
+import { clearSession, getWorkshopName, isAdmin } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const links = [
@@ -29,12 +29,28 @@ function NavLink({
       href={href}
       className={`tap-target inline-flex items-center rounded-md px-3 py-1.5 text-sm transition ${
         active
-          ? "bg-stone-900 text-white"
-          : "text-muted hover:bg-stone-100 hover:text-ink"
+          ? "bg-steel text-white"
+          : "text-muted hover:bg-stone-100 hover:text-ink dark:hover:bg-stone-800"
       }`}
     >
       {label}
     </Link>
+  );
+}
+
+function useClientFlag(read: () => boolean) {
+  return useSyncExternalStore(
+    () => () => {},
+    read,
+    () => false,
+  );
+}
+
+function useClientWorkshopName() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => getWorkshopName(),
+    () => "Taller",
   );
 }
 
@@ -48,16 +64,35 @@ export function PanelShell({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const workshop = getWorkshopName();
+  const workshop = useClientWorkshopName();
+  const admin = useClientFlag(() => isAdmin());
+  const pathname = usePathname();
+  const adminActive = pathname.startsWith("/panel/admin");
+
+  const nav = [
+    ...links,
+    ...(admin
+      ? [{ href: "/panel/admin", label: "Admin", exact: false as const }]
+      : []),
+  ];
 
   return (
     <div className="flex min-h-dvh flex-1 flex-col bg-background text-ink">
       <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <div className="flex items-center gap-6">
-            <BrandMark className="text-lg" />
+          <div className="flex min-w-0 items-center gap-6">
+            <Link href="/panel" className="min-w-0">
+              <span className="block truncate font-[family-name:var(--font-display)] text-lg font-bold tracking-tight text-ink">
+                {admin ? "TallerTrack Admin" : workshop}
+              </span>
+              {!admin && (
+                <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-muted">
+                  TallerTrack
+                </span>
+              )}
+            </Link>
             <nav className="hidden items-center gap-1 sm:flex">
-              {links.map((link) => (
+              {nav.map((link) => (
                 <NavLink key={link.href} {...link} />
               ))}
             </nav>
@@ -65,8 +100,12 @@ export function PanelShell({
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
             <div className="hidden text-right sm:block">
-              <p className="text-xs font-medium text-ink">{workshop}</p>
-              <p className="text-[11px] text-muted">Modo WhatsApp: link</p>
+              <p className="text-xs font-medium text-ink">
+                {admin ? "Administración" : workshop}
+              </p>
+              <p className="text-[11px] text-muted">
+                {admin ? "Cuentas de talleres" : "Modo WhatsApp: link"}
+              </p>
             </div>
             <button
               type="button"
@@ -81,9 +120,14 @@ export function PanelShell({
           </div>
         </div>
         <nav className="flex gap-1 overflow-x-auto border-t border-line px-4 py-2 sm:hidden">
-          {links.map((link) => (
+          {nav.map((link) => (
             <NavLink key={link.href} {...link} />
           ))}
+          {admin && (
+            <span className="sr-only">
+              {adminActive ? "Admin activo" : "Admin"}
+            </span>
+          )}
         </nav>
       </header>
 

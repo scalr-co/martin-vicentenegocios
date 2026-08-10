@@ -5,7 +5,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/ui";
 import { apiFetch, extractToken } from "@/lib/api";
-import { setSession } from "@/lib/auth";
+import { extractSessionFromLogin, isAdmin, setSession } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
@@ -34,13 +34,13 @@ export default function LoginPage() {
         throw new Error("La API no devolvió token. Avisa a tu amigo.");
       }
 
-      const workshop =
-        (data.workshop as unknown) ||
-        (data as { workshop?: unknown }).workshop ||
-        null;
-
-      setSession(token, workshop);
-      router.replace("/panel");
+      const { workshop, user } = extractSessionFromLogin(data);
+      setSession(token, workshop, {
+        ...user,
+        email: user?.email || email,
+        role: user?.role,
+      });
+      router.replace(isAdmin() ? "/panel/admin" : "/panel");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar sesión");
     } finally {
