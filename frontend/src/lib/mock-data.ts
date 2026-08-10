@@ -181,21 +181,3 @@ export function buildWhatsAppLink(phone: string, message: string) {
   const clean = phone.replace(/\D/g, "");
   return `https://wa.me/${clean}?text=${encodeURIComponent(message)}`;
 }
-
-export function buildStatusMessage(
-  clientName: string,
-  order: WorkOrder,
-  workshopName = "Taller Demo",
-) {
-  const statusText = STATUS_LABELS[order.status];
-  if (order.status === "listo") {
-    return `Hola ${clientName}, te escribe ${workshopName}. Tu trabajo "${order.title}" (${order.vehicleOrItem}) ya está listo para retirar. ¡Te esperamos!`;
-  }
-  if (order.status === "esperando_aprobacion") {
-    return `Hola ${clientName}, te escribe ${workshopName}. Necesitamos tu aprobación para continuar con "${order.title}" (${order.vehicleOrItem}). ¿Me confirmas por este chat?`;
-  }
-  if (order.status === "esperando_repuesto") {
-    return `Hola ${clientName}, te escribe ${workshopName}. Tu trabajo "${order.title}" (${order.vehicleOrItem}) está en espera de repuesto. Te avisamos cuando avancemos.`;
-  }
-  return `Hola ${clientName}, te escribe ${workshopName}. Actualización de tu trabajo "${order.title}" (${order.vehicleOrItem}): estado actual — ${statusText}.`;
-}

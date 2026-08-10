@@ -27,6 +27,15 @@ export type ApiVehicle = {
   model?: string | null;
 };
 
+export type ApiNotification = {
+  id: string;
+  message: string;
+  toPhone: string;
+  status?: string;
+  createdAt?: string;
+  sentAt?: string | null;
+};
+
 export type ApiOrder = {
   id: string;
   title: string;
@@ -40,18 +49,10 @@ export type ApiOrder = {
   clientId?: string;
   vehicleId?: string;
   photos?: { id: string; url: string; createdAt?: string }[];
-  notification?: {
-    id: string;
-    message: string;
-    toPhone: string;
-    status?: string;
-  } | null;
-  latestNotification?: {
-    id: string;
-    message: string;
-    toPhone: string;
-    status?: string;
-  } | null;
+  /** Respuesta de POST /orders/{id}/status */
+  notification?: ApiNotification | null;
+  /** Respuesta de GET /orders/{id} */
+  latestNotification?: ApiNotification | null;
 };
 
 export const STATUS_LABELS: Record<string, string> = {
@@ -104,8 +105,8 @@ export function extractNotificationDraft(
   const obj = payload as Record<string, unknown>;
 
   const candidates = [
-    obj.notification,
     obj.latestNotification,
+    obj.notification,
     obj.aviso,
     obj.draft,
     obj.data,

@@ -29,6 +29,18 @@ const ALL_STATUSES = [
 const fieldClass =
   "mt-1.5 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30";
 
+function normalizeOrder(data: ApiOrder): ApiOrder {
+  const notice = data.latestNotification ?? data.notification ?? null;
+  return {
+    ...data,
+    vehicleOrItem:
+      data.vehicleOrItem ||
+      formatVehicleOrItem(data.vehicle ?? null, "Sin vehículo"),
+    latestNotification: notice,
+    notification: data.notification ?? notice,
+  };
+}
+
 export default function OrdenDetailPage() {
   return (
     <AuthGuard>
@@ -64,12 +76,7 @@ function OrdenDetailContent() {
 
   async function load() {
     const { data } = await apiFetch<ApiOrder>(`/orders/${params.id}`);
-    const normalized: ApiOrder = {
-      ...data,
-      vehicleOrItem:
-        data.vehicleOrItem ||
-        formatVehicleOrItem(data.vehicle ?? null, "Sin vehículo"),
-    };
+    const normalized = normalizeOrder(data);
     setOrder(normalized);
     applyDraftFrom(normalized, normalized.client?.phone);
     return normalized;
@@ -122,17 +129,19 @@ function OrdenDetailContent() {
     if (!order) return;
     setSaving(true);
     try {
-      const { data } = await apiFetch<Record<string, unknown>>(
-        `/orders/${order.id}/status`,
-        {
-          method: "POST",
-          body: JSON.stringify({ status: next }),
-        },
-      );
-      // El borrador lo arma el backend; no componer texto en el frontend.
+      const { data } = await apiFetch<ApiOrder>(`/orders/${order.id}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status: next }),
+      });
+      // Usar la notification de la respuesta; no hace falta otro GET.
+      const normalized = normalizeOrder({
+        ...order,
+        ...data,
+        status: (data.status as string) || next,
+      });
+      setOrder(normalized);
       applyDraftFrom(data, order.client?.phone);
       setMessageSent(false);
-      await load();
       setFlash(
         `Estado actualizado a “${statusLabel(next)}”. Revisa el aviso y mándalo por WhatsApp.`,
       );
@@ -144,16 +153,20 @@ function OrdenDetailContent() {
   }
 
   async function markSent() {
+    const id = notificationId;
+    const finalMessage = draftMessage.trim().slice(0, 1000);
+    if (!id || !finalMessage) return;
+
     setMessageSent(true);
     setLeaveConfirmOpen(false);
-    if (!notificationId) return;
     try {
-      await apiFetch(`/notifications/${notificationId}/sent`, {
+      await apiFetch(`/notifications/${id}/sent`, {
         method: "POST",
+        body: JSON.stringify({ message: finalMessage }),
       });
       setFlash("Aviso marcado como enviado.");
     } catch {
-      // no bloquea el WhatsApp
+      // No bloquea el WhatsApp; el link ya se abrió.
     }
   }
 
@@ -255,7 +268,9 @@ function OrdenDetailContent() {
                 value={draftMessage}
                 onChange={(e) => setDraftMessage(e.target.value)}
                 rows={6}
-                className={`${fieldClass} min-h-[8.5rem] resize-y leading-relaxed`}
+                maxLength={1000}
+                disabled={messageSent}
+                className={`${fieldClass} min-h-[8.5rem] resize-y leading-relaxed disabled:opacity-70`}
               />
             </label>
           ) : (
@@ -265,7 +280,7 @@ function OrdenDetailContent() {
             </p>
           )}
 
-          {waLink ? (
+          {waLink && !messageSent ? (
             <a
               href={waLink}
               target="_blank"
@@ -277,6 +292,10 @@ function OrdenDetailContent() {
             >
               Avisar por WhatsApp
             </a>
+          ) : messageSent ? (
+            <p className="mt-4 text-sm font-medium text-emerald-800">
+              Aviso marcado como enviado.
+            </p>
           ) : (
             <p className="mt-4 text-sm text-muted">
               {draftMessage
