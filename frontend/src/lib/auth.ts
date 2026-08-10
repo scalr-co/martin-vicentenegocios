@@ -12,7 +12,8 @@ export type SessionUser = {
   id?: string;
   email?: string;
   name?: string;
-  role?: "admin" | "owner" | "mechanic" | string;
+  /** Backend usa `platform_admin` para Martín/Vicente. */
+  role?: "platform_admin" | "admin" | "owner" | "mechanic" | string;
 };
 
 export function getToken(): string | null {
@@ -26,8 +27,9 @@ export function setSession(
   user?: unknown,
 ) {
   localStorage.setItem(TOKEN_KEY, token);
-  if (workshop) {
-    localStorage.setItem(WORKSHOP_KEY, JSON.stringify(workshop));
+  if (workshop !== undefined) {
+    if (workshop === null) localStorage.removeItem(WORKSHOP_KEY);
+    else localStorage.setItem(WORKSHOP_KEY, JSON.stringify(workshop));
   }
   if (user) {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -38,21 +40,6 @@ export function clearSession() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(WORKSHOP_KEY);
   localStorage.removeItem(USER_KEY);
-}
-
-/** Vista previa del panel admin sin API. Solo para Martín/Vicente mientras se construye el backend. */
-export function enterAdminDemo() {
-  setSession(
-    "demo-admin-token",
-    null,
-    {
-      id: "admin_demo",
-      email: "admin@motorping.cl",
-      name: "Admin demo",
-      role: "admin",
-    },
-  );
-  localStorage.removeItem(WORKSHOP_KEY);
 }
 
 export function getWorkshop(): SessionWorkshop | null {
@@ -81,59 +68,77 @@ export function getUser(): SessionUser | null {
   }
 }
 
-/** Admin de plataforma (Martín / Vicente), no dueño de un taller. */
+function normalizeRole(role?: string | null) {
+  return (role || "").trim().toLowerCase();
+}
+
+/** Admin de plataforma (Martín / Vicente). El backend envía `platform_admin`. */
 export function isAdmin(): boolean {
-  const user = getUser();
-  const role = (user?.role || "").toLowerCase();
-  if (role === "admin" || role === "superadmin" || role === "platform_admin") {
-    return true;
-  }
-  const email = (user?.email || "").toLowerCase();
-  // Fallback temporal hasta que la API marque el rol.
+  const role = normalizeRole(getUser()?.role);
   return (
-    (email.endsWith("@motorping.cl") || email.endsWith("@tallertrack.cl")) &&
-    (email.startsWith("admin") ||
-      email.startsWith("martin") ||
-      email.startsWith("vicente") ||
-      email.startsWith("solve"))
+    role === "platform_admin" ||
+    role === "admin" ||
+    role === "superadmin"
   );
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
 }
 
 export function extractSessionFromLogin(data: Record<string, unknown>): {
   workshop: SessionWorkshop | null;
   user: SessionUser | null;
 } {
+  const nested = asRecord(data.data);
   const workshopRaw =
-    (data.workshop as SessionWorkshop | undefined) ||
-    ((data.data as Record<string, unknown> | undefined)?.workshop as
-      | SessionWorkshop
-      | undefined) ||
+    asRecord(data.workshop) ||
+    asRecord(nested?.workshop) ||
     null;
 
   const userRaw =
-    (data.user as SessionUser | undefined) ||
-    ((data.data as Record<string, unknown> | undefined)?.user as
-      | SessionUser
-      | undefined) ||
+    asRecord(data.user) ||
+    asRecord(nested?.user) ||
     null;
+
+  const role =
+    (typeof userRaw?.role === "string" && userRaw.role) ||
+    (typeof data.role === "string" && data.role) ||
+    (typeof nested?.role === "string" && nested.role) ||
+    undefined;
 
   const workshop: SessionWorkshop | null = workshopRaw
     ? {
-        id: workshopRaw.id,
-        name: workshopRaw.name,
-        phone: workshopRaw.phone,
+        id: typeof workshopRaw.id === "string" ? workshopRaw.id : undefined,
+        name:
+          (typeof workshopRaw.name === "string" && workshopRaw.name) ||
+          (typeof workshopRaw.workshopName === "string" &&
+            workshopRaw.workshopName) ||
+          undefined,
+        phone:
+          (typeof workshopRaw.phone === "string" && workshopRaw.phone) ||
+          (typeof workshopRaw.workshopPhone === "string" &&
+            workshopRaw.workshopPhone) ||
+          undefined,
       }
     : null;
 
   const user: SessionUser | null = userRaw
     ? {
-        id: userRaw.id,
-        email: userRaw.email,
-        name: userRaw.name,
-        role: userRaw.role,
+        id: typeof userRaw.id === "string" ? userRaw.id : undefined,
+        email:
+          (typeof userRaw.email === "string" && userRaw.email) ||
+          (typeof data.email === "string" && data.email) ||
+          undefined,
+        name: typeof userRaw.name === "string" ? userRaw.name : undefined,
+        role,
       }
-    : data.email
-      ? { email: String(data.email), role: String(data.role || "") }
+    : role || typeof data.email === "string"
+      ? {
+          email: typeof data.email === "string" ? data.email : undefined,
+          role,
+        }
       : null;
 
   return { workshop, user };
