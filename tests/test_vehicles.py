@@ -91,6 +91,58 @@ def test_listar_los_vehiculos_de_un_cliente(cliente, dueno):
     assert [v["plate"] for v in respuesta.json()["data"]] == ["AAAA11"]
 
 
+def test_buscar_por_patente_encuentra_el_auto_que_ya_estuvo_en_el_taller(cliente, dueno):
+    """El caso normal de un taller: el auto vuelve.
+
+    Sin esta busqueda no hay forma de llegar al vehiculo desde la patente, que es el
+    unico dato que el mecanico tiene en la mano cuando el auto entra por la puerta.
+    """
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id = crear_cliente(cliente, token)
+    crear_vehiculo(cliente, token, cliente_id, patente="AAAA11")
+    crear_vehiculo(cliente, token, cliente_id, patente="BBBB22")
+
+    respuesta = cliente.get("/vehicles", params={"plate": "BBBB22"}, headers=con_token(token))
+
+    assert [v["plate"] for v in respuesta.json()["data"]] == ["BBBB22"]
+
+
+def test_la_patente_se_busca_como_se_guarda_no_como_se_escribe(cliente, dueno):
+    """El mecanico escribe "bbbb 22" con una mano. Se guarda normalizada; buscar tambien."""
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id = crear_cliente(cliente, token)
+    crear_vehiculo(cliente, token, cliente_id, patente="AAAA11")
+    crear_vehiculo(cliente, token, cliente_id, patente="BBBB22")
+
+    respuesta = cliente.get("/vehicles", params={"plate": "bbbb 22"}, headers=con_token(token))
+
+    assert [v["plate"] for v in respuesta.json()["data"]] == ["BBBB22"]
+
+
+def test_una_patente_que_no_existe_devuelve_la_lista_vacia(cliente, dueno):
+    """Es la senal de "auto nuevo": el frontend crea el vehiculo recien cuando ve esto."""
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id = crear_cliente(cliente, token)
+    crear_vehiculo(cliente, token, cliente_id, patente="AAAA11")
+
+    respuesta = cliente.get("/vehicles", params={"plate": "ZZZZ99"}, headers=con_token(token))
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["data"] == []
+
+
+def test_la_patente_de_otro_taller_no_aparece(cliente, dueno, dueno_vecino):
+    """Dos talleres pueden atender el mismo auto sin enterarse el uno del otro."""
+    token_propio = entrar(cliente, "dueno@taller.cl")
+    token_vecino = entrar(cliente, "dueno@vecino.cl")
+    ajeno = crear_cliente(cliente, token_vecino, telefono="56999999999")
+    crear_vehiculo(cliente, token_vecino, ajeno, patente="CCCC33")
+
+    respuesta = cliente.get("/vehicles", params={"plate": "CCCC33"}, headers=con_token(token_propio))
+
+    assert respuesta.json()["data"] == []
+
+
 def test_listar_devuelve_la_forma_de_lista_del_contrato(cliente, dueno):
     token = entrar(cliente, "dueno@taller.cl")
     cliente_id = crear_cliente(cliente, token)

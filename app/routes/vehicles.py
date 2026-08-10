@@ -14,6 +14,7 @@ from app.models import Client, Order, User, Vehicle
 from app.schemas.order import OrdenSalida
 from app.schemas.vehicle import VehiculoEdicion, VehiculoEntrada, VehiculoSalida
 from app.security.dependencias import usuario_actual
+from app.services.normalizacion import DatoInvalido, normalizar_patente
 
 router = APIRouter(prefix="/vehicles", tags=["vehicles"])
 
@@ -73,14 +74,27 @@ def _patente_repetida() -> HTTPException:
 @router.get("")
 def listar(
     client_id: str | None = Query(default=None, alias="clientId"),
+    plate: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=TOPE_POR_PAGINA),
     usuario: User = Depends(usuario_actual),
     sesion: Session = Depends(obtener_sesion),
 ):
+    """Buscar por `plate` es como se llega a un auto que ya estuvo aca.
+
+    La patente es el unico dato que el mecanico tiene en la mano cuando el auto entra
+    por la puerta, y un auto que vuelve es el caso normal de un taller, no la excepcion.
+    """
     condiciones = [Vehicle.workshop_id == usuario.workshop_id]
     if client_id:
         condiciones.append(Vehicle.client_id == client_id)
+    if plate:
+        # Se guarda normalizada: sin esto, "bbbb 22" no encontraria nunca a "BBBB22".
+        try:
+            condiciones.append(Vehicle.plate == normalizar_patente(plate))
+        except DatoInvalido:
+            # Una patente imposible no es un error: es que no hay ningun auto asi.
+            condiciones.append(Vehicle.plate.is_(None))
 
     total = sesion.scalar(select(func.count()).select_from(Vehicle).where(*condiciones))
     encontrados = sesion.scalars(
