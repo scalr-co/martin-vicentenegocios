@@ -19,6 +19,19 @@ from app.security.passwords import hashear
 CLAVE_DE_PRUEBA = "clave-de-prueba"
 
 
+def ajustes(**valores):
+    """Configuracion aislada del `.env` de la maquina.
+
+    `Settings` lee un `.env` local, que no esta versionado y cada uno tiene el suyo. Sin
+    `_env_file=None`, un `.env` con un JWT_SECRET valido hace pasar el test que comprueba
+    que la aplicacion se niega a arrancar en produccion con la clave de desarrollo: el
+    test quedaria en verde y la proteccion sin comprobar.
+    """
+    from app.config import Settings
+
+    return Settings(_env_file=None, **valores)
+
+
 @pytest.fixture
 def sesion():
     motor = create_engine(
