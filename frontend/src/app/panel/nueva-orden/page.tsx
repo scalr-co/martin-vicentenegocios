@@ -9,7 +9,11 @@ import { apiFetch, apiList } from "@/lib/api";
 import type { ApiClient, ApiVehicle } from "@/lib/types";
 
 const fieldClass =
-  "mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30";
+  "mt-1 box-border block w-full min-w-0 max-w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30";
+
+function formatRutNotes(rut: string) {
+  return `RUT: ${rut}`;
+}
 
 export default function NuevaOrdenPage() {
   return (
@@ -64,19 +68,29 @@ function NuevaOrdenContent() {
     const title = String(form.get("title") || "").trim();
     const description = String(form.get("description") || "").trim() || null;
     const estimatedAt = String(form.get("estimatedAt") || "").trim() || null;
+    const rut = String(form.get("rut") || "").trim();
 
     try {
       let clientId = String(form.get("clientId") || "");
 
       if (mode === "new") {
         const name = String(form.get("clientName") || "").trim();
-        const phone = String(form.get("clientPhone") || "")
-          .replace(/\D/g, "");
+        const phone = String(form.get("clientPhone") || "").replace(/\D/g, "");
         const { data: client } = await apiFetch<ApiClient>("/clients", {
           method: "POST",
-          body: JSON.stringify({ name, phone }),
+          body: JSON.stringify({
+            name,
+            phone,
+            // La API aún no tiene campo rut; lo guardamos en notes.
+            notes: rut ? formatRutNotes(rut) : null,
+          }),
         });
         clientId = client.id;
+      } else if (rut) {
+        await apiFetch(`/clients/${clientId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ notes: formatRutNotes(rut) }),
+        });
       }
 
       const { data: vehicle } = await apiFetch<ApiVehicle>("/vehicles", {
@@ -142,7 +156,7 @@ function NuevaOrdenContent() {
           </div>
 
           {mode === "existing" ? (
-            <label className="block" htmlFor="clientId">
+            <label className="block min-w-0" htmlFor="clientId">
               <span className="text-sm font-medium text-ink">Cliente</span>
               <select
                 id="clientId"
@@ -163,7 +177,7 @@ function NuevaOrdenContent() {
             </label>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block" htmlFor="clientName">
+              <label className="block min-w-0" htmlFor="clientName">
                 <span className="text-sm font-medium text-ink">Nombre</span>
                 <input
                   id="clientName"
@@ -173,7 +187,7 @@ function NuevaOrdenContent() {
                   placeholder="Juan Pérez"
                 />
               </label>
-              <label className="block" htmlFor="clientPhone">
+              <label className="block min-w-0" htmlFor="clientPhone">
                 <span className="text-sm font-medium text-ink">WhatsApp</span>
                 <input
                   id="clientPhone"
@@ -186,8 +200,23 @@ function NuevaOrdenContent() {
             </div>
           )}
 
+          <label className="block min-w-0" htmlFor="rut">
+            <span className="text-sm font-medium text-ink">
+              RUT{" "}
+              <span className="font-normal text-muted">(opcional)</span>
+            </span>
+            <input
+              id="rut"
+              name="rut"
+              className={fieldClass}
+              placeholder="12.345.678-9"
+              autoComplete="off"
+              inputMode="text"
+            />
+          </label>
+
           <div className="grid gap-4 sm:grid-cols-3">
-            <label className="block" htmlFor="plate">
+            <label className="block min-w-0" htmlFor="plate">
               <span className="text-sm font-medium text-ink">Patente</span>
               <input
                 id="plate"
@@ -197,17 +226,17 @@ function NuevaOrdenContent() {
                 placeholder="ABCD12"
               />
             </label>
-            <label className="block" htmlFor="brand">
+            <label className="block min-w-0" htmlFor="brand">
               <span className="text-sm font-medium text-ink">Marca</span>
               <input id="brand" name="brand" className={fieldClass} placeholder="Toyota" />
             </label>
-            <label className="block" htmlFor="model">
+            <label className="block min-w-0" htmlFor="model">
               <span className="text-sm font-medium text-ink">Modelo</span>
               <input id="model" name="model" className={fieldClass} placeholder="Corolla" />
             </label>
           </div>
 
-          <label className="block" htmlFor="title">
+          <label className="block min-w-0" htmlFor="title">
             <span className="text-sm font-medium text-ink">Título</span>
             <input
               id="title"
@@ -218,7 +247,7 @@ function NuevaOrdenContent() {
             />
           </label>
 
-          <label className="block" htmlFor="description">
+          <label className="block min-w-0" htmlFor="description">
             <span className="text-sm font-medium text-ink">Descripción</span>
             <textarea
               id="description"
@@ -229,9 +258,10 @@ function NuevaOrdenContent() {
             />
           </label>
 
-          <label className="block" htmlFor="estimatedAt">
+          <label className="block min-w-0 overflow-hidden" htmlFor="estimatedAt">
             <span className="text-sm font-medium text-ink">
-              Fecha estimada (opcional)
+              Fecha estimada{" "}
+              <span className="font-normal text-muted">(opcional)</span>
             </span>
             <input
               id="estimatedAt"

@@ -17,6 +17,8 @@ export type ApiClient = {
   name: string;
   phone: string;
   notes?: string | null;
+  /** Si el backend lo agrega después; hoy puede ir en notes. */
+  rut?: string | null;
 };
 
 export type ApiVehicle = {
