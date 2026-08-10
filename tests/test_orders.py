@@ -21,6 +21,56 @@ def taller_con_auto(cliente, token, patente="ABCD12", telefono="56911111111"):
     return cliente_id, vehiculo_id
 
 
+def test_una_orden_sin_avisos_no_trae_ninguno(cliente, dueno):
+    """Recien creada no se le ha dicho nada al cliente todavia."""
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id, vehiculo_id = taller_con_auto(cliente, token)
+    orden = crear_orden(cliente, token, cliente_id, vehiculo_id).json()["data"]["id"]
+
+    respuesta = cliente.get(f"/orders/{orden}", headers=con_token(token))
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["data"]["latestNotification"] is None
+
+
+def test_el_detalle_trae_el_aviso_pendiente(cliente, dueno):
+    """Sin esto el frontend pierde el borrador al recargar la pagina.
+
+    El aviso solo viaja en la respuesta del cambio de estado. Si el mecanico recarga,
+    se queda sin el texto que tenia que mandar y sin el id para marcarlo como enviado.
+    """
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id, vehiculo_id = taller_con_auto(cliente, token)
+    orden = crear_orden(cliente, token, cliente_id, vehiculo_id).json()["data"]["id"]
+    cambio = cliente.post(
+        f"/orders/{orden}/status", json={"status": "listo"}, headers=con_token(token)
+    ).json()["data"]["notification"]
+
+    respuesta = cliente.get(f"/orders/{orden}", headers=con_token(token))
+
+    aviso = respuesta.json()["data"]["latestNotification"]
+    assert aviso["id"] == cambio["id"]
+    assert aviso["message"] == cambio["message"]
+    assert aviso["toPhone"] == cambio["toPhone"]
+
+
+def test_el_detalle_trae_el_ultimo_aviso_no_el_primero(cliente, dueno):
+    """La orden avanza varias veces; al mecanico le sirve el que tiene pendiente ahora."""
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id, vehiculo_id = taller_con_auto(cliente, token)
+    orden = crear_orden(cliente, token, cliente_id, vehiculo_id).json()["data"]["id"]
+    cliente.post(
+        f"/orders/{orden}/status", json={"status": "en_reparacion"}, headers=con_token(token)
+    )
+    ultimo = cliente.post(
+        f"/orders/{orden}/status", json={"status": "listo"}, headers=con_token(token)
+    ).json()["data"]["notification"]
+
+    respuesta = cliente.get(f"/orders/{orden}", headers=con_token(token))
+
+    assert respuesta.json()["data"]["latestNotification"]["id"] == ultimo["id"]
+
+
 def test_crear_una_orden_la_devuelve_con_su_id(cliente, dueno):
     token = entrar(cliente, "dueno@taller.cl")
     cliente_id, vehiculo_id = taller_con_auto(cliente, token)

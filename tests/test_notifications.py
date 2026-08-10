@@ -63,6 +63,92 @@ def test_marcarlo_dos_veces_no_cambia_la_hora_original(cliente, dueno, sesion):
     ).sent_at == primera_hora
 
 
+def test_el_texto_editado_por_el_mecanico_reemplaza_al_borrador(cliente, dueno, sesion):
+    """Lo que se guarda es lo que de verdad salio, no el borrador que preparamos.
+
+    El mecanico ve el borrador y a veces lo cambia -aparecio una fuga al desarmar-.
+    Si guardamos el borrador, el registro dice una cosa y al cliente le llego otra.
+    """
+    token = entrar(cliente, "dueno@taller.cl")
+    aviso = aviso_recien_creado(cliente, token)
+
+    respuesta = cliente.post(
+        f"/notifications/{aviso}/sent",
+        json={"message": "Hola Juan, tu auto quedo listo pero apareció una fuga. Te llamo."},
+        headers=con_token(token),
+    )
+
+    assert respuesta.status_code == 200
+    guardado = sesion.scalar(select(Notification).where(Notification.id == aviso))
+    assert guardado.message == (
+        "Hola Juan, tu auto quedo listo pero apareció una fuga. Te llamo."
+    )
+
+
+def test_sin_texto_el_borrador_queda_tal_cual(cliente, dueno, sesion):
+    """El frontend que solo marca enviado, sin mandar nada, tiene que seguir andando."""
+    token = entrar(cliente, "dueno@taller.cl")
+    aviso = aviso_recien_creado(cliente, token)
+    borrador = sesion.scalar(select(Notification).where(Notification.id == aviso)).message
+
+    respuesta = cliente.post(f"/notifications/{aviso}/sent", headers=con_token(token))
+
+    assert respuesta.status_code == 200
+    sesion.expire_all()
+    assert sesion.scalar(
+        select(Notification).where(Notification.id == aviso)
+    ).message == borrador
+
+
+def test_marcarlo_de_nuevo_no_reescribe_el_texto_que_ya_salio(cliente, dueno, sesion):
+    """Ya se envio: el texto que leyo el cliente no se puede cambiar despues."""
+    token = entrar(cliente, "dueno@taller.cl")
+    aviso = aviso_recien_creado(cliente, token)
+    cliente.post(
+        f"/notifications/{aviso}/sent",
+        json={"message": "El texto que salio"},
+        headers=con_token(token),
+    )
+
+    respuesta = cliente.post(
+        f"/notifications/{aviso}/sent",
+        json={"message": "Otro texto inventado despues"},
+        headers=con_token(token),
+    )
+
+    assert respuesta.status_code == 200
+    sesion.expire_all()
+    assert sesion.scalar(
+        select(Notification).where(Notification.id == aviso)
+    ).message == "El texto que salio"
+
+
+def test_un_texto_en_blanco_no_se_acepta(cliente, dueno):
+    """Un aviso vacio no es un aviso. Si viene el campo, tiene que traer algo."""
+    token = entrar(cliente, "dueno@taller.cl")
+    aviso = aviso_recien_creado(cliente, token)
+
+    respuesta = cliente.post(
+        f"/notifications/{aviso}/sent", json={"message": "   "}, headers=con_token(token)
+    )
+
+    assert respuesta.status_code == 422
+
+
+def test_un_texto_larguisimo_no_se_acepta(cliente, dueno):
+    """El mismo limite que al mover de estado: 1000 caracteres."""
+    token = entrar(cliente, "dueno@taller.cl")
+    aviso = aviso_recien_creado(cliente, token)
+
+    respuesta = cliente.post(
+        f"/notifications/{aviso}/sent",
+        json={"message": "a" * 1001},
+        headers=con_token(token),
+    )
+
+    assert respuesta.status_code == 422
+
+
 def test_el_aviso_de_otro_taller_no_se_puede_tocar(cliente, dueno, dueno_vecino):
     token_propio = entrar(cliente, "dueno@taller.cl")
     token_vecino = entrar(cliente, "dueno@vecino.cl")

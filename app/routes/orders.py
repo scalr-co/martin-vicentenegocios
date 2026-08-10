@@ -36,6 +36,24 @@ def salida_de_orden(orden: Order) -> dict:
     return OrdenSalida.model_validate(orden).model_dump(by_alias=True, mode="json")
 
 
+def _ultimo_aviso(sesion: Session, orden_id: str) -> dict | None:
+    """El aviso mas reciente de la orden, o None si no se le ha dicho nada al cliente.
+
+    Va solo en el detalle y no en el listado: el aviso viaja en la respuesta del cambio
+    de estado, y sin esto el mecanico que recarga la pagina pierde el texto que tenia
+    que mandar y el id para marcarlo como enviado.
+    """
+    aviso = sesion.scalar(
+        select(Notification)
+        .where(Notification.order_id == orden_id)
+        .order_by(Notification.created_at.desc())
+        .limit(1)
+    )
+    if aviso is None:
+        return None
+    return AvisoSalida.model_validate(aviso).model_dump(by_alias=True, mode="json")
+
+
 def _no_encontrada(que: str = "Orden") -> HTTPException:
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{que} no encontrada")
 
@@ -175,7 +193,10 @@ def obtener(
     usuario: User = Depends(usuario_actual),
     sesion: Session = Depends(obtener_sesion),
 ):
-    return {"data": salida_de_orden(_del_taller(sesion, usuario, orden_id))}
+    orden = _del_taller(sesion, usuario, orden_id)
+    salida = salida_de_orden(orden)
+    salida["latestNotification"] = _ultimo_aviso(sesion, orden.id)
+    return {"data": salida}
 
 
 @router.patch("/{orden_id}")

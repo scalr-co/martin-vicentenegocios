@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.db import obtener_sesion
 from app.models import AVISO_ENVIADO, Notification, User
 from app.models.base import ahora
-from app.schemas.order import AvisoSalida
+from app.schemas.order import AvisoEnviado, AvisoSalida
 from app.security.dependencias import usuario_actual
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -20,6 +20,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 @router.post("/{aviso_id}/sent")
 def marcar_como_enviado(
     aviso_id: str,
+    datos: AvisoEnviado | None = None,
     usuario: User = Depends(usuario_actual),
     sesion: Session = Depends(obtener_sesion),
 ):
@@ -32,8 +33,12 @@ def marcar_como_enviado(
     if aviso is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Aviso no encontrado")
 
-    # El envio ocurrio una sola vez: si ya estaba marcado, la hora original se respeta.
+    # El envio ocurrio una sola vez: si ya estaba marcado, la hora original se respeta,
+    # y el texto que el cliente ya leyo tampoco se puede reescribir despues.
     if aviso.status != AVISO_ENVIADO:
+        if datos is not None and datos.message is not None:
+            # El mecanico cambio el borrador antes de mandarlo: se guarda lo que salio.
+            aviso.message = datos.message
         aviso.status = AVISO_ENVIADO
         aviso.sent_at = ahora()
         sesion.commit()

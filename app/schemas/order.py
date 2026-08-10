@@ -81,6 +81,25 @@ class CambioDeEstado(Esquema):
         return _estado_conocido(valor)
 
 
+class AvisoEnviado(Esquema):
+    """Lo que el mecanico mando de verdad, si cambio el borrador antes de enviarlo.
+
+    Viene vacio cuando mando el borrador tal cual: ese es el caso normal.
+    """
+
+    message: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("message")
+    @classmethod
+    def _con_algo_adentro(cls, valor: str | None) -> str | None:
+        if valor is None:
+            return None
+        limpio = valor.strip()
+        if not limpio:
+            raise ValueError("El aviso no puede ir en blanco")
+        return limpio
+
+
 class AvisoSalida(Esquema):
     """Lo que el frontend necesita para abrir wa.me sin pedir nada mas."""
 
