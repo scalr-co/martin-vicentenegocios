@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { BrandMark } from "@/components/ui";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function HomePage() {
   return (
@@ -29,7 +28,6 @@ export default function HomePage() {
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8">
             <BrandMark light className="text-xl md:text-2xl" />
             <nav className="flex items-center gap-2 sm:gap-3">
-              <ThemeToggle lightHero />
               <Link
                 href="/login"
                 className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark"

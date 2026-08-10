@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/ui";
 import { apiFetch, extractToken } from "@/lib/api";
 import { extractSessionFromLogin, isAdmin, setSession } from "@/lib/auth";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -53,9 +52,6 @@ export default function LoginPage() {
       className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto px-4 py-10"
       style={{ backgroundColor: "#292524" }}
     >
-      <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20">
-        <ThemeToggle lightHero />
-      </div>
       <div
         className="pointer-events-none absolute inset-0"
         style={{

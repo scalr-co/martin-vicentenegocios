@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { clearSession, getWorkshopName, isAdmin } from "@/lib/auth";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 const links = [
   { href: "/panel", label: "Hoy", exact: true },
@@ -98,7 +97,6 @@ export function PanelShell({
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <ThemeToggle />
             <div className="hidden text-right sm:block">
               <p className="text-xs font-medium text-ink">
                 {admin ? "Administración" : workshop}
