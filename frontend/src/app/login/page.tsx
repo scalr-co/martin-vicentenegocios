@@ -5,7 +5,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/ui";
 import { apiFetch, extractToken } from "@/lib/api";
-import { extractSessionFromLogin, isAdmin, setSession } from "@/lib/auth";
+import { enterAdminDemo, extractSessionFromLogin, isAdmin, setSession } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
@@ -119,6 +119,17 @@ export default function LoginPage() {
             ← Volver a la landing
           </Link>
         </p>
+
+        <button
+          type="button"
+          onClick={() => {
+            enterAdminDemo();
+            router.replace("/panel/admin");
+          }}
+          className="mt-4 w-full rounded-md border border-dashed border-stone-300 py-2 text-xs font-medium text-muted hover:border-brand hover:text-ink"
+        >
+          Ver panel admin (demo, sin API)
+        </button>
       </div>
     </div>
   );

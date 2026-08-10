@@ -40,6 +40,21 @@ export function clearSession() {
   localStorage.removeItem(USER_KEY);
 }
 
+/** Vista previa del panel admin sin API. Solo para Martín/Vicente mientras se construye el backend. */
+export function enterAdminDemo() {
+  setSession(
+    "demo-admin-token",
+    null,
+    {
+      id: "admin_demo",
+      email: "admin@tallertrack.cl",
+      name: "Admin demo",
+      role: "admin",
+    },
+  );
+  localStorage.removeItem(WORKSHOP_KEY);
+}
+
 export function getWorkshop(): SessionWorkshop | null {
   if (typeof window === "undefined") return null;
   try {
