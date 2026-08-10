@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
-from app.models import ROL_DUENO, User
+from app.models import ROL_ADMIN_PLATAFORMA, ROL_DUENO, User
 from app.security.tokens import TokenInvalido, leer_token
 
 PREFIJO = "Bearer "
@@ -47,5 +47,18 @@ def solo_dueno(usuario: User = Depends(usuario_actual)) -> User:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Esta accion es solo para el dueno del taller",
+        )
+    return usuario
+
+
+def solo_admin_plataforma(usuario: User = Depends(usuario_actual)) -> User:
+    """Para el panel de Solve: dar de alta talleres y corregirlos.
+
+    Administrar el propio taller no es administrar la plataforma: un dueno recibe 403.
+    """
+    if usuario.role != ROL_ADMIN_PLATAFORMA:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Esta accion es solo para la administracion de la plataforma",
         )
     return usuario

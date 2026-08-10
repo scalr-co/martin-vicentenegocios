@@ -10,6 +10,10 @@ from app.models.workshop import Workshop
 ROL_DUENO = "owner"
 ROL_MECANICO = "mechanic"
 
+# Solve, no el taller. Da acceso al panel de administracion y a NADA de los talleres:
+# las ordenes, los clientes y los vehiculos siguen filtrando por el taller del token.
+ROL_ADMIN_PLATAFORMA = "platform_admin"
+
 
 class User(Base):
     """Una persona del taller. El dueno administra; el mecanico opera las ordenes."""
@@ -28,4 +32,6 @@ class User(Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora)
 
-    workshop: Mapped[Workshop] = relationship(lazy="joined")
+    # `foreign_keys` explicito: desde que workshops tiene `created_by_user_id`, hay dos
+    # caminos entre las dos tablas y SQLAlchemy no puede adivinar cual es "su taller".
+    workshop: Mapped[Workshop] = relationship(lazy="joined", foreign_keys=[workshop_id])

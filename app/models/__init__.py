@@ -16,11 +16,12 @@ from app.models.order import (
     Order,
 )
 from app.models.order_event import TIPO_CAMBIO_DE_ESTADO, OrderEvent
-from app.models.user import ROL_DUENO, ROL_MECANICO, User
+from app.models.user import ROL_ADMIN_PLATAFORMA, ROL_DUENO, ROL_MECANICO, User
 from app.models.vehicle import Vehicle
 from app.models.workshop import MODO_API, MODO_LINK, Workshop
 
 __all__ = [
+    "ROL_ADMIN_PLATAFORMA",
     "ROL_DUENO",
     "ROL_MECANICO",
     "MODO_API",

@@ -14,12 +14,10 @@ CLAVE_ADMIN = "clave-de-administracion-de-solve"
 
 @pytest.fixture(autouse=True)
 def clave_de_admin_configurada(monkeypatch):
+    """La clave se lee de `config.settings` en cada llamada, asi que basta con reemplazarla aca."""
     import app.config
-    import app.routes.auth
 
-    ajustes = Settings(admin_api_key=CLAVE_ADMIN)
-    monkeypatch.setattr(app.config, "settings", ajustes)
-    monkeypatch.setattr(app.routes.auth, "settings", ajustes)
+    monkeypatch.setattr(app.config, "settings", Settings(admin_api_key=CLAVE_ADMIN))
 
 
 def _alta(cliente, clave=CLAVE_ADMIN, **cambios):

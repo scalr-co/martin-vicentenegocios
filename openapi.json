@@ -50,6 +50,7 @@
           "auth"
         ],
         "summary": "Register",
+        "description": "La puerta de emergencia. El dia a dia va por el panel de admin, con cuenta propia.",
         "operationId": "register_auth_register_post",
         "parameters": [
           {
@@ -923,6 +924,221 @@
         }
       }
     },
+    "/admin/accounts": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Crear Cuenta De Admin",
+        "operationId": "crear_cuenta_de_admin_admin_accounts_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaAdminEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Listar Talleres",
+        "description": "La lista sirve para una sola pregunta: quien esta usando esto de verdad.\n\nPor eso trae el conteo de ordenes y no solo los datos de contacto. Se arma con dos\nsubconsultas correlacionadas y no con joins: un taller con dos duenos duplicaria filas.",
+        "operationId": "listar_talleres_admin_workshops_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Crear Taller",
+        "operationId": "crear_taller_admin_workshops_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AltaTallerEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops/{taller_id}": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Editar Taller",
+        "operationId": "editar_taller_admin_workshops__taller_id__patch",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TallerEdicion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops/{taller_id}/owner-password": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Cambiar Clave Del Dueno",
+        "description": "Para el dueno que perdio su clave. Sin esto, la unica salida es crearle otra\ncuenta -y ahi pierde sus ordenes, sus clientes y su historial por patente.",
+        "operationId": "cambiar_clave_del_dueno_admin_workshops__taller_id__owner_password_post",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaveNueva"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -1028,6 +1244,21 @@
         ],
         "title": "CambioDeEstado"
       },
+      "ClaveNueva": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "title": "ClaveNueva"
+      },
       "ClienteEdicion": {
         "properties": {
           "name": {
@@ -1102,6 +1333,35 @@
           "phone"
         ],
         "title": "ClienteEntrada"
+      },
+      "CuentaAdminEntrada": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "CuentaAdminEntrada",
+        "description": "Una cuenta de Solve. No pertenece a ningun taller de verdad."
       },
       "HTTPValidationError": {
         "properties": {
@@ -1236,6 +1496,39 @@
           "title"
         ],
         "title": "OrdenEntrada"
+      },
+      "TallerEdicion": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20,
+                "minLength": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "type": "object",
+        "title": "TallerEdicion",
+        "description": "Solo lo que se corrige a mano. El nombre sale en el WhatsApp que lee el cliente."
       },
       "ValidationError": {
         "properties": {
