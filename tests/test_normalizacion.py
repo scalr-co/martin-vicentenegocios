@@ -9,6 +9,7 @@ import pytest
 from app.services.normalizacion import (
     DatoInvalido,
     normalizar_patente,
+    normalizar_rut,
     normalizar_telefono,
 )
 
@@ -57,3 +58,45 @@ def test_la_patente_se_guarda_en_mayusculas_y_sin_separadores(escrita, guardada)
 def test_una_patente_vacia_se_rechaza():
     with pytest.raises(DatoInvalido):
         normalizar_patente("  ")
+
+
+@pytest.mark.parametrize(
+    "escrito, guardado",
+    [
+        ("12.345.678-5", "12345678-5"),
+        ("12345678-5", "12345678-5"),
+        ("123456785", "12345678-5"),
+        (" 12.345.678 - 5 ", "12345678-5"),
+    ],
+)
+def test_el_rut_se_guarda_sin_puntos_y_con_guion(escrito, guardado):
+    assert normalizar_rut(escrito) == guardado
+
+
+def test_el_digito_verificador_k_se_guarda_en_mayuscula():
+    assert normalizar_rut("12.345.698-k") == "12345698-K"
+
+
+def test_un_rut_con_digito_verificador_cero_se_acepta():
+    assert normalizar_rut("12.345.658-0") == "12345658-0"
+
+
+def test_un_rut_con_el_digito_verificador_equivocado_se_rechaza():
+    """Para eso existe el verificador: caza el numero mal tecleado."""
+    with pytest.raises(DatoInvalido):
+        normalizar_rut("12.345.678-9")
+
+
+def test_un_rut_vacio_se_rechaza():
+    with pytest.raises(DatoInvalido):
+        normalizar_rut("   ")
+
+
+def test_un_rut_demasiado_corto_se_rechaza():
+    with pytest.raises(DatoInvalido):
+        normalizar_rut("123-6")
+
+
+def test_un_rut_con_letras_en_el_cuerpo_se_rechaza():
+    with pytest.raises(DatoInvalido):
+        normalizar_rut("12.34A.678-5")

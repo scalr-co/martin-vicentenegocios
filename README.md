@@ -97,6 +97,10 @@ Convenciones del contrato:
 
 - Telefonos: solo digitos, sin `+`. Ejemplo `56912345678`.
 - Patentes: mayusculas y sin espacios. Ejemplo `ABCD12`.
+- Rut del cliente: **opcional**, sin puntos y con guion. Ejemplo `12345678-5`. Se puede mandar como
+  lo escriba el mecanico (`12.345.678-5`) y la API lo deja en ese formato; si el digito verificador
+  no calza responde **422**, que es justo para lo que sirve. `GET /clients?search=` tambien busca
+  por rut, con puntos o sin ellos.
 - Fechas: ISO 8601 en UTC. `estimatedAt` es fecha sin hora.
 - Paginacion: `?page=&limit=`, con tope de 100 por pagina.
 - Los cambios que rompan compatibilidad se avisan aca antes de subirlos.

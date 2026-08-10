@@ -4,6 +4,8 @@ Toda consulta filtra por el taller del token. Un taller no puede ver, ni tocar, 
 enterarse de que existe un cliente de otro: por eso lo ajeno responde 404 y no 403.
 """
 
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -61,9 +63,14 @@ def listar(
     condiciones = [Client.workshop_id == usuario.workshop_id]
 
     if search and search.strip():
-        # El mecanico busca por lo que recuerda: el nombre o los ultimos digitos.
+        # El mecanico busca por lo que recuerda: el nombre, los ultimos digitos o el rut.
         patron = f"%{search.strip()}%"
-        condiciones.append(or_(Client.name.ilike(patron), Client.phone.ilike(patron)))
+        # El rut se compara sin guion de los dos lados: lo copia y pega con puntos.
+        solo_rut = re.sub(r"[^0-9kK]", "", search).upper()
+        buscado = [Client.name.ilike(patron), Client.phone.ilike(patron)]
+        if solo_rut:
+            buscado.append(func.replace(Client.rut, "-", "").ilike(f"%{solo_rut}%"))
+        condiciones.append(or_(*buscado))
 
     total = sesion.scalar(select(func.count()).select_from(Client).where(*condiciones))
     encontrados = sesion.scalars(
@@ -96,6 +103,7 @@ def crear(
         workshop_id=usuario.workshop_id,
         name=datos.name,
         phone=datos.phone,
+        rut=datos.rut,
         notes=datos.notes,
     )
     sesion.add(cliente)

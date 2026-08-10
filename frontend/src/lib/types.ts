@@ -17,7 +17,7 @@ export type ApiClient = {
   name: string;
   phone: string;
   notes?: string | null;
-  /** Si el backend lo agrega después; hoy puede ir en notes. */
+  /** Guardado sin puntos y con guion: "12345678-5". */
   rut?: string | null;
 };
 

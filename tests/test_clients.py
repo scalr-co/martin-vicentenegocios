@@ -1,10 +1,14 @@
 from tests.conftest import con_token, entrar
 
 
-def crear_cliente(cliente, token, nombre="Juan Perez", telefono="56911111111", notas=None):
+def crear_cliente(
+    cliente, token, nombre="Juan Perez", telefono="56911111111", notas=None, rut=None
+):
     cuerpo = {"name": nombre, "phone": telefono}
     if notas is not None:
         cuerpo["notes"] = notas
+    if rut is not None:
+        cuerpo["rut"] = rut
     return cliente.post("/clients", json=cuerpo, headers=con_token(token))
 
 
@@ -136,6 +140,72 @@ def test_editar_un_cliente_propio_funciona(cliente, dueno):
 
     assert respuesta.status_code == 200
     assert respuesta.json()["data"]["notes"] == "Prefiere que lo llamen en la tarde"
+
+
+def test_el_rut_se_guarda_normalizado(cliente, dueno):
+    token = entrar(cliente, "dueno@taller.cl")
+
+    respuesta = crear_cliente(cliente, token, rut="12.345.678-5")
+
+    assert respuesta.status_code == 201
+    assert respuesta.json()["data"]["rut"] == "12345678-5"
+
+
+def test_el_rut_es_opcional_y_sin_el_la_ficha_queda_igual(cliente, dueno):
+    """La mayoria de los autos entran al taller sin que nadie pida el rut."""
+    token = entrar(cliente, "dueno@taller.cl")
+
+    respuesta = crear_cliente(cliente, token)
+
+    assert respuesta.status_code == 201
+    assert respuesta.json()["data"]["rut"] is None
+
+
+def test_un_rut_mal_escrito_no_entra_a_la_ficha(cliente, dueno):
+    token = entrar(cliente, "dueno@taller.cl")
+
+    respuesta = crear_cliente(cliente, token, rut="12.345.678-9")
+
+    assert respuesta.status_code == 422
+
+
+def test_el_rut_se_puede_agregar_despues(cliente, dueno):
+    """El mecanico lo pide recien cuando hay que hacer la boleta."""
+    token = entrar(cliente, "dueno@taller.cl")
+    creado = crear_cliente(cliente, token).json()["data"]["id"]
+
+    respuesta = cliente.patch(
+        f"/clients/{creado}",
+        json={"rut": "12.345.678-5"},
+        headers=con_token(token),
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["data"]["rut"] == "12345678-5"
+
+
+def test_buscar_por_rut(cliente, dueno):
+    token = entrar(cliente, "dueno@taller.cl")
+    crear_cliente(cliente, token, nombre="Juan Perez", telefono="56911111111")
+    crear_cliente(
+        cliente, token, nombre="Maria Soto", telefono="56922222222", rut="12.345.678-5"
+    )
+
+    respuesta = cliente.get("/clients", params={"search": "12345678"}, headers=con_token(token))
+
+    assert [c["name"] for c in respuesta.json()["data"]] == ["Maria Soto"]
+
+
+def test_buscar_por_rut_da_igual_como_se_escriba(cliente, dueno):
+    """Lo copia y pega con puntos desde la boleta anterior."""
+    token = entrar(cliente, "dueno@taller.cl")
+    crear_cliente(cliente, token, nombre="Maria Soto", rut="12345678-5")
+
+    respuesta = cliente.get(
+        "/clients", params={"search": "12.345.678-5"}, headers=con_token(token)
+    )
+
+    assert [c["name"] for c in respuesta.json()["data"]] == ["Maria Soto"]
 
 
 def test_el_limite_de_pagina_no_puede_pasarse_del_tope(cliente, dueno):

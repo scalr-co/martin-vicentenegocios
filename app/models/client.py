@@ -25,5 +25,9 @@ class Client(Base):
     # Guardado solo con digitos: es lo que se le pega al link de wa.me.
     phone: Mapped[str] = mapped_column(String(20), index=True)
 
+    # Opcional: recien hace falta cuando hay que emitir la boleta. Guardado sin puntos
+    # y con guion ("12345678-5").
+    rut: Mapped[str | None] = mapped_column(String(12), default=None)
+
     notes: Mapped[str | None] = mapped_column(String(1000), default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora)

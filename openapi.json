@@ -1285,6 +1285,17 @@
             ],
             "title": "Phone"
           },
+          "rut": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rut"
+          },
           "notes": {
             "anyOf": [
               {
@@ -1313,6 +1324,17 @@
           "phone": {
             "type": "string",
             "title": "Phone"
+          },
+          "rut": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rut"
           },
           "notes": {
             "anyOf": [

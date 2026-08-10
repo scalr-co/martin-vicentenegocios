@@ -78,6 +78,9 @@ function ClientesContent() {
                   <div>
                     <p className="font-semibold text-ink">{client.name}</p>
                     <p className="text-sm text-muted">{client.phone}</p>
+                    {client.rut && (
+                      <p className="text-sm text-muted">RUT {client.rut}</p>
+                    )}
                     {client.notes && (
                       <p className="mt-1 text-xs text-muted">{client.notes}</p>
                     )}
