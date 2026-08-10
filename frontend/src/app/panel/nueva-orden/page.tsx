@@ -9,7 +9,7 @@ import { apiFetch, apiList } from "@/lib/api";
 import type { ApiClient, ApiVehicle } from "@/lib/types";
 
 const fieldClass =
-  "mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30";
+  "mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30";
 
 export default function NuevaOrdenPage() {
   return (

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BrandMark } from "@/components/ui";
 import { clearSession, getWorkshopName } from "@/lib/auth";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const links = [
   { href: "/panel", label: "Hoy", exact: true },
@@ -50,7 +51,7 @@ export function PanelShell({
   const workshop = getWorkshopName();
 
   return (
-    <div className="min-h-full bg-background text-ink">
+    <div className="flex min-h-dvh flex-1 flex-col bg-background text-ink">
       <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-6">
@@ -61,7 +62,8 @@ export function PanelShell({
               ))}
             </nav>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeToggle />
             <div className="hidden text-right sm:block">
               <p className="text-xs font-medium text-ink">{workshop}</p>
               <p className="text-[11px] text-muted">Modo WhatsApp: link</p>
@@ -72,7 +74,7 @@ export function PanelShell({
                 clearSession();
                 router.replace("/login");
               }}
-              className="rounded-md px-2 py-1 text-xs text-muted hover:bg-stone-100 hover:text-ink"
+              className="rounded-md px-2 py-1 text-xs text-muted hover:bg-stone-100 hover:text-ink dark:hover:bg-stone-800"
             >
               Salir
             </button>

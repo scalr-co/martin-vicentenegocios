@@ -1,17 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { PanelShell } from "@/components/panel-shell";
 import { StatusBadge } from "@/components/ui";
 import { apiFetch } from "@/lib/api";
-import { getWorkshopName } from "@/lib/auth";
 import {
-  buildStatusMessage,
   buildWhatsAppLink,
+  extractNotificationDraft,
   formatVehicleOrItem,
+  isNotificationSent,
   statusLabel,
   type ApiOrder,
 } from "@/lib/types";
@@ -27,7 +27,7 @@ const ALL_STATUSES = [
 ];
 
 const fieldClass =
-  "mt-1.5 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30";
+  "mt-1.5 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30";
 
 export default function OrdenDetailPage() {
   return (
@@ -39,20 +39,40 @@ export default function OrdenDetailPage() {
 
 function OrdenDetailContent() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [order, setOrder] = useState<ApiOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [draftMessage, setDraftMessage] = useState("");
+  const [draftPhone, setDraftPhone] = useState("");
+  const [notificationId, setNotificationId] = useState<string | null>(null);
+  const [messageSent, setMessageSent] = useState(false);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+
+  function applyDraftFrom(payload: unknown, fallbackPhone?: string) {
+    const draft = extractNotificationDraft(payload);
+    if (draft?.message) setDraftMessage(draft.message);
+    if (draft?.toPhone) setDraftPhone(draft.toPhone);
+    else if (fallbackPhone) setDraftPhone(fallbackPhone);
+    if (draft?.id) setNotificationId(draft.id);
+    if (draft?.status !== undefined) {
+      setMessageSent(isNotificationSent(draft.status));
+    }
+  }
 
   async function load() {
     const { data } = await apiFetch<ApiOrder>(`/orders/${params.id}`);
-    setOrder({
+    const normalized: ApiOrder = {
       ...data,
       vehicleOrItem:
         data.vehicleOrItem ||
         formatVehicleOrItem(data.vehicle ?? null, "Sin vehículo"),
-    });
+    };
+    setOrder(normalized);
+    applyDraftFrom(normalized, normalized.client?.phone);
+    return normalized;
   }
 
   useEffect(() => {
@@ -82,33 +102,39 @@ function OrdenDetailContent() {
     return () => clearTimeout(t);
   }, [flash]);
 
-  const notification = order?.notification || order?.latestNotification;
-  const workshopName = getWorkshopName();
+  const hasUnsentWhatsApp = Boolean(draftMessage.trim()) && !messageSent;
 
-  const message = useMemo(() => {
-    if (!order) return "";
-    if (notification?.message) return notification.message;
-    return buildStatusMessage(
-      order.client?.name ?? "cliente",
-      order,
-      workshopName,
-    );
-  }, [order, notification, workshopName]);
+  const waLink =
+    draftPhone && draftMessage.trim()
+      ? buildWhatsAppLink(draftPhone, draftMessage.trim())
+      : null;
 
-  const phone = notification?.toPhone || order?.client?.phone || "";
-  const waLink = phone ? buildWhatsAppLink(phone, message) : null;
+  function requestLeavePanel(e?: React.MouseEvent) {
+    if (hasUnsentWhatsApp) {
+      e?.preventDefault();
+      setLeaveConfirmOpen(true);
+      return;
+    }
+    router.push("/panel");
+  }
 
   async function changeStatus(next: string) {
     if (!order) return;
     setSaving(true);
     try {
-      await apiFetch(`/orders/${order.id}/status`, {
-        method: "POST",
-        body: JSON.stringify({ status: next }),
-      });
+      const { data } = await apiFetch<Record<string, unknown>>(
+        `/orders/${order.id}/status`,
+        {
+          method: "POST",
+          body: JSON.stringify({ status: next }),
+        },
+      );
+      // El borrador lo arma el backend; no componer texto en el frontend.
+      applyDraftFrom(data, order.client?.phone);
+      setMessageSent(false);
       await load();
       setFlash(
-        `Estado actualizado a “${statusLabel(next)}”. Ya puedes avisar por WhatsApp.`,
+        `Estado actualizado a “${statusLabel(next)}”. Revisa el aviso y mándalo por WhatsApp.`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cambiar");
@@ -118,9 +144,11 @@ function OrdenDetailContent() {
   }
 
   async function markSent() {
-    if (!notification?.id) return;
+    setMessageSent(true);
+    setLeaveConfirmOpen(false);
+    if (!notificationId) return;
     try {
-      await apiFetch(`/notifications/${notification.id}/sent`, {
+      await apiFetch(`/notifications/${notificationId}/sent`, {
         method: "POST",
       });
       setFlash("Aviso marcado como enviado.");
@@ -154,9 +182,13 @@ function OrdenDetailContent() {
       subtitle="Estados del trabajo y aviso al cliente"
     >
       <div className="mb-4">
-        <Link href="/panel" className="text-sm text-muted hover:text-ink">
+        <button
+          type="button"
+          onClick={(e) => requestLeavePanel(e)}
+          className="text-sm text-muted hover:text-ink"
+        >
           ← Volver al panel
-        </Link>
+        </button>
       </div>
 
       {flash && (
@@ -212,11 +244,27 @@ function OrdenDetailContent() {
             Aviso al cliente
           </p>
           <p className="mt-1 text-sm font-medium text-ink">
-            Modo actual: link (wa.me)
+            Borrador de la API — puedes editarlo antes de enviar
           </p>
-          <p className="mt-3 rounded-md bg-stone-50 p-3 text-sm leading-relaxed text-ink">
-            {message}
-          </p>
+
+          {draftMessage ? (
+            <label className="mt-3 block" htmlFor="draft-message">
+              <span className="sr-only">Mensaje para el cliente</span>
+              <textarea
+                id="draft-message"
+                value={draftMessage}
+                onChange={(e) => setDraftMessage(e.target.value)}
+                rows={6}
+                className={`${fieldClass} min-h-[8.5rem] resize-y leading-relaxed`}
+              />
+            </label>
+          ) : (
+            <p className="mt-3 rounded-md border border-dashed border-line bg-stone-50 p-3 text-sm text-muted">
+              Cambia el estado de la orden para que la API genere el borrador del
+              aviso.
+            </p>
+          )}
+
           {waLink ? (
             <a
               href={waLink}
@@ -231,11 +279,51 @@ function OrdenDetailContent() {
             </a>
           ) : (
             <p className="mt-4 text-sm text-muted">
-              Falta el teléfono del cliente para armar el WhatsApp.
+              {draftMessage
+                ? "Falta el teléfono del cliente para armar el WhatsApp."
+                : "Cuando haya borrador y teléfono, podrás avisar por WhatsApp."}
             </p>
           )}
         </div>
       </div>
+
+      {leaveConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="leave-confirm-title"
+        >
+          <div className="w-full max-w-md rounded-lg border border-line bg-surface p-5 shadow-xl">
+            <h2
+              id="leave-confirm-title"
+              className="font-[family-name:var(--font-display)] text-lg font-bold text-ink"
+            >
+              ¿Volver al panel?
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              ¿Estás seguro que quieres volver al panel? Aún no has enviado el
+              mensaje por WhatsApp.
+            </p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
+              <button
+                type="button"
+                onClick={() => router.push("/panel")}
+                className="tap-target inline-flex items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+              >
+                Sí, quiero volver al panel
+              </button>
+              <button
+                type="button"
+                onClick={() => setLeaveConfirmOpen(false)}
+                className="tap-target inline-flex items-center justify-center rounded-md border border-line bg-white px-4 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+              >
+                No, volver a estado
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PanelShell>
   );
 }

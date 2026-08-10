@@ -102,7 +102,7 @@ function PanelContent() {
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                 filter === f.id
                   ? "bg-steel text-white"
-                  : "bg-white text-muted ring-1 ring-line hover:text-ink"
+                  : "bg-surface text-muted ring-1 ring-line hover:text-ink"
               }`}
             >
               {f.label}
@@ -203,15 +203,19 @@ function Stat({
 }) {
   const toneClass =
     tone === "warn"
-      ? "border-amber-200 bg-amber-50"
+      ? "border-amber-300 bg-amber-50"
       : tone === "ok"
-        ? "border-emerald-200 bg-emerald-50"
+        ? "border-emerald-300 bg-emerald-50"
         : "border-line bg-surface";
+  const labelClass = tone === "neutral" ? "text-muted" : "text-stone-600";
+  const valueClass = tone === "neutral" ? "text-ink" : "text-stone-900";
 
   return (
     <div className={`rounded-lg border px-4 py-3 ${toneClass}`}>
-      <p className="text-xs font-medium text-muted">{label}</p>
-      <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
+      <p className={`text-xs font-medium ${labelClass}`}>{label}</p>
+      <p
+        className={`mt-1 font-[family-name:var(--font-display)] text-2xl font-bold ${valueClass}`}
+      >
         {value}
       </p>
     </div>

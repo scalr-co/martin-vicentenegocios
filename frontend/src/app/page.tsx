@@ -1,40 +1,46 @@
+"use client";
+
 import Link from "next/link";
 import { BrandMark } from "@/components/ui";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-full flex-col bg-background text-ink">
-      <header className="absolute inset-x-0 top-0 z-20">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 md:px-8">
-          <BrandMark light className="text-xl md:text-2xl" />
-          <nav className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="hidden text-sm text-white/80 transition hover:text-white sm:inline"
-            >
-              Ingresar
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark"
-            >
-              Ver demo
-            </Link>
-          </nav>
-        </div>
-      </header>
-
-      <section className="relative min-h-[100svh] overflow-hidden">
+    <div className="flex min-h-dvh flex-col">
+      {/* Hero: el fondo oscuro/imagen llega hasta el borde superior (sin franja) */}
+      <section
+        className="relative isolate min-h-svh overflow-hidden"
+        style={{ backgroundColor: "#1c1917" }}
+      >
         <div
-          className="absolute inset-0 scale-105 bg-cover bg-center transition-transform duration-[8s] ease-out"
+          aria-hidden
+          className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage:
               "linear-gradient(105deg, rgba(28,25,23,0.94) 0%, rgba(28,25,23,0.75) 50%, rgba(28,25,23,0.4) 100%), url('https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=2000&q=80')",
           }}
         />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(232,93,4,0.28),transparent_55%)]" />
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(232,93,4,0.28),transparent_55%)]"
+        />
 
-        <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-end px-5 pb-16 pt-28 md:justify-center md:px-8 md:pb-24">
+        <header className="absolute inset-x-0 top-0 z-20">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8">
+            <BrandMark light className="text-xl md:text-2xl" />
+            <nav className="flex items-center gap-2 sm:gap-3">
+              <ThemeToggle lightHero />
+              <Link
+                href="/login"
+                className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark"
+              >
+                Ingresar
+              </Link>
+            </nav>
+          </div>
+        </header>
+
+        <div className="relative z-10 mx-auto flex min-h-svh max-w-6xl flex-col justify-end px-5 pb-16 pt-28 md:justify-center md:px-8 md:pb-24">
           <div className="max-w-2xl">
             <p className="animate-rise mb-4 font-[family-name:var(--font-display)] text-sm font-semibold uppercase tracking-[0.22em] text-brand">
               TallerTrack
@@ -53,10 +59,10 @@ export default function HomePage() {
                 href="/login"
                 className="tap-target inline-flex items-center justify-center rounded-md bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
               >
-                Probar el panel
+                Ingresar
               </Link>
               <a
-                href="https://wa.me/56900000000?text=Hola%2C%20quiero%20saber%20de%20TallerTrack"
+                href="https://wa.me/56981875498?text=Hola%2C%20quiero%20saber%20de%20TallerTrack"
                 className="tap-target inline-flex items-center justify-center rounded-md border border-white/30 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/10"
               >
                 Hablar por WhatsApp
@@ -66,9 +72,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-line bg-surface px-5 py-20 md:px-8">
+      <section className="border-t border-line bg-surface px-5 py-20 text-ink md:px-8">
         <div className="mx-auto max-w-6xl">
-          <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-ink md:text-4xl">
+          <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight md:text-4xl">
             Hecho para el caos real del taller
           </h2>
           <p className="mt-3 max-w-xl text-muted">
@@ -97,7 +103,7 @@ export default function HomePage() {
                 className="border-t-2 border-brand pt-5"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
-                <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold text-ink">
+                <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold">
                   {item.title}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted">
@@ -109,7 +115,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-background px-5 py-16 md:px-8">
+      <section className="bg-background px-5 py-16 text-ink md:px-8">
         <div className="mx-auto max-w-6xl">
           <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight md:text-3xl">
             Flujo del día
@@ -128,7 +134,7 @@ export default function HomePage() {
                 <p className="font-[family-name:var(--font-display)] text-sm font-bold text-brand">
                   {String(index + 1).padStart(2, "0")}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed text-ink">{step}</p>
+                <p className="mt-2 text-sm leading-relaxed">{step}</p>
               </li>
             ))}
           </ol>
@@ -151,12 +157,12 @@ export default function HomePage() {
             href="/login"
             className="inline-flex items-center justify-center rounded-md bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
           >
-            Ver cómo se ve
+            Ingresar
           </Link>
         </div>
       </section>
 
-      <footer className="border-t border-line bg-background px-5 py-8 md:px-8">
+      <footer className="border-t border-line bg-background px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-ink md:px-8">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <BrandMark />

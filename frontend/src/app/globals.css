@@ -10,6 +10,22 @@
   --surface: #ffffff;
   --line: #e7e5e4;
   --steel: #292524;
+  --hero-edge: #1c1917;
+  color-scheme: light;
+}
+
+html.dark {
+  --background: #141210;
+  --foreground: #f5f5f4;
+  --brand: #f97316;
+  --brand-dark: #ea580c;
+  --ink: #f5f5f4;
+  --muted: #a8a29e;
+  --surface: #1c1917;
+  --line: #3f3a36;
+  --steel: #0c0a09;
+  --hero-edge: #0c0a09;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -26,10 +42,44 @@
   --font-display: var(--font-display);
 }
 
+html {
+  min-height: 100%;
+  min-height: 100dvh;
+  /* Coincide con el hero para que el overscroll del celular no muestre franja rara */
+  background: #1c1917;
+}
+
+html.dark {
+  background: #0c0a09;
+}
+
 body {
-  background: var(--background);
+  background: transparent;
   color: var(--foreground);
   font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100dvh;
+}
+
+/* Inputs blancos: texto oscuro siempre (evita texto invisible en dark mode / iOS) */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+select,
+textarea {
+  color: #1c1917;
+  -webkit-text-fill-color: #1c1917;
+  background-color: #ffffff;
+  caret-color: #1c1917;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #78716c;
+  -webkit-text-fill-color: #78716c;
+  opacity: 1;
+}
+
+select option {
+  color: #1c1917;
+  background-color: #ffffff;
 }
 
 @keyframes rise {
@@ -64,15 +114,6 @@ body {
   animation: fade-in 0.9s ease-out 0.25s both;
 }
 
-@keyframes press {
-  from {
-    transform: scale(0.98);
-  }
-  to {
-    transform: scale(1);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .animate-rise,
   .animate-rise-delay,
@@ -101,4 +142,8 @@ body {
     transform: translateY(-1px);
     box-shadow: 0 8px 24px rgba(28, 25, 23, 0.06);
   }
+}
+
+html.dark .card-lift:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }

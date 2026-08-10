@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/ui";
 import { apiFetch, extractToken } from "@/lib/api";
 import { setSession } from "@/lib/auth";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -48,10 +49,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-full flex-col items-center justify-center overflow-hidden bg-steel px-4 py-16">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(232,93,4,0.25),transparent_55%)]" />
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto px-4 py-10"
+      style={{ backgroundColor: "#292524" }}
+    >
+      <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20">
+        <ThemeToggle lightHero />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at top, rgba(232,93,4,0.25), transparent 55%)",
+        }}
+      />
 
-      <div className="relative w-full max-w-sm rounded-lg border border-white/10 bg-surface p-6 shadow-xl">
+      <div className="relative w-full max-w-sm rounded-lg border border-white/10 bg-white p-6 shadow-xl dark:border-line dark:bg-surface">
         <BrandMark className="text-xl" />
         <h1 className="mt-6 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
           Ingresar
@@ -70,7 +83,7 @@ export default function LoginPage() {
               required
               autoComplete="email"
               placeholder="taller@ejemplo.cl"
-              className="mt-1 w-full rounded-md border border-line px-3 py-2.5 text-sm outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30"
+              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30"
             />
           </label>
           <label className="block" htmlFor="password">
@@ -82,7 +95,7 @@ export default function LoginPage() {
               required
               autoComplete="current-password"
               placeholder="••••••••"
-              className="mt-1 w-full rounded-md border border-line px-3 py-2.5 text-sm outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30"
+              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30"
             />
           </label>
 

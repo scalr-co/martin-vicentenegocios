@@ -89,21 +89,73 @@ export function buildWhatsAppLink(phone: string, message: string) {
   return `https://wa.me/${clean}?text=${encodeURIComponent(message)}`;
 }
 
-export function buildStatusMessage(
-  clientName: string,
-  order: Pick<ApiOrder, "title" | "status" | "vehicleOrItem">,
-  workshopName = "Taller",
-) {
-  const statusText = statusLabel(order.status);
-  const vehicle = order.vehicleOrItem ?? "tu vehículo";
-  if (order.status === "listo") {
-    return `Hola ${clientName}, te escribe ${workshopName}. Tu trabajo "${order.title}" (${vehicle}) ya está listo para retirar. ¡Te esperamos!`;
+export type NotificationDraft = {
+  id?: string;
+  message: string;
+  toPhone?: string;
+  status?: string;
+};
+
+/** Extrae el borrador de aviso que arma el backend (status change u orden). */
+export function extractNotificationDraft(
+  payload: unknown,
+): NotificationDraft | null {
+  if (!payload || typeof payload !== "object") return null;
+  const obj = payload as Record<string, unknown>;
+
+  const candidates = [
+    obj.notification,
+    obj.latestNotification,
+    obj.aviso,
+    obj.draft,
+    obj.data,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== "object") continue;
+    const n = candidate as Record<string, unknown>;
+    const nested = extractNotificationDraft(n);
+    if (nested) return nested;
+    const message =
+      (typeof n.message === "string" && n.message) ||
+      (typeof n.draft === "string" && n.draft) ||
+      (typeof n.draftMessage === "string" && n.draftMessage) ||
+      null;
+    if (message) {
+      return {
+        id: typeof n.id === "string" ? n.id : undefined,
+        message,
+        toPhone:
+          (typeof n.toPhone === "string" && n.toPhone) ||
+          (typeof n.phone === "string" && n.phone) ||
+          undefined,
+        status: typeof n.status === "string" ? n.status : undefined,
+      };
+    }
   }
-  if (order.status === "esperando_aprobacion") {
-    return `Hola ${clientName}, te escribe ${workshopName}. Necesitamos tu aprobación para continuar con "${order.title}" (${vehicle}). ¿Me confirmas por este chat?`;
+
+  if (typeof obj.message === "string" && obj.message.trim()) {
+    return {
+      id: typeof obj.id === "string" ? obj.id : undefined,
+      message: obj.message,
+      toPhone:
+        (typeof obj.toPhone === "string" && obj.toPhone) ||
+        (typeof obj.phone === "string" && obj.phone) ||
+        undefined,
+      status: typeof obj.status === "string" ? obj.status : undefined,
+    };
   }
-  if (order.status === "esperando_repuesto") {
-    return `Hola ${clientName}, te escribe ${workshopName}. Tu trabajo "${order.title}" (${vehicle}) está en espera de repuesto. Te avisamos cuando avancemos.`;
-  }
-  return `Hola ${clientName}, te escribe ${workshopName}. Actualización de tu trabajo "${order.title}" (${vehicle}): estado actual — ${statusText}.`;
+
+  return null;
+}
+
+export function isNotificationSent(status?: string | null) {
+  if (!status) return false;
+  const s = status.toLowerCase();
+  return (
+    s === "sent" ||
+    s === "enviado" ||
+    s === "delivered" ||
+    s === "entregado"
+  );
 }
