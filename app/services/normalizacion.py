@@ -7,8 +7,11 @@ quedaria partido. Con los telefonos pasa lo mismo y ademas rompe el link de wa.m
 import re
 
 CODIGO_CHILE = "56"
-LARGO_MINIMO_DE_TELEFONO = 8
-LARGO_DE_MOVIL_CHILENO = 9
+
+# Todo numero chileno tiene 9 digitos despues del codigo de pais: el celular parte en 9
+# y el fijo en su codigo de area (2 en Santiago, 45 en Temuco, 41 en Concepcion...).
+LARGO_NACIONAL = 9
+INICIOS_DE_NUMERO_CHILENO = "23456789"
 
 # Un rut chileno tiene 7 u 8 digitos. Se deja holgura: 6 para los ruts viejos de los
 # clientes mas grandes, 9 por si el registro civil algun dia llega ahi.
@@ -21,20 +24,40 @@ class DatoInvalido(ValueError):
 
 
 def normalizar_telefono(texto: str) -> str:
-    """Devuelve solo digitos, con codigo de pais. Formato que espera wa.me."""
+    """Devuelve 56 y los 9 digitos nacionales. Formato que espera wa.me.
+
+    Lo que no sea un numero chileno se rechaza en vez de guardarse tal cual. Antes se
+    guardaba: el taller anotaba el fijo como se lo dictaron ("45 234 5678"), el sistema
+    armaba el aviso con normalidad y el link apuntaba a un numero que no existe. El
+    taller creia que habia avisado y el cliente nunca supo nada.
+    """
     digitos = re.sub(r"\D", "", texto or "")
 
     if not digitos:
         raise DatoInvalido("El telefono viene vacio")
 
-    # En Chile la gente escribe su celular como "9 1234 5678", sin el codigo de pais.
-    if len(digitos) == LARGO_DE_MOVIL_CHILENO and digitos.startswith("9"):
-        digitos = CODIGO_CHILE + digitos
+    # "0056 9 1234 5678": el prefijo internacional como se marca desde un fijo.
+    if digitos.startswith("00"):
+        digitos = digitos[2:]
 
-    if len(digitos) < LARGO_MINIMO_DE_TELEFONO:
-        raise DatoInvalido(f"El telefono '{texto}' tiene muy pocos digitos")
+    if len(digitos) == LARGO_NACIONAL + 2 and digitos.startswith(CODIGO_CHILE):
+        nacional = digitos[2:]
+    elif len(digitos) == LARGO_NACIONAL + 1 and digitos.startswith("0"):
+        # El 0 de la marcacion larga de antes, que alguna gente sigue anotando.
+        nacional = digitos[1:]
+    elif len(digitos) == LARGO_NACIONAL:
+        # Como lo escribe la gente aca: "9 1234 5678" o "45 234 5678".
+        nacional = digitos
+    else:
+        raise DatoInvalido(
+            f"El telefono '{texto}' no es un numero chileno: tiene que tener 9 digitos, "
+            "con o sin el +56 adelante"
+        )
 
-    return digitos
+    if nacional[0] not in INICIOS_DE_NUMERO_CHILENO:
+        raise DatoInvalido(f"El telefono '{texto}' no empieza como un numero chileno")
+
+    return CODIGO_CHILE + nacional
 
 
 def normalizar_patente(texto: str) -> str:

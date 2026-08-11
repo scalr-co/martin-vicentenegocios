@@ -32,9 +32,39 @@ def test_un_telefono_chileno_sin_codigo_de_pais_lo_recibe():
     assert normalizar_telefono("9 1234 5678") == "56912345678"
 
 
-def test_un_telefono_sin_digitos_suficientes_se_rechaza():
+@pytest.mark.parametrize(
+    "escrito, guardado",
+    [
+        ("452345678", "56452345678"),
+        ("45 234 5678", "56452345678"),
+        ("+56 45 234 5678", "56452345678"),
+        ("223456789", "56223456789"),
+        ("0056912345678", "56912345678"),
+    ],
+)
+def test_un_fijo_chileno_tambien_queda_en_formato_de_wame(escrito, guardado):
+    """El taller anota el fijo como se lo dictaron.
+
+    Antes se guardaba tal cual, sin el 56 adelante: el link de wa.me apuntaba a un
+    numero que no existe y el taller creia que habia avisado.
+    """
+    assert normalizar_telefono(escrito) == guardado
+
+
+@pytest.mark.parametrize(
+    "basura",
+    [
+        "22345678",
+        "999999999999999",
+        "+1 555 0123",
+        "123",
+        "123456789",
+    ],
+)
+def test_lo_que_no_es_un_telefono_chileno_se_rechaza(basura):
+    """Guardar un numero que no sirve es peor que no dejar guardarlo."""
     with pytest.raises(DatoInvalido):
-        normalizar_telefono("123")
+        normalizar_telefono(basura)
 
 
 def test_un_telefono_vacio_se_rechaza():
