@@ -176,17 +176,24 @@ comoda de romper la base.
    403 confirmaria que ese id existe. Mismo criterio que ya aplican clientes, vehiculos
    y ordenes.
 2. **Nadie se desactiva a si mismo** → 409. Vale para el dueno y para el admin de Solve.
-   Es el candado que deja a la persona fuera de su propia casa.
-3. **Un taller no se queda sin dueno activo** → 409 al desactivar al ultimo `owner`
-   activo. Si no, ese taller pierde la capacidad de administrar su equipo y depende de
-   que Solve lo rescate.
-4. **Solve no se queda sin administradores** → 409 al desactivar la ultima cuenta
-   `platform_admin` activa, por `PATCH /admin/accounts/{id}`. Con dos cuentas, esta
-   guarda es la que impide que una equivocacion los deje a los dos fuera del panel.
-5. **El taller interno de Solve no se suspende ni se da de baja.** Ya lo cubre el filtro
+   Es el candado que deja a la persona fuera de su propia casa, y **es tambien lo unico
+   que hace falta** para que ni el taller se quede sin dueno activo ni el panel sin
+   ninguna cuenta de Solve.
+
+   Al escribir el plan quedo claro que las dos guardas que aqui decian "no dejar al
+   ultimo" serian codigo inalcanzable: quien ejecuta la accion es, por definicion, un
+   miembro activo del conjunto que se quiere proteger —`solo_dueno` y
+   `solo_admin_plataforma` lo exigen, y `usuario_actual` verifica que este activo—, asi
+   que al apagar a otro el conteo nunca puede llegar a cero. La unica forma de vaciar el
+   conjunto es apagarse uno mismo, que es exactamente lo que esta guarda prohibe.
+
+   Los tests lo comprueban como invariante y no como excepcion: despues de apagar al
+   socio, queda un dueno activo y el que quedo no puede apagarse.
+3. **El taller interno de Solve no se suspende ni se da de baja.** Ya lo cubre el filtro
    `internal.is_(False)` de `_taller_o_404`.
-6. **El dueno crea mecanicos, no duenos.** `POST /users` fuerza `role=mechanic`.
-7. **El correo es unico en todo el sistema** → 409. El chequeo que hoy esta escrito dos
+4. **El dueno crea mecanicos, no duenos.** `POST /users` fuerza `role=mechanic`. Si el
+   rol viajara en el cuerpo, cualquier dueno se clonaria.
+5. **El correo es unico en todo el sistema** → 409. El chequeo que hoy esta escrito dos
    veces —dentro de `crear_taller_con_dueno` y dentro de `crear_admin`— se saca a una
    funcion compartida en `app/services/altas.py`, para que las cuatro puertas de alta
    validen igual y no se separen con el tiempo.
@@ -228,13 +235,13 @@ responder "quien de Solve entro a que taller", no para vigilar a los clientes.
 
 ## Limpieza incluida
 
-`taller_interno` esta escrita dos veces —`app/services/altas.py` y dentro de
-`app/routes/admin.py`— y las copias ya se separaron: una crea el taller interno con
-telefono `56900000000` y la otra con `000000000`, que ni siquiera pasaria el validador de
-telefonos chilenos del propio repositorio. Se borra la copia de `admin.py` y se importa la
-de `altas.py`.
+La duplicacion de `taller_interno` entre `admin.py` y `services/altas.py` **ya la resolvio
+el commit `cd267e4`**: hoy existe una sola, en `altas.py`, y `scripts/crear_admin.py` la
+importa. No queda nada que hacer ahi.
 
-Es codigo que esta feature toca igual, y ya se dio vuelta una vez.
+Sigue duplicado el chequeo de correo repetido: esta escrito dentro de
+`crear_taller_con_dueno` y otra vez dentro de `crear_admin`. Se saca a `correo_libre()` en
+`app/services/altas.py`, para que las cuatro puertas de alta validen igual.
 
 ## Migracion
 
@@ -244,11 +251,16 @@ Una sola columna:
 workshops.deleted_at  DateTime(timezone=True), nullable, default None
 ```
 
-Misma forma que `clients.deleted_at`. Se genera con `alembic revision --autogenerate`, y
-va **encima** de `f2a9c4d8e1b3_version_de_sesion`. Los talleres que ya viven en Railway
-quedan en `NULL`, es decir activos, que es lo correcto.
+Misma forma que `clients.deleted_at`. Va **encima** de `f2a9c4d8e1b3_version_de_sesion`,
+que es la cabeza actual.
 
-Los usuarios no cambian de forma: no hay migracion para ellos.
+Se escribe **a mano, no con `--autogenerate`**, que es la regla de este repositorio:
+desarrollo corre SQLite y produccion corre Postgres, y por eso las columnas se agregan
+dentro de `with op.batch_alter_table(...)`, igual que en
+`f2a9c4d8e1b3_version_de_sesion` y `a1c3f5d7b9e1_panel_de_admin`.
+
+Los talleres que ya viven en Railway quedan en `NULL`, es decir activos, que es lo
+correcto. Los usuarios no cambian de forma: no hay migracion para ellos.
 
 ## Tests
 
@@ -262,8 +274,9 @@ Sobre los 214 que ya existen, mas los de sesiones.
   que tenia antes deja de servir** (`token_version`)
 - un `mechanic` recibe 403 en todo `/users`
 - **aislamiento**: el dueno del taller A recibe 404 al tocar a alguien del taller B
-- una guarda por prueba: auto-desactivarse, ultimo dueno activo, correo repetido, y que
-  `POST /users` no deja crear un `owner`
+- una guarda por prueba: auto-desactivarse, correo repetido, y que `POST /users` no deja
+  crear un `owner`
+- la invariante: apagar al socio deja un dueno activo, y ese no puede apagarse
 
 **`tests/test_admin.py`** (ampliar)
 - suspender, reactivar, dar de baja, restaurar
@@ -271,9 +284,9 @@ Sobre los 214 que ya existen, mas los de sesiones.
   `?archived=true` los trae
 - alta de respaldo y listado del equipo de cualquier taller
 - crear, listar y editar cuentas de Solve; la clave de admin exige 12 caracteres
-- un `mechanic` y un `owner` reciben 403 en todo `/admin`
-- no se puede suspender ni dar de baja el taller interno
-- no se puede desactivar la ultima cuenta de plataforma, ni desactivarse a si mismo
+- un `mechanic` y un `owner` reciben 403 en **cada una** de las rutas nuevas de `/admin`
+- no se puede suspender ni dar de baja el taller interno, y ese taller no sale en la lista
+- nadie puede desactivar su propia cuenta de plataforma
 - `DELETE` repetido no mueve la fecha de baja; `restore` sobre un taller activo no falla
 - cada accion nueva deja su fila en `admin_audit`, con el admin correcto como actor
 
