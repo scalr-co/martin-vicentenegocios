@@ -174,6 +174,9 @@ def cambiar_clave_del_dueno(
         )
 
     dueno.password_hash = hashear(datos.password)
+    # Cambiar la clave tiene que cortar lo que ya estaba abierto: si no, quien tuviera
+    # el token de antes sigue adentro hasta 12 horas mas, con la clave vieja inservible.
+    dueno.token_version += 1
     _anotar(
         sesion,
         admin,

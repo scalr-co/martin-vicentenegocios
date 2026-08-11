@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -45,6 +45,7 @@ def login(datos: LoginEntrada, sesion: Session = Depends(obtener_sesion)):
         user_id=usuario.id,
         workshop_id=usuario.workshop_id,
         role=usuario.role,
+        token_version=usuario.token_version,
     )
     salida = LoginSalida(
         token=token,
@@ -68,11 +69,35 @@ def register(
     sesion.commit()
 
     salida = LoginSalida(
-        token=crear_token(user_id=dueno.id, workshop_id=taller.id, role=dueno.role),
+        token=crear_token(
+            user_id=dueno.id,
+            workshop_id=taller.id,
+            role=dueno.role,
+            token_version=dueno.token_version,
+        ),
         workshop=WorkshopSalida.model_validate(taller),
         user=UserSalida.model_validate(dueno),
     )
     return {"data": salida.model_dump(by_alias=True)}
+
+
+@router.post("/logout-all", status_code=status.HTTP_204_NO_CONTENT)
+def cerrar_todas_las_sesiones(
+    usuario: User = Depends(usuario_actual),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Deja fuera a todos los tokens ya emitidos de esta persona.
+
+    Es lo que se hace cuando a alguien le roban el celular con la sesion abierta. No
+    desactiva la cuenta: puede volver a entrar con su clave enseguida.
+
+    Un JWT no se puede borrar del aparato donde quedo, asi que lo que se mueve es la
+    version de sesion: el token viejo trae la anterior y deja de calzar.
+    """
+    usuario.token_version += 1
+    sesion.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/me")

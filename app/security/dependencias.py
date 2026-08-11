@@ -38,6 +38,11 @@ def usuario_actual(
     if usuario is None or not usuario.active or not usuario.workshop.active:
         raise _no_autenticado()
 
+    # La sesion se puede cerrar: si la version subio despues de emitir este token
+    # -alguien cerro sus sesiones, o le cambiaron la clave- el token deja de servir.
+    if usuario.token_version != datos.token_version:
+        raise _no_autenticado()
+
     return usuario
 
 
