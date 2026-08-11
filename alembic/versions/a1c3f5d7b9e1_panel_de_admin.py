@@ -10,6 +10,11 @@ apunte la configuracion, y la de desarrollo es SQLite mientras produccion es Pos
 `internal` va con server_default para los talleres que ya existen -ninguno es interno-.
 `created_by_user_id` queda nulo en los que se crearon antes del panel: no hay forma de
 saber quien los dio de alta, y inventar un responsable seria peor que dejarlo vacio.
+
+Todo dentro de un `batch_alter_table`, como las otras migraciones: SQLite no sabe
+alterar restricciones, y al hacerlo en directo esta migracion moria a la mitad -con la
+columna `internal` ya agregada, porque SQLite tampoco deshace DDL-, de manera que el
+segundo intento tampoco corria y no habia salida sin borrar la base a mano.
 """
 from typing import Sequence, Union
 
@@ -25,25 +30,24 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.add_column(
-        'workshops',
-        sa.Column('internal', sa.Boolean(), nullable=False, server_default=sa.false()),
-    )
-    op.add_column(
-        'workshops',
-        sa.Column('created_by_user_id', sa.String(length=36), nullable=True),
-    )
-    op.create_foreign_key(
-        'fk_workshops_created_by_user_id_users',
-        'workshops',
-        'users',
-        ['created_by_user_id'],
-        ['id'],
-    )
+    with op.batch_alter_table('workshops') as lote:
+        lote.add_column(
+            sa.Column('internal', sa.Boolean(), nullable=False, server_default=sa.false()),
+        )
+        lote.add_column(
+            sa.Column('created_by_user_id', sa.String(length=36), nullable=True),
+        )
+        lote.create_foreign_key(
+            'fk_workshops_created_by_user_id_users',
+            'users',
+            ['created_by_user_id'],
+            ['id'],
+        )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_constraint('fk_workshops_created_by_user_id_users', 'workshops', type_='foreignkey')
-    op.drop_column('workshops', 'created_by_user_id')
-    op.drop_column('workshops', 'internal')
+    with op.batch_alter_table('workshops') as lote:
+        lote.drop_constraint('fk_workshops_created_by_user_id_users', type_='foreignkey')
+        lote.drop_column('created_by_user_id')
+        lote.drop_column('internal')
