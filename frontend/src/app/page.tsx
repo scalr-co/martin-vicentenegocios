@@ -34,11 +34,11 @@ const PLAN_EXTRA = [
 function PlanFeature({ label }: { label: string }) {
   return (
     <li className="flex items-center gap-3 px-5 py-3.5">
-      <span className="min-w-0 flex-1 text-sm leading-snug text-ink">
+      <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-stone-900">
         {label}
       </span>
       <span
-        className="shrink-0 text-ink"
+        className="shrink-0 text-stone-900"
         aria-label="Incluido"
         title="Incluido"
       >
@@ -206,39 +206,39 @@ export default function HomePage() {
 
       <section
         id="precios"
-        className="border-t border-line bg-[#e7e5e4] px-5 py-20 text-ink md:px-8"
+        className="border-t border-stone-300 bg-stone-200 px-5 py-20 md:px-8"
       >
         <div className="mx-auto max-w-6xl">
-          <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight md:text-4xl">
+          <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-stone-900 md:text-4xl">
             Planes para tu taller
           </h2>
-          <p className="mt-3 max-w-2xl text-muted">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-700 md:text-base">
             Nosotros te damos de alta el taller. Tú creas las cuentas de tus
             mecánicos. Elige según cuántas personas usan el sistema.
           </p>
 
           <div className="mt-12 grid items-start gap-6 lg:grid-cols-2">
-            {/* Básico */}
-            <article className="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
-              <div className="border-b border-line bg-white px-6 py-5">
-                <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide text-ink">
+            {/* Básico — fondo claro y texto oscuro fijos (legible en modo oscuro del sistema) */}
+            <article className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
+              <div className="border-b border-stone-200 bg-white px-6 py-5">
+                <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide text-stone-900">
                   Básico
                 </p>
-                <p className="mt-1 text-sm text-muted">
+                <p className="mt-1 text-sm text-stone-600">
                   Ideal para talleres chicos con poco equipo
                 </p>
-                <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold text-ink">
+                <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold text-stone-900">
                   $24.990
-                  <span className="text-base font-semibold text-muted">
+                  <span className="text-base font-semibold text-stone-600">
                     {" "}
                     / mes
                   </span>
                 </p>
-                <p className="mt-1 text-xs text-muted">
+                <p className="mt-1 text-xs text-stone-600">
                   + setup $120.000 (una vez)
                 </p>
               </div>
-              <ul className="divide-y divide-line px-2 py-1">
+              <ul className="divide-y divide-stone-200">
                 {PLAN_BASICO.map((item) => (
                   <PlanFeature key={item} label={item} />
                 ))}
@@ -246,7 +246,7 @@ export default function HomePage() {
               <div className="px-6 pb-6 pt-2">
                 <a
                   href="https://wa.me/56981875498?text=Hola%2C%20quiero%20el%20plan%20B%C3%A1sico%20de%20Motor%20Ping"
-                  className="tap-target inline-flex w-full items-center justify-center rounded-md border border-line bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-chip"
+                  className="tap-target inline-flex w-full items-center justify-center rounded-md border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
                 >
                   Quiero el Básico
                 </a>
@@ -254,26 +254,26 @@ export default function HomePage() {
             </article>
 
             {/* Extra — destacado */}
-            <article className="overflow-hidden rounded-xl border border-brand/40 bg-white shadow-md ring-1 ring-brand/20">
-              <div className="bg-brand px-6 py-5 text-white">
+            <article className="overflow-hidden rounded-xl border border-orange-800/30 bg-white shadow-md ring-1 ring-orange-800/15">
+              <div className="bg-[#c2410c] px-6 py-5 text-white">
                 <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide">
                   Extra
                 </p>
-                <p className="mt-1 text-sm text-white/90">
+                <p className="mt-1 text-sm text-white/95">
                   Todo el Básico, sin tope de mecánicos y con más potencia
                 </p>
                 <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold">
                   $44.990
-                  <span className="text-base font-semibold text-white/85">
+                  <span className="text-base font-semibold text-white/90">
                     {" "}
                     / mes
                   </span>
                 </p>
-                <p className="mt-1 text-xs text-white/80">
+                <p className="mt-1 text-xs text-white/85">
                   + setup $150.000 (una vez)
                 </p>
               </div>
-              <ul className="divide-y divide-line px-2 py-1">
+              <ul className="divide-y divide-stone-200">
                 {PLAN_EXTRA.map((item) => (
                   <PlanFeature key={item} label={item} />
                 ))}
@@ -281,7 +281,7 @@ export default function HomePage() {
               <div className="px-6 pb-6 pt-2">
                 <a
                   href="https://wa.me/56981875498?text=Hola%2C%20quiero%20el%20plan%20Extra%20de%20Motor%20Ping"
-                  className="tap-target inline-flex w-full items-center justify-center rounded-md bg-brand px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark"
+                  className="tap-target inline-flex w-full items-center justify-center rounded-md bg-[#c2410c] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#9a3412]"
                 >
                   Quiero el Extra
                 </a>
@@ -289,7 +289,7 @@ export default function HomePage() {
             </article>
           </div>
 
-          <p className="mt-8 text-center text-sm text-muted">
+          <p className="mt-8 text-center text-sm text-stone-700">
             Precios de lanzamiento en Chile · IVA no incluido · Se pueden ajustar
             al cerrar contigo
           </p>
