@@ -2,6 +2,17 @@ const TOKEN_KEY = "motorping_token";
 const WORKSHOP_KEY = "motorping_workshop";
 const USER_KEY = "motorping_user";
 
+/**
+ * A2-05 (auditoría): el JWT vive en localStorage y cualquier script del origen
+ * puede leerlo (XSS → robo de sesión).
+ *
+ * Alternativa propuesta (requiere backend + acuerdo):
+ * - Cookie httpOnly + Secure + SameSite=Lax/Strict emitida por la API en login
+ * - Frontend deja de guardar el token; las llamadas van con credentials: "include"
+ * - CSRF token o SameSite estricto según el despliegue
+ * No se cambia aquí sin coordinar con el backend.
+ */
+
 export type SessionWorkshop = {
   id?: string;
   name?: string;

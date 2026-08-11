@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PanelShell } from "@/components/panel-shell";
 import { apiList } from "@/lib/api";
+import { errorMessage } from "@/lib/errors";
 import {
   formatVehicleOrItem,
   type ApiClient,
@@ -24,32 +25,34 @@ function ClientesContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        setLoading(true);
-        const [c, v] = await Promise.all([
-          apiList<ApiClient>("/clients?limit=50"),
-          apiList<ApiVehicle>("/vehicles?limit=100"),
-        ]);
-        if (!cancelled) {
-          setClients(c);
-          setVehicles(v);
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Error al cargar");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [c, v] = await Promise.all([
+        apiList<ApiClient>("/clients?limit=50"),
+        apiList<ApiVehicle>("/vehicles?limit=100"),
+      ]);
+      setClients(c);
+      setVehicles(v);
+      setError(null);
+    } catch (err) {
+      setError(errorMessage(err, "No se pudieron cargar los clientes"));
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    function onOnline() {
+      void load();
+    }
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [load]);
 
   return (
     <PanelShell
@@ -58,9 +61,19 @@ function ClientesContent() {
     >
       {loading && <p className="text-sm text-muted">Cargando…</p>}
       {error && (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-          {error}
-        </p>
+        <div
+          role="alert"
+          className="rounded-md border border-red-200 bg-danger-soft px-3 py-3 text-sm text-red-800 dark:text-red-200"
+        >
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="tap-target mt-2 rounded-md border border-red-300 bg-surface px-3 py-1.5 text-sm font-semibold"
+          >
+            Reintentar
+          </button>
+        </div>
       )}
 
       {!loading && !error && (
@@ -72,15 +85,14 @@ function ClientesContent() {
             return (
               <li
                 key={client.id}
-                className="card-lift rounded-lg border border-line bg-surface p-4"
+                className="card-lift min-w-0 rounded-lg border border-line bg-surface p-4"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-semibold text-ink">{client.name}</p>
+                <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 overflow-hidden">
+                    <p className="truncate font-semibold text-ink">
+                      {client.name}
+                    </p>
                     <p className="text-sm text-muted">{client.phone}</p>
-                    {client.rut && (
-                      <p className="text-sm text-muted">RUT {client.rut}</p>
-                    )}
                     {client.notes && (
                       <p className="mt-1 text-xs text-muted">{client.notes}</p>
                     )}

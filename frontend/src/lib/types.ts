@@ -1,6 +1,10 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ??
-  "https://martin-vicentenegocios-production.up.railway.app";
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+if (!rawApiUrl) {
+  throw new Error(
+    "Falta NEXT_PUBLIC_API_URL. Defínela en .env.local o en el panel de Vercel; sin ella el frontend no sabe a qué API hablar.",
+  );
+}
+export const API_URL = rawApiUrl;
 
 export type OrderStatus =
   | "recibido"
@@ -17,7 +21,7 @@ export type ApiClient = {
   name: string;
   phone: string;
   notes?: string | null;
-  /** Guardado sin puntos y con guion: "12345678-5". */
+  /** Si el backend lo agrega después; hoy puede ir en notes. */
   rut?: string | null;
 };
 

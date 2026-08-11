@@ -5,28 +5,44 @@
 :root {
   --background: #f4f1ec;
   --foreground: #1c1917;
-  --brand: #e85d04;
-  --brand-dark: #c44d03;
+  /* G21: blanco sobre #c2410c ≈ 5.18:1 (WCAG AA 4.5:1) */
+  --brand: #c2410c;
+  --brand-dark: #9a3412;
   --ink: #1c1917;
   --muted: #57534e;
   --surface: #ffffff;
   --line: #e7e5e4;
   --steel: #292524;
   --hero-edge: #1c1917;
+  --chip: #f5f5f4;
+  --warn-soft: #fffbeb;
+  --warn-line: #f59e0b;
+  --ok-soft: #ecfdf5;
+  --ok-line: #34d399;
+  --danger-soft: #fef2f2;
+  --tone-ink: #1c1917;
   color-scheme: light;
 }
 
 html.dark {
   --background: #141210;
   --foreground: #f5f5f4;
-  --brand: #f97316;
-  --brand-dark: #ea580c;
+  /* G21: mismo naranja oscuro en dark ≈ 5.18:1 con blanco */
+  --brand: #c2410c;
+  --brand-dark: #9a3412;
   --ink: #f5f5f4;
   --muted: #a8a29e;
   --surface: #1c1917;
   --line: #3f3a36;
   --steel: #0c0a09;
   --hero-edge: #0c0a09;
+  --chip: #292524;
+  --warn-soft: #422006;
+  --warn-line: #d97706;
+  --ok-soft: #064e3b;
+  --ok-line: #34d399;
+  --danger-soft: #450a0a;
+  --tone-ink: #fef3c7;
   color-scheme: dark;
 }
 
@@ -40,6 +56,10 @@ html.dark {
   --color-surface: var(--surface);
   --color-line: var(--line);
   --color-steel: var(--steel);
+  --color-chip: var(--chip);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok-soft: var(--ok-soft);
+  --color-danger-soft: var(--danger-soft);
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
 }
@@ -137,6 +157,7 @@ select option {
 
 .tap-target {
   min-height: 44px;
+  min-width: 44px;
 }
 
 .card-lift {

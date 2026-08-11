@@ -1,15 +1,14 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { PanelShell } from "@/components/panel-shell";
-import { apiFetch, apiList } from "@/lib/api";
+import { ApiError, apiFetch, apiList } from "@/lib/api";
+import { errorMessage, parseValidationErrors } from "@/lib/errors";
+import { fieldClass } from "@/lib/form-styles";
 import type { ApiClient, ApiVehicle } from "@/lib/types";
-
-const fieldClass =
-  "mt-1 box-border block w-full min-w-0 max-w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30";
 
 function formatRutNotes(rut: string) {
   return `RUT: ${rut}`;
@@ -29,20 +28,26 @@ function NuevaOrdenContent() {
   const [loadingClients, setLoadingClients] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [mode, setMode] = useState<"existing" | "new">("existing");
+  /** Cliente ya creado en un intento previo (evita 409 al reintentar). */
+  const createdClientIdRef = useRef<string | null>(null);
+
+  async function refreshClients() {
+    const list = await apiList<ApiClient>("/clients?limit=100");
+    setClients(list);
+    return list;
+  }
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const list = await apiList<ApiClient>("/clients?limit=100");
-        if (!cancelled) {
-          setClients(list);
-          if (list.length === 0) setMode("new");
-        }
+        const list = await refreshClients();
+        if (!cancelled && list.length === 0) setMode("new");
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Error al cargar clientes");
+          setError(errorMessage(err, "No se pudieron cargar los clientes"));
         }
       } finally {
         if (!cancelled) setLoadingClients(false);
@@ -53,10 +58,56 @@ function NuevaOrdenContent() {
     };
   }, []);
 
+  async function resolveNewClient(
+    name: string,
+    phone: string,
+    rut: string,
+  ): Promise<string> {
+    if (createdClientIdRef.current) {
+      return createdClientIdRef.current;
+    }
+
+    try {
+      const { data: client } = await apiFetch<ApiClient>("/clients", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          phone,
+          notes: rut ? formatRutNotes(rut) : null,
+        }),
+      });
+      createdClientIdRef.current = client.id;
+      try {
+        await refreshClients();
+      } catch {
+        // La orden puede seguir; la lista se actualiza al volver
+      }
+      return client.id;
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        let list: ApiClient[];
+        try {
+          list = await refreshClients();
+        } catch {
+          throw err;
+        }
+        const existing = list.find(
+          (c) => c.phone.replace(/\D/g, "") === phone,
+        );
+        if (existing) {
+          createdClientIdRef.current = existing.id;
+          return existing.id;
+        }
+      }
+      throw err;
+    }
+  }
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setError(null);
+    setFieldErrors({});
 
     const form = new FormData(e.currentTarget);
     const plate = String(form.get("plate") || "")
@@ -76,16 +127,7 @@ function NuevaOrdenContent() {
       if (mode === "new") {
         const name = String(form.get("clientName") || "").trim();
         const phone = String(form.get("clientPhone") || "").replace(/\D/g, "");
-        const { data: client } = await apiFetch<ApiClient>("/clients", {
-          method: "POST",
-          body: JSON.stringify({
-            name,
-            phone,
-            // La API aún no tiene campo rut; lo guardamos en notes.
-            notes: rut ? formatRutNotes(rut) : null,
-          }),
-        });
-        clientId = client.id;
+        clientId = await resolveNewClient(name, phone, rut);
       } else if (rut) {
         await apiFetch(`/clients/${clientId}`, {
           method: "PATCH",
@@ -93,7 +135,6 @@ function NuevaOrdenContent() {
         });
       }
 
-      // Reutilizar vehículo si la patente ya existe (cliente que vuelve).
       const existentes = await apiList<ApiVehicle>(
         `/vehicles?plate=${encodeURIComponent(plate)}&limit=20`,
       );
@@ -124,9 +165,33 @@ function NuevaOrdenContent() {
 
       router.replace(`/panel/ordenes/${order.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo crear la orden");
+      const parsed = parseValidationErrors(err);
+      const mapped: Record<string, string> = { ...parsed.fields };
+      if (mapped.name) {
+        mapped.clientName = mapped.name;
+      }
+      if (mapped.phone) {
+        mapped.clientPhone = mapped.phone;
+      }
+      setFieldErrors(mapped);
+      setError(
+        parsed.form ||
+          (Object.keys(mapped).length
+            ? "Revisa los campos marcados."
+            : errorMessage(err, "No se pudo crear la orden")),
+      );
       setSaving(false);
     }
+  }
+
+  function fieldHint(key: string) {
+    const msg = fieldErrors[key];
+    if (!msg) return null;
+    return (
+      <p className="mt-1 text-sm text-red-700" role="alert">
+        {msg}
+      </p>
+    );
   }
 
   return (
@@ -146,10 +211,10 @@ function NuevaOrdenContent() {
               type="button"
               onClick={() => setMode("existing")}
               disabled={clients.length === 0}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+              className={`tap-target rounded-full px-3 py-1.5 text-xs font-medium ${
                 mode === "existing"
                   ? "bg-steel text-white"
-                  : "bg-stone-100 text-muted"
+                  : "bg-chip text-muted"
               }`}
             >
               Cliente existente
@@ -157,10 +222,8 @@ function NuevaOrdenContent() {
             <button
               type="button"
               onClick={() => setMode("new")}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                mode === "new"
-                  ? "bg-steel text-white"
-                  : "bg-stone-100 text-muted"
+              className={`tap-target rounded-full px-3 py-1.5 text-xs font-medium ${
+                mode === "new" ? "bg-steel text-white" : "bg-chip text-muted"
               }`}
             >
               Cliente nuevo
@@ -197,25 +260,33 @@ function NuevaOrdenContent() {
                   required
                   className={fieldClass}
                   placeholder="Juan Pérez"
+                  aria-invalid={Boolean(fieldErrors.clientName || fieldErrors.name)}
                 />
+                {fieldHint("clientName") || fieldHint("name")}
               </label>
               <label className="block min-w-0" htmlFor="clientPhone">
                 <span className="text-sm font-medium text-ink">WhatsApp</span>
                 <input
                   id="clientPhone"
                   name="clientPhone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
                   required
                   className={fieldClass}
                   placeholder="56912345678"
+                  aria-invalid={Boolean(
+                    fieldErrors.clientPhone || fieldErrors.phone,
+                  )}
                 />
+                {fieldHint("clientPhone") || fieldHint("phone")}
               </label>
             </div>
           )}
 
           <label className="block min-w-0" htmlFor="rut">
             <span className="text-sm font-medium text-ink">
-              RUT{" "}
-              <span className="font-normal text-muted">(opcional)</span>
+              RUT <span className="font-normal text-muted">(opcional)</span>
             </span>
             <input
               id="rut"
@@ -225,6 +296,7 @@ function NuevaOrdenContent() {
               autoComplete="off"
               inputMode="text"
             />
+            {fieldHint("rut")}
           </label>
 
           <div className="grid gap-4 sm:grid-cols-3">
@@ -236,15 +308,27 @@ function NuevaOrdenContent() {
                 required
                 className={`${fieldClass} uppercase`}
                 placeholder="ABCD12"
+                aria-invalid={Boolean(fieldErrors.plate)}
               />
+              {fieldHint("plate")}
             </label>
             <label className="block min-w-0" htmlFor="brand">
               <span className="text-sm font-medium text-ink">Marca</span>
-              <input id="brand" name="brand" className={fieldClass} placeholder="Toyota" />
+              <input
+                id="brand"
+                name="brand"
+                className={fieldClass}
+                placeholder="Toyota"
+              />
             </label>
             <label className="block min-w-0" htmlFor="model">
               <span className="text-sm font-medium text-ink">Modelo</span>
-              <input id="model" name="model" className={fieldClass} placeholder="Corolla" />
+              <input
+                id="model"
+                name="model"
+                className={fieldClass}
+                placeholder="Corolla"
+              />
             </label>
           </div>
 
@@ -256,7 +340,9 @@ function NuevaOrdenContent() {
               required
               className={fieldClass}
               placeholder="Revisión de frenos"
+              aria-invalid={Boolean(fieldErrors.title)}
             />
+            {fieldHint("title")}
           </label>
 
           <label className="block min-w-0" htmlFor="description">
@@ -299,7 +385,7 @@ function NuevaOrdenContent() {
             </button>
             <Link
               href="/panel"
-              className="tap-target inline-flex items-center text-sm text-muted hover:text-ink"
+              className="tap-target inline-flex items-center px-2 text-sm text-muted hover:text-ink"
             >
               Cancelar
             </Link>

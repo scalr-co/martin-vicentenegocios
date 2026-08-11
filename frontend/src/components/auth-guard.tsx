@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken } from "@/lib/auth";
+import { clearSession, getToken } from "@/lib/auth";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -10,7 +10,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!getToken()) {
-      router.replace("/login");
+      // A4-10: no dejar workshop/user del taller anterior colgados
+      clearSession();
+      router.replace("/login?razon=sesion");
       return;
     }
     setReady(true);

@@ -87,7 +87,7 @@ function AdminContent() {
       {flash && (
         <div
           role="status"
-          className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+          className="mb-4 rounded-md border border-[color:var(--ok-line)] bg-ok-soft px-4 py-3 text-sm text-[color:var(--tone-ink)]"
         >
           {flash}
         </div>
@@ -144,7 +144,7 @@ function AdminContent() {
                     setSuspendId(account.id);
                     setSuspendDays(7);
                   }}
-                  className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-stone-50 dark:hover:bg-stone-800"
+                  className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-chip"
                 >
                   Suspender
                 </button>
@@ -156,7 +156,7 @@ function AdminContent() {
                     refresh();
                     showFlash("Cuenta reactivada.");
                   }}
-                  className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-stone-50 dark:hover:bg-stone-800"
+                  className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-chip"
                 >
                   Reactivar
                 </button>
@@ -341,12 +341,14 @@ function Stat({
 }) {
   const toneClass =
     tone === "warn"
-      ? "border-amber-300 bg-amber-50"
+      ? "border-[color:var(--warn-line)] bg-warn-soft"
       : tone === "ok"
-        ? "border-emerald-300 bg-emerald-50"
+        ? "border-[color:var(--ok-line)] bg-ok-soft"
         : "border-line bg-surface";
-  const labelClass = tone === "neutral" ? "text-muted" : "text-stone-600";
-  const valueClass = tone === "neutral" ? "text-ink" : "text-stone-900";
+  const labelClass =
+    tone === "neutral" ? "text-muted" : "text-[color:var(--tone-ink)]";
+  const valueClass =
+    tone === "neutral" ? "text-ink" : "text-[color:var(--tone-ink)]";
 
   return (
     <div className={`rounded-lg border px-4 py-3 ${toneClass}`}>
