@@ -14,8 +14,8 @@ from sqlalchemy import select
 
 from app.config import Settings
 from app.models import User, Workshop
+from scripts.crear_admin import NoSePudoCrear, crear_admin
 from tests.conftest import (
-    CLAVE_DE_PRUEBA,
     con_token,
     crear_cliente_api,
     crear_vehiculo_api,
@@ -23,6 +23,7 @@ from tests.conftest import (
 )
 
 CLAVE_ADMIN = "clave-de-administracion-de-solve"
+CLAVE_DEL_ADMIN = "clave-larga-del-admin"
 
 
 @pytest.fixture(autouse=True)
@@ -32,19 +33,12 @@ def clave_de_admin_configurada(monkeypatch):
     monkeypatch.setattr(app.config, "settings", Settings(admin_api_key=CLAVE_ADMIN))
 
 
-def crear_cuenta_admin(cliente, email="vicente@solve.cl", clave=CLAVE_ADMIN):
-    cabeceras = {"X-Admin-Key": clave} if clave is not None else {}
-    return cliente.post(
-        "/admin/accounts",
-        json={"name": "Vicente", "email": email, "password": CLAVE_DE_PRUEBA},
-        headers=cabeceras,
-    )
-
-
 @pytest.fixture
-def token_admin(cliente):
-    assert crear_cuenta_admin(cliente).status_code == 201
-    return entrar(cliente, "vicente@solve.cl")
+def token_admin(cliente, sesion):
+    """La cuenta de admin se crea por consola, que es el unico camino que queda."""
+    crear_admin(sesion, "Vicente", "vicente@solve.cl", CLAVE_DEL_ADMIN)
+    sesion.commit()
+    return entrar(cliente, "vicente@solve.cl", clave=CLAVE_DEL_ADMIN)
 
 
 def alta_de_taller(cliente, token, **cambios):
@@ -59,20 +53,43 @@ def alta_de_taller(cliente, token, **cambios):
     return cliente.post("/admin/workshops", json=cuerpo, headers=con_token(token))
 
 
-def test_sin_la_clave_no_se_puede_crear_una_cuenta_de_admin(cliente):
-    """Es la cuenta mas poderosa del sistema: la puerta es la clave del servidor."""
-    respuesta = crear_cuenta_admin(cliente, clave=None)
+def test_la_cuenta_de_admin_ya_no_se_puede_crear_por_http(cliente):
+    """Creaba la cuenta mas poderosa del sistema con solo una cabecera y sin sesion.
 
-    assert respuesta.status_code == 403
+    Con esa llave se le cambiaba la clave al dueno de cualquier taller, se entraba a sus
+    datos y no quedaba registro. Ahora la cuenta se crea con scripts/crear_admin.py,
+    desde adentro del servidor.
+    """
+    respuesta = cliente.post(
+        "/admin/accounts",
+        json={"name": "X", "email": "x@solve.cl", "password": "clave-larga-de-mas"},
+        headers={"X-Admin-Key": CLAVE_ADMIN},
+    )
+
+    assert respuesta.status_code == 404
 
 
-def test_con_la_clave_queda_creada_y_puede_entrar(cliente):
-    respuesta = crear_cuenta_admin(cliente)
+def test_la_cuenta_creada_por_consola_puede_entrar(cliente, sesion):
+    crear_admin(sesion, "Vicente", "vicente@solve.cl", CLAVE_DEL_ADMIN)
+    sesion.commit()
 
-    assert respuesta.status_code == 201, respuesta.text
-    token = entrar(cliente, "vicente@solve.cl")
+    token = entrar(cliente, "vicente@solve.cl", clave=CLAVE_DEL_ADMIN)
+
     yo = cliente.get("/auth/me", headers=con_token(token))
     assert yo.json()["data"]["user"]["role"] == "platform_admin"
+
+
+def test_la_consola_no_deja_crear_dos_cuentas_con_el_mismo_correo(sesion):
+    crear_admin(sesion, "Vicente", "vicente@solve.cl", CLAVE_DEL_ADMIN)
+    sesion.commit()
+
+    with pytest.raises(NoSePudoCrear):
+        crear_admin(sesion, "Otro", "vicente@solve.cl", CLAVE_DEL_ADMIN)
+
+
+def test_la_consola_no_deja_una_clave_corta_en_la_cuenta_mas_poderosa(sesion):
+    with pytest.raises(NoSePudoCrear):
+        crear_admin(sesion, "Vicente", "vicente@solve.cl", "corta")
 
 
 def test_sin_token_no_se_entra_al_panel(cliente):

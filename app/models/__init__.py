@@ -1,5 +1,11 @@
 """Todas las tablas se importan aca para que SQLAlchemy las conozca al crear el esquema."""
 
+from app.models.admin_audit import (
+    ACCION_CLAVE_DEL_DUENO_CAMBIADA,
+    ACCION_TALLER_CREADO,
+    ACCION_TALLER_EDITADO,
+    AdminAudit,
+)
 from app.models.client import Client
 from app.models.notification import (
     AVISO_ENVIADO,
@@ -22,6 +28,10 @@ from app.models.vehicle import Vehicle
 from app.models.workshop import MODO_API, MODO_LINK, Workshop
 
 __all__ = [
+    "ACCION_TALLER_CREADO",
+    "ACCION_TALLER_EDITADO",
+    "ACCION_CLAVE_DEL_DUENO_CAMBIADA",
+    "AdminAudit",
     "ROL_ADMIN_PLATAFORMA",
     "ROL_DUENO",
     "ROL_MECANICO",

@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     entorno: str = "desarrollo"
 
     # Conexion a la base de datos. En desarrollo un archivo SQLite; en produccion, Postgres.
-    database_url: str = "sqlite:///./tallertrack.db"
+    database_url: str = "sqlite:///./motorping.db"
 
     # Dominios del frontend autorizados a llamar la API, separados por coma.
     frontend_origins: str = "http://localhost:3000"
@@ -70,6 +70,14 @@ class Settings(BaseSettings):
             raise ConfiguracionInvalida(
                 f"JWT_SECRET es demasiado corta: necesita al menos {LARGO_MINIMO_DE_CLAVE} "
                 "caracteres para firmar de forma segura."
+            )
+        if self.admin_api_key and len(self.admin_api_key) < LARGO_MINIMO_DE_CLAVE:
+            # Vacia esta bien: significa que el alta por HTTP esta cerrada. Lo que no
+            # puede pasar es que este puesta y sea corta: con ella se dan de alta
+            # talleres, y hasta hoy cualquier valor no vacio servia.
+            raise ConfiguracionInvalida(
+                f"ADMIN_API_KEY es demasiado corta: necesita al menos "
+                f"{LARGO_MINIMO_DE_CLAVE} caracteres, o dejarla vacia para cerrar el alta."
             )
         return self
 

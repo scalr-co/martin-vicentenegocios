@@ -2,6 +2,12 @@
 
 Nada de aca toca los datos de un taller. Un admin de plataforma no ve ordenes, clientes
 ni vehiculos: esos endpoints siguen filtrando por el taller del token, sin excepcion.
+
+Las cuentas de admin NO se crean por aca. Se crean con `scripts/crear_admin.py`, en la
+consola del servidor: una ruta HTTP que crea la cuenta mas poderosa del sistema es una
+puerta abierta a internet, y la llave del servidor no alcanza para sostenerla.
+
+Todo lo que el admin hace sobre un taller queda registrado en `admin_audit`.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,37 +15,43 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
-from app.models import ROL_ADMIN_PLATAFORMA, ROL_DUENO, Order, User, Workshop
-from app.schemas.admin import (
-    ClaveNueva,
-    CuentaAdminEntrada,
-    TallerEdicion,
-    UsuarioAdminSalida,
+from app.models import (
+    ACCION_CLAVE_DEL_DUENO_CAMBIADA,
+    ACCION_TALLER_CREADO,
+    ACCION_TALLER_EDITADO,
+    ROL_DUENO,
+    AdminAudit,
+    Order,
+    User,
+    Workshop,
 )
+from app.schemas.admin import ClaveNueva, TallerEdicion, UsuarioAdminSalida
 from app.schemas.auth import AltaTallerEntrada, UserSalida, WorkshopSalida
-from app.security.admin import exigir_clave_de_administracion
 from app.security.dependencias import solo_admin_plataforma
 from app.security.passwords import hashear
 from app.services.altas import crear_taller_con_dueno
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-TALLER_INTERNO = "Solve"
 
-
-def _taller_interno(sesion: Session) -> Workshop:
-    """El taller al que pertenecen las cuentas de Solve.
-
-    `User.workshop_id` no admite nulos y `usuario_actual` exige que el taller este
-    activo. Con un taller interno el admin entra por el mismo camino que todos y no
-    hay que aflojar ni una linea del aislamiento.
-    """
-    taller = sesion.scalar(select(Workshop).where(Workshop.internal.is_(True)))
-    if taller is None:
-        taller = Workshop(name=TALLER_INTERNO, phone="000000000", internal=True)
-        sesion.add(taller)
-        sesion.flush()
-    return taller
+def _anotar(
+    sesion: Session,
+    admin: User,
+    accion: str,
+    taller_id: str | None = None,
+    usuario_id: str | None = None,
+    detalle: str | None = None,
+) -> None:
+    """Deja el rastro de lo que hizo el admin. Se llama antes del commit de la accion."""
+    sesion.add(
+        AdminAudit(
+            actor_user_id=admin.id,
+            action=accion,
+            workshop_id=taller_id,
+            target_user_id=usuario_id,
+            detail=detalle,
+        )
+    )
 
 
 def _taller_o_404(sesion: Session, taller_id: str) -> Workshop:
@@ -51,28 +63,6 @@ def _taller_o_404(sesion: Session, taller_id: str) -> Workshop:
     return taller
 
 
-@router.post(
-    "/accounts",
-    status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(exigir_clave_de_administracion)],
-)
-def crear_cuenta_de_admin(
-    datos: CuentaAdminEntrada,
-    sesion: Session = Depends(obtener_sesion),
-):
-    admin = User(
-        workshop_id=_taller_interno(sesion).id,
-        name=datos.name,
-        email=datos.email,
-        password_hash=hashear(datos.password),
-        role=ROL_ADMIN_PLATAFORMA,
-    )
-    sesion.add(admin)
-    sesion.commit()
-
-    return {"data": UsuarioAdminSalida.model_validate(admin).model_dump(by_alias=True)}
-
-
 @router.post("/workshops", status_code=status.HTTP_201_CREATED)
 def crear_taller(
     datos: AltaTallerEntrada,
@@ -80,6 +70,7 @@ def crear_taller(
     sesion: Session = Depends(obtener_sesion),
 ):
     taller, dueno = crear_taller_con_dueno(sesion, datos, creado_por=admin)
+    _anotar(sesion, admin, ACCION_TALLER_CREADO, taller_id=taller.id, usuario_id=dueno.id)
     sesion.commit()
 
     return {
@@ -128,33 +119,48 @@ def listar_talleres(sesion: Session = Depends(obtener_sesion)):
     }
 
 
-@router.patch("/workshops/{taller_id}", dependencies=[Depends(solo_admin_plataforma)])
+@router.patch("/workshops/{taller_id}")
 def editar_taller(
     taller_id: str,
     datos: TallerEdicion,
+    admin: User = Depends(solo_admin_plataforma),
     sesion: Session = Depends(obtener_sesion),
 ):
     taller = _taller_o_404(sesion, taller_id)
 
-    for campo, valor in datos.model_dump(exclude_unset=True).items():
-        if valor is not None:
-            setattr(taller, campo, valor)
+    cambios = {
+        campo: valor
+        for campo, valor in datos.model_dump(exclude_unset=True).items()
+        if valor is not None
+    }
+    for campo, valor in cambios.items():
+        setattr(taller, campo, valor)
+
+    _anotar(
+        sesion,
+        admin,
+        ACCION_TALLER_EDITADO,
+        taller_id=taller.id,
+        detalle=", ".join(sorted(cambios)) or None,
+    )
     sesion.commit()
 
     return {"data": WorkshopSalida.model_validate(taller).model_dump(by_alias=True)}
 
 
-@router.post(
-    "/workshops/{taller_id}/owner-password",
-    dependencies=[Depends(solo_admin_plataforma)],
-)
+@router.post("/workshops/{taller_id}/owner-password")
 def cambiar_clave_del_dueno(
     taller_id: str,
     datos: ClaveNueva,
+    admin: User = Depends(solo_admin_plataforma),
     sesion: Session = Depends(obtener_sesion),
 ):
     """Para el dueno que perdio su clave. Sin esto, la unica salida es crearle otra
-    cuenta -y ahi pierde sus ordenes, sus clientes y su historial por patente."""
+    cuenta -y ahi pierde sus ordenes, sus clientes y su historial por patente.
+
+    Es la accion mas delicada del panel: deja a una persona fuera de su propio sistema
+    sin avisarle. Por eso queda anotada en `admin_audit` con nombre y apellido.
+    """
     taller = _taller_o_404(sesion, taller_id)
 
     dueno = sesion.scalar(
@@ -168,6 +174,13 @@ def cambiar_clave_del_dueno(
         )
 
     dueno.password_hash = hashear(datos.password)
+    _anotar(
+        sesion,
+        admin,
+        ACCION_CLAVE_DEL_DUENO_CAMBIADA,
+        taller_id=taller.id,
+        usuario_id=dueno.id,
+    )
     sesion.commit()
 
     return {"data": UsuarioAdminSalida.model_validate(dueno).model_dump(by_alias=True)}

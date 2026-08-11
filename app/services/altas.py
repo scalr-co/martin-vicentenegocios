@@ -13,6 +13,23 @@ from app.models import ROL_DUENO, User, Workshop
 from app.schemas.auth import AltaTallerEntrada
 from app.security.passwords import hashear
 
+TALLER_INTERNO = "Solve"
+
+
+def taller_interno(sesion: Session) -> Workshop:
+    """El taller al que pertenecen las cuentas de la administracion de la plataforma.
+
+    `User.workshop_id` no admite nulos y `usuario_actual` exige que el taller este
+    activo. Con un taller interno el admin entra por el mismo camino que todos y no hay
+    que aflojar ni una linea del aislamiento entre talleres.
+    """
+    taller = sesion.scalar(select(Workshop).where(Workshop.internal.is_(True)))
+    if taller is None:
+        taller = Workshop(name=TALLER_INTERNO, phone="56900000000", internal=True)
+        sesion.add(taller)
+        sesion.flush()
+    return taller
+
 
 def crear_taller_con_dueno(
     sesion: Session, datos: AltaTallerEntrada, creado_por: User | None = None

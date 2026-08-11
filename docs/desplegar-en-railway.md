@@ -48,11 +48,13 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 **No sirve inventarlas cortas**: con `ENTORNO=produccion` la aplicacion se niega a arrancar
 si `JWT_SECRET` es la de desarrollo o tiene menos de 32 caracteres. Es a proposito: la de
 desarrollo esta escrita en este repositorio publico y cualquiera podria fabricarse un token.
+`ADMIN_API_KEY` se revisa igual: o esta vacia -y el alta por HTTP queda cerrada- o tiene
+al menos 32 caracteres. Antes cualquier valor no vacio servia.
 
 ## 4. Publicar la URL
 
 En **Settings → Networking → Generate Domain**. Queda algo como
-`tallertrack-production.up.railway.app`.
+`motorping-production.up.railway.app`.
 
 Comprobar que respondio bien:
 
@@ -61,9 +63,30 @@ Comprobar que respondio bien:
 
 Las migraciones corren solas al arrancar el contenedor, asi que las tablas ya estan.
 
-## 5. Dar de alta el primer taller
+## 5. Crear la cuenta de administracion
 
-El alta no es publica: se hace con la clave de administracion.
+Se hace **dentro del servidor**, no por HTTP. En Railway: el servicio de la API →
+**Deployments → el ultimo → Terminal** (o `railway run` desde el computador):
+
+```bash
+python scripts/crear_admin.py \
+  --nombre "Vicente" \
+  --email vicente@solve.cl \
+  --password "una clave larga de verdad"
+```
+
+Con esa cuenta se entra por `/auth/login` y desde ahi se dan de alta los talleres, se
+corrigen y se le devuelve el acceso a un dueno que perdio su clave. Todo eso queda
+registrado en la tabla `admin_audit`, con quien lo hizo.
+
+Antes esto era `POST /admin/accounts` con la cabecera `X-Admin-Key` y sin sesion de
+nadie: una ruta abierta a internet que creaba la cuenta con mas poder del sistema. Ya no
+existe.
+
+## 6. Dar de alta el primer taller
+
+El alta tambien se puede hacer sin cuenta, con la clave de administracion. Es la puerta
+de emergencia; el dia a dia va por el panel con la cuenta de cada uno.
 
 ```bash
 curl -X POST https://esa-url/auth/register \
@@ -75,7 +98,7 @@ curl -X POST https://esa-url/auth/register \
 
 Devuelve el taller, el usuario y un token listo para usar.
 
-## 6. Avisarle a Martin
+## 7. Avisarle a Martin
 
 Necesita dos cosas: la URL base y que el token va en `Authorization: Bearer <token>`.
 
@@ -83,7 +106,7 @@ Cuando publique su frontend (Vercel, por ejemplo), hay que agregar su dominio a
 `FRONTEND_ORIGINS`, separado por coma:
 
 ```
-FRONTEND_ORIGINS=http://localhost:3000,https://tallertrack.vercel.app
+FRONTEND_ORIGINS=http://localhost:3000,https://motorping.vercel.app
 ```
 
 Sin ese paso el navegador le bloquea todas las llamadas, aunque la API este perfecta.
