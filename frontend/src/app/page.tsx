@@ -3,6 +3,65 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/ui";
 
+const PLAN_BASICO = [
+  "Órdenes de trabajo ilimitadas",
+  "Estados claros (incluye espera de aprobación y repuesto)",
+  "Historial por patente",
+  "Clientes y vehículos del taller",
+  "Aviso al cliente por WhatsApp (link listo)",
+  "1 cuenta dueño + hasta 3 mecánicos",
+  "El taller crea las cuentas de sus mecánicos",
+  "Soporte por WhatsApp",
+  "Setup e acompañamiento inicial",
+];
+
+/** Extra = todo lo del Básico + más valor (mecánicos sin tope y extras). */
+const PLAN_EXTRA = [
+  "Órdenes de trabajo ilimitadas",
+  "Estados claros (incluye espera de aprobación y repuesto)",
+  "Historial por patente",
+  "Clientes y vehículos del taller",
+  "Aviso al cliente por WhatsApp (link listo)",
+  "1 cuenta dueño + mecánicos ilimitados",
+  "El taller crea las cuentas de sus mecánicos",
+  "Soporte prioritario por WhatsApp",
+  "Setup e acompañamiento inicial prioritario",
+  "Plantillas de aviso personalizables al taller",
+  "Resumen semanal del taller (cuando esté listo)",
+  "Exportar clientes e historial (CSV, cuando esté listo)",
+];
+
+function PlanFeature({ label }: { label: string }) {
+  return (
+    <li className="flex items-center gap-3 px-5 py-3.5">
+      <span className="min-w-0 flex-1 text-sm leading-snug text-ink">
+        {label}
+      </span>
+      <span
+        className="shrink-0 text-ink"
+        aria-label="Incluido"
+        title="Incluido"
+      >
+        <TicketCheck />
+      </span>
+    </li>
+  );
+}
+
+function TicketCheck() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M5 12.5 9.5 17 19 7.5"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function HomePage() {
   return (
     <div className="flex min-h-dvh flex-col">
@@ -28,6 +87,12 @@ export default function HomePage() {
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8">
             <BrandMark light className="text-xl md:text-2xl" />
             <nav className="flex items-center gap-2 sm:gap-3">
+              <a
+                href="#precios"
+                className="hidden rounded-md px-3 py-2 text-sm font-medium text-white/80 transition hover:text-white sm:inline"
+              >
+                Precios
+              </a>
               <Link
                 href="/login"
                 className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark"
@@ -139,24 +204,95 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-steel px-5 py-20 text-white md:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-8 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-xl">
-            <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight md:text-4xl">
-              Setup desde $150.000
-              <span className="block text-brand">+ $29.990 al mes</span>
-            </h2>
-            <p className="mt-4 text-white/70">
-              Precio de lanzamiento para talleres en Chile. Te dejamos andando y
-              te acompañamos los primeros días.
-            </p>
+      <section
+        id="precios"
+        className="border-t border-line bg-[#e7e5e4] px-5 py-20 text-ink md:px-8"
+      >
+        <div className="mx-auto max-w-6xl">
+          <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight md:text-4xl">
+            Planes para tu taller
+          </h2>
+          <p className="mt-3 max-w-2xl text-muted">
+            Nosotros te damos de alta el taller. Tú creas las cuentas de tus
+            mecánicos. Elige según cuántas personas usan el sistema.
+          </p>
+
+          <div className="mt-12 grid items-start gap-6 lg:grid-cols-2">
+            {/* Básico */}
+            <article className="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
+              <div className="border-b border-line bg-white px-6 py-5">
+                <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide text-ink">
+                  Básico
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  Ideal para talleres chicos con poco equipo
+                </p>
+                <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold text-ink">
+                  $24.990
+                  <span className="text-base font-semibold text-muted">
+                    {" "}
+                    / mes
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  + setup $120.000 (una vez)
+                </p>
+              </div>
+              <ul className="divide-y divide-line px-2 py-1">
+                {PLAN_BASICO.map((item) => (
+                  <PlanFeature key={item} label={item} />
+                ))}
+              </ul>
+              <div className="px-6 pb-6 pt-2">
+                <a
+                  href="https://wa.me/56981875498?text=Hola%2C%20quiero%20el%20plan%20B%C3%A1sico%20de%20Motor%20Ping"
+                  className="tap-target inline-flex w-full items-center justify-center rounded-md border border-line bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-chip"
+                >
+                  Quiero el Básico
+                </a>
+              </div>
+            </article>
+
+            {/* Extra — destacado */}
+            <article className="overflow-hidden rounded-xl border border-brand/40 bg-white shadow-md ring-1 ring-brand/20">
+              <div className="bg-brand px-6 py-5 text-white">
+                <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide">
+                  Extra
+                </p>
+                <p className="mt-1 text-sm text-white/90">
+                  Todo el Básico, sin tope de mecánicos y con más potencia
+                </p>
+                <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold">
+                  $44.990
+                  <span className="text-base font-semibold text-white/85">
+                    {" "}
+                    / mes
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-white/80">
+                  + setup $150.000 (una vez)
+                </p>
+              </div>
+              <ul className="divide-y divide-line px-2 py-1">
+                {PLAN_EXTRA.map((item) => (
+                  <PlanFeature key={item} label={item} />
+                ))}
+              </ul>
+              <div className="px-6 pb-6 pt-2">
+                <a
+                  href="https://wa.me/56981875498?text=Hola%2C%20quiero%20el%20plan%20Extra%20de%20Motor%20Ping"
+                  className="tap-target inline-flex w-full items-center justify-center rounded-md bg-brand px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark"
+                >
+                  Quiero el Extra
+                </a>
+              </div>
+            </article>
           </div>
-          <Link
-            href="/login"
-            className="inline-flex items-center justify-center rounded-md bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
-          >
-            Ingresar
-          </Link>
+
+          <p className="mt-8 text-center text-sm text-muted">
+            Precios de lanzamiento en Chile · IVA no incluido · Se pueden ajustar
+            al cerrar contigo
+          </p>
         </div>
       </section>
 
