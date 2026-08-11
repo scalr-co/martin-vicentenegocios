@@ -14,6 +14,7 @@ from app.models.order import (
     ESTADO_INICIAL,
     ESTADOS,
     Order,
+    es_retroceso,
 )
 from app.models.order_event import TIPO_CAMBIO_DE_ESTADO, OrderEvent
 from app.models.user import ROL_ADMIN_PLATAFORMA, ROL_DUENO, ROL_MECANICO, User
@@ -42,4 +43,5 @@ __all__ = [
     "User",
     "Vehicle",
     "Workshop",
+    "es_retroceso",
 ]

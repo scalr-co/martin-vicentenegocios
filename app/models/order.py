@@ -32,6 +32,23 @@ ESTADO_INICIAL = ESTADO_RECIBIDO
 # Entregado es el unico estado que cierra la orden: deja de aparecer en el panel.
 ESTADO_CERRADO = ESTADO_ENTREGADO
 
+# Donde cae cada estado dentro del flujo. Con esto se distingue avanzar de corregir.
+POSICION_DE_ESTADO = {estado: indice for indice, estado in enumerate(ESTADOS)}
+
+
+def es_retroceso(desde: str, hacia: str) -> bool:
+    """Volver a un estado anterior es corregir un dedazo, no avanzar el trabajo.
+
+    Avanzar le escribe al cliente; corregir, no. Sin esta distincion, arreglar un toque
+    equivocado le manda al dueno de un auto recien ingresado un "tu auto ya esta listo",
+    y despues un "lo recibimos" del mismo trabajo.
+
+    No se prohibe el salto hacia adelante: el trabajo que entra y sale el mismo dia es
+    normal en un taller, y obligar a pasar por los estados del medio solo haria que el
+    mecanico invente pasos que no ocurrieron.
+    """
+    return POSICION_DE_ESTADO[hacia] < POSICION_DE_ESTADO[desde]
+
 
 class Order(Base):
     """Un trabajo sobre un vehiculo. Su estado es lo que el cliente sigue por WhatsApp."""

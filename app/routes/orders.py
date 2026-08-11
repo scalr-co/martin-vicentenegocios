@@ -25,6 +25,7 @@ from app.models import (
     OrderEvent,
     User,
     Vehicle,
+    es_retroceso,
 )
 from app.models.base import ahora
 from app.schemas.order import AvisoSalida, CambioDeEstado, OrdenEdicion, OrdenEntrada, OrdenSalida
@@ -266,6 +267,13 @@ def mover_de_estado(
             to_status=datos.status,
         )
     )
+
+    if es_retroceso(anterior, datos.status):
+        # Corregir un dedazo no es avanzar el trabajo: la orden se mueve y el cambio
+        # queda en el historial, pero al cliente no se le escribe. Si el mecanico si
+        # quiere avisarle, vuelve a avanzar el estado.
+        sesion.commit()
+        return {"data": {"order": salida_de_orden(orden), "notification": None}}
 
     texto = datos.message or mensaje_para(
         datos.status,

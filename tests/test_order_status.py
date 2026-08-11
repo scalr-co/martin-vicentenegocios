@@ -142,6 +142,48 @@ def test_dejar_la_orden_en_el_estado_que_ya_tenia_no_avisa_de_nuevo(cliente, due
     assert len(avisos) == 1
 
 
+def test_volver_atras_corrige_el_estado_sin_escribirle_al_cliente(cliente, dueno, sesion):
+    """El dedazo: el mecanico marca 'entregado' y el auto acaba de entrar.
+
+    Antes, cada toque del estado generaba un aviso: corregirse le mandaba al dueno del
+    auto un "gracias por confiar" y despues un "lo recibimos" del mismo trabajo.
+    """
+    token = entrar(cliente, "dueno@taller.cl")
+    orden = orden_lista(cliente, token)
+    mover(cliente, token, orden, "entregado")
+
+    respuesta = mover(cliente, token, orden, "recibido")
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["data"]["order"]["status"] == "recibido"
+    assert respuesta.json()["data"]["notification"] is None
+    avisos = sesion.scalars(select(Notification).where(Notification.order_id == orden)).all()
+    assert len(avisos) == 1
+
+
+def test_volver_atras_igual_queda_en_el_historial(cliente, dueno, sesion):
+    """Al cliente no se le escribe, pero el dueno del taller tiene que poder verlo."""
+    token = entrar(cliente, "dueno@taller.cl")
+    orden = orden_lista(cliente, token)
+    mover(cliente, token, orden, "listo")
+    mover(cliente, token, orden, "en_reparacion")
+
+    eventos = sesion.scalars(select(OrderEvent).where(OrderEvent.order_id == orden)).all()
+    assert len(eventos) == 2
+    assert eventos[1].from_status == "listo"
+    assert eventos[1].to_status == "en_reparacion"
+
+
+def test_saltarse_estados_hacia_adelante_sigue_avisando(cliente, dueno):
+    """El trabajo rapido existe: el auto entra y sale listo el mismo dia."""
+    token = entrar(cliente, "dueno@taller.cl")
+    orden = orden_lista(cliente, token)
+
+    respuesta = mover(cliente, token, orden, "listo")
+
+    assert respuesta.json()["data"]["notification"] is not None
+
+
 def test_mover_la_orden_de_otro_taller_responde_no_encontrado(cliente, dueno, dueno_vecino):
     token_propio = entrar(cliente, "dueno@taller.cl")
     token_vecino = entrar(cliente, "dueno@vecino.cl")
