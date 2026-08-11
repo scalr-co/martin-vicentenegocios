@@ -5,6 +5,8 @@ se mueve por su propio endpoint, no editando la ficha: mover el estado le avisa 
 cliente, y eso no puede pasar de casualidad al corregir una falta de ortografia.
 """
 
+from datetime import date
+
 from tests.conftest import con_token, crear_cliente_api, crear_vehiculo_api, entrar
 
 
@@ -19,6 +21,44 @@ def taller_con_auto(cliente, token, patente="ABCD12", telefono="56911111111"):
     cliente_id = crear_cliente_api(cliente, token, telefono=telefono)
     vehiculo_id = crear_vehiculo_api(cliente, token, cliente_id, patente=patente)
     return cliente_id, vehiculo_id
+
+
+def test_el_error_de_cliente_no_encontrado_va_en_masculino(cliente, dueno):
+    """La funcion de error de ordenes se reutilizaba con el genero fijo en femenino."""
+    token = entrar(cliente, "dueno@taller.cl")
+    _, vehiculo_id = taller_con_auto(cliente, token)
+
+    respuesta = crear_orden(cliente, token, "no-existe", vehiculo_id)
+
+    assert respuesta.json()["error"]["message"] == "Cliente no encontrado"
+
+
+def test_una_fecha_estimada_en_el_pasado_se_rechaza(cliente, dueno):
+    """Prometerle al cliente una fecha de 2020 no es un dato, es un dedazo."""
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id, vehiculo_id = taller_con_auto(cliente, token)
+
+    respuesta = crear_orden(
+        cliente, token, cliente_id, vehiculo_id, estimatedAt="2020-01-01"
+    )
+
+    assert respuesta.status_code == 422
+
+
+def test_la_fecha_estimada_de_hoy_se_acepta(cliente, dueno):
+    """El trabajo que se promete para el mismo dia es el caso normal."""
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id, vehiculo_id = taller_con_auto(cliente, token)
+
+    respuesta = crear_orden(
+        cliente,
+        token,
+        cliente_id,
+        vehiculo_id,
+        estimatedAt=date.today().isoformat(),
+    )
+
+    assert respuesta.status_code == 201
 
 
 def test_un_titulo_de_puros_espacios_se_rechaza(cliente, dueno):

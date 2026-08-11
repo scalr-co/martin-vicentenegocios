@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from pydantic import Field, computed_field, field_validator
 
@@ -10,6 +10,18 @@ from app.services.presentacion import describir_vehiculo
 def _estado_conocido(valor: str | None) -> str | None:
     if valor is not None and valor not in ESTADOS:
         raise ValueError(f"'{valor}' no es un estado de orden. Son: {', '.join(ESTADOS)}")
+    return valor
+
+
+def _fecha_que_todavia_puede_cumplirse(valor: date | None) -> date | None:
+    """Aceptaba una fecha de 2020 sin decir nada, y eso llega a la ficha del cliente.
+
+    Se deja un dia de holgura por el huso horario: el servidor corre en UTC y en Chile
+    son 3 o 4 horas menos, asi que a las 9 de la noche en Temuco "hoy" ya es "manana"
+    para el servidor, y prometer para hoy tiene que seguir siendo posible.
+    """
+    if valor is not None and valor < date.today() - timedelta(days=1):
+        raise ValueError("La fecha estimada ya paso")
     return valor
 
 
@@ -39,6 +51,11 @@ class OrdenEntrada(Esquema):
     def _estado(cls, valor: str | None) -> str | None:
         return _estado_conocido(valor)
 
+    @field_validator("estimated_at")
+    @classmethod
+    def _fecha(cls, valor: date | None) -> date | None:
+        return _fecha_que_todavia_puede_cumplirse(valor)
+
 
 class OrdenEdicion(Esquema):
     """Sin `status` a proposito: el estado se mueve por su propio endpoint.
@@ -50,6 +67,11 @@ class OrdenEdicion(Esquema):
     title: TextoOpcional = Field(default=None, min_length=2, max_length=160)
     description: TextoOpcional = None
     estimated_at: date | None = None
+
+    @field_validator("estimated_at")
+    @classmethod
+    def _fecha(cls, valor: date | None) -> date | None:
+        return _fecha_que_todavia_puede_cumplirse(valor)
 
 
 class OrdenSalida(Esquema):

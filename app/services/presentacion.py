@@ -49,7 +49,8 @@ def describir_para_el_cliente(patente: str, marca: str | None, modelo: str | Non
     """
     descripcion = _marca_y_modelo(marca, modelo)
     if not descripcion:
-        return f"vehiculo (patente {patente})"
+        # Con tilde: esto lo lee el cliente del taller por WhatsApp.
+        return f"vehículo (patente {patente})"
     return f"{descripcion} ({patente})"
 
 
@@ -75,8 +76,15 @@ def primer_nombre(nombre_completo: str) -> str:
     Va con mayuscula inicial aunque la ficha diga "juan": el mecanico escribe rapido y
     el cliente no tiene por que enterarse. Las tildes no se inventan -de "perez" no se
     puede deducir si es "Perez" o "Perez"- porque escribir mal un apellido es peor.
+
+    Si la ficha viene con coma, esta escrita como en un formulario -"Munoz, Juan"- y el
+    nombre esta despues. Sin esto el mensaje partia con "Hola Munoz".
     """
-    partes = nombre_completo.strip().split()
+    texto = nombre_completo.strip()
+    if "," in texto:
+        texto = texto.split(",", 1)[1].strip() or texto
+
+    partes = texto.split()
     if not partes:
         return nombre_completo
     return con_mayuscula_inicial(partes[0])

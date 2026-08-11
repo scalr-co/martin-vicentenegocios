@@ -27,6 +27,12 @@ def test_un_nombre_ya_bien_escrito_no_se_toca():
     assert primer_nombre("María José Fuentes") == "María"
 
 
+def test_al_cliente_anotado_con_el_apellido_primero_se_le_habla_por_su_nombre():
+    """La ficha escrita como en un formulario: "Munoz, Juan" no es "Hola Munoz"."""
+    assert primer_nombre("Munoz, Juan") == "Juan"
+    assert primer_nombre("Gonzalez Rojas, Maria Fernanda") == "Maria"
+
+
 def test_la_marca_va_con_mayuscula():
     assert describir_para_el_cliente("ABCD12", "nissan", "v16") == "Nissan v16 (ABCD12)"
 
@@ -47,4 +53,5 @@ def test_la_pantalla_del_mecanico_se_ve_igual_que_el_mensaje():
 
 
 def test_sin_marca_ni_modelo_sigue_saliendo_la_patente():
-    assert describir_para_el_cliente("ABCD12", None, None) == "vehiculo (patente ABCD12)"
+    """Con tilde: este texto lo lee el cliente del taller, no es un nombre de variable."""
+    assert describir_para_el_cliente("ABCD12", None, None) == "vehículo (patente ABCD12)"

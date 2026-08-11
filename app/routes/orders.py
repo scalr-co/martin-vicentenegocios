@@ -63,8 +63,17 @@ def _ultimo_aviso(sesion: Session, orden_id: str) -> dict | None:
     return AvisoSalida.model_validate(aviso).model_dump(by_alias=True, mode="json")
 
 
+# El genero de cada palabra, porque el mensaje se arma con una sola funcion. Sin esto
+# salia "Cliente no encontrada" y "Vehiculo no encontrada".
+FALTA = {
+    "Orden": "Orden no encontrada",
+    "Cliente": "Cliente no encontrado",
+    "Vehiculo": "Vehiculo no encontrado",
+}
+
+
 def _no_encontrada(que: str = "Orden") -> HTTPException:
-    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{que} no encontrada")
+    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=FALTA[que])
 
 
 def _del_taller(sesion: Session, usuario: User, orden_id: str) -> Order:
