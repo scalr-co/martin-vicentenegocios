@@ -161,6 +161,37 @@ def test_el_rut_es_opcional_y_sin_el_la_ficha_queda_igual(cliente, dueno):
     assert respuesta.json()["data"]["rut"] is None
 
 
+def test_un_nombre_de_puros_espacios_se_rechaza(cliente, dueno):
+    """Tres espacios miden 3, pasaban el minimo de 2, y la ficha quedaba en blanco.
+
+    El taller terminaba con un cliente que se ve vacio en la lista y no se puede buscar.
+    """
+    token = entrar(cliente, "dueno@taller.cl")
+
+    respuesta = crear_cliente(cliente, token, nombre="   ")
+
+    assert respuesta.status_code == 422
+
+
+def test_un_nombre_de_puros_espacios_tampoco_entra_al_editar(cliente, dueno):
+    token = entrar(cliente, "dueno@taller.cl")
+    creado = crear_cliente(cliente, token).json()["data"]["id"]
+
+    respuesta = cliente.patch(
+        f"/clients/{creado}", json={"name": "  "}, headers=con_token(token)
+    )
+
+    assert respuesta.status_code == 422
+
+
+def test_el_nombre_se_guarda_sin_los_espacios_de_los_bordes(cliente, dueno):
+    token = entrar(cliente, "dueno@taller.cl")
+
+    respuesta = crear_cliente(cliente, token, nombre="  Juan Perez  ")
+
+    assert respuesta.json()["data"]["name"] == "Juan Perez"
+
+
 def test_un_rut_mal_escrito_no_entra_a_la_ficha(cliente, dueno):
     token = entrar(cliente, "dueno@taller.cl")
 

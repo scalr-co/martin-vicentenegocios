@@ -1,5 +1,23 @@
-from pydantic import BaseModel, ConfigDict
+from typing import Annotated
+
+from pydantic import BaseModel, BeforeValidator, ConfigDict
 from pydantic.alias_generators import to_camel
+
+
+def _sin_espacios_en_los_bordes(valor: object) -> object:
+    """Corre antes que min_length, asi "   " mide 0 y no 3.
+
+    Sin esto la validacion cuenta caracteres y no contenido: un nombre de tres espacios
+    pasaba el minimo de dos, se guardaba, y el taller quedaba con una ficha que se ve
+    vacia en la lista y no se puede buscar.
+    """
+    return valor.strip() if isinstance(valor, str) else valor
+
+
+# Para los campos que escribe una persona a mano. El largo se sigue declarando con
+# Field(min_length=...); lo que cambia es que se mide sobre el texto ya limpio.
+Texto = Annotated[str, BeforeValidator(_sin_espacios_en_los_bordes)]
+TextoOpcional = Annotated[str | None, BeforeValidator(_sin_espacios_en_los_bordes)]
 
 
 class Esquema(BaseModel):

@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import Field, computed_field, field_validator
 
-from app.schemas.base import Esquema
+from app.schemas.base import Esquema, TextoOpcional
 from app.services.normalizacion import DatoInvalido, normalizar_patente
 from app.services.presentacion import describir_vehiculo
 
@@ -18,8 +18,8 @@ def _patente_de_una_sola_forma(valor: str) -> str:
 class VehiculoEntrada(Esquema):
     client_id: str
     plate: str
-    brand: str | None = Field(default=None, max_length=60)
-    model: str | None = Field(default=None, max_length=60)
+    brand: TextoOpcional = Field(default=None, max_length=60)
+    model: TextoOpcional = Field(default=None, max_length=60)
 
     @field_validator("plate")
     @classmethod
@@ -31,8 +31,8 @@ class VehiculoEdicion(Esquema):
     """Todo opcional: llega solo lo que se corrigio de la ficha."""
 
     plate: str | None = None
-    brand: str | None = Field(default=None, max_length=60)
-    model: str | None = Field(default=None, max_length=60)
+    brand: TextoOpcional = Field(default=None, max_length=60)
+    model: TextoOpcional = Field(default=None, max_length=60)
 
     @field_validator("plate")
     @classmethod

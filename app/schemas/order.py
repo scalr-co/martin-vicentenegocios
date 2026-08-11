@@ -3,7 +3,7 @@ from datetime import date, datetime
 from pydantic import Field, computed_field, field_validator
 
 from app.models.order import ESTADOS
-from app.schemas.base import Esquema
+from app.schemas.base import Esquema, Texto, TextoOpcional
 from app.services.presentacion import describir_vehiculo
 
 
@@ -29,8 +29,8 @@ class VehiculoResumen(Esquema):
 class OrdenEntrada(Esquema):
     client_id: str
     vehicle_id: str
-    title: str = Field(min_length=2, max_length=160)
-    description: str | None = None
+    title: Texto = Field(min_length=2, max_length=160)
+    description: TextoOpcional = None
     estimated_at: date | None = None
     status: str | None = None
 
@@ -47,8 +47,8 @@ class OrdenEdicion(Esquema):
     palabra del titulo podria terminar mandando un WhatsApp sin que nadie lo pidiera.
     """
 
-    title: str | None = Field(default=None, min_length=2, max_length=160)
-    description: str | None = None
+    title: TextoOpcional = Field(default=None, min_length=2, max_length=160)
+    description: TextoOpcional = None
     estimated_at: date | None = None
 
 

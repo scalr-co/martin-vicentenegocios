@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import Field, field_validator
 
-from app.schemas.base import Esquema
+from app.schemas.base import Esquema, Texto, TextoOpcional
 from app.services.normalizacion import DatoInvalido, normalizar_rut, normalizar_telefono
 
 
@@ -25,10 +25,10 @@ def _rut_guardable(valor: str | None) -> str | None:
 
 
 class ClienteEntrada(Esquema):
-    name: str = Field(min_length=2, max_length=120)
+    name: Texto = Field(min_length=2, max_length=120)
     phone: str
     rut: str | None = None
-    notes: str | None = Field(default=None, max_length=1000)
+    notes: TextoOpcional = Field(default=None, max_length=1000)
 
     @field_validator("phone")
     @classmethod
@@ -44,10 +44,10 @@ class ClienteEntrada(Esquema):
 class ClienteEdicion(Esquema):
     """Todo opcional: llega solo lo que el mecanico cambio en la ficha."""
 
-    name: str | None = Field(default=None, min_length=2, max_length=120)
+    name: TextoOpcional = Field(default=None, min_length=2, max_length=120)
     phone: str | None = None
     rut: str | None = None
-    notes: str | None = Field(default=None, max_length=1000)
+    notes: TextoOpcional = Field(default=None, max_length=1000)
 
     @field_validator("phone")
     @classmethod

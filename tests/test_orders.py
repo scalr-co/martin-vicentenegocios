@@ -21,6 +21,28 @@ def taller_con_auto(cliente, token, patente="ABCD12", telefono="56911111111"):
     return cliente_id, vehiculo_id
 
 
+def test_un_titulo_de_puros_espacios_se_rechaza(cliente, dueno):
+    """Dos espacios miden 2 y pasaban el minimo: la orden quedaba sin titulo visible."""
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id, vehiculo_id = taller_con_auto(cliente, token)
+
+    respuesta = crear_orden(cliente, token, cliente_id, vehiculo_id, titulo="   ")
+
+    assert respuesta.status_code == 422
+
+
+def test_un_titulo_de_puros_espacios_tampoco_entra_al_editar(cliente, dueno):
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id, vehiculo_id = taller_con_auto(cliente, token)
+    orden = crear_orden(cliente, token, cliente_id, vehiculo_id).json()["data"]["id"]
+
+    respuesta = cliente.patch(
+        f"/orders/{orden}", json={"title": "  "}, headers=con_token(token)
+    )
+
+    assert respuesta.status_code == 422
+
+
 def test_una_orden_sin_avisos_no_trae_ninguno(cliente, dueno):
     """Recien creada no se le ha dicho nada al cliente todavia."""
     token = entrar(cliente, "dueno@taller.cl")
