@@ -124,8 +124,10 @@ def test_la_orden_archivada_no_sale_en_el_historial_del_vehiculo(cliente, dueno)
 def test_archivar_una_orden_no_toca_a_las_demas(cliente, dueno):
     token = entrar(cliente, "dueno@taller.cl")
     cliente_id, vehiculo_id = taller_con_auto(cliente, token)
+    # Dos autos del mismo cliente: un vehiculo no puede tener dos ordenes abiertas.
+    otro_vehiculo = crear_vehiculo_api(cliente, token, cliente_id, patente="XYZ99")
     archivada = crear_orden(cliente, token, cliente_id, vehiculo_id, titulo="Se va").json()["data"]["id"]
-    crear_orden(cliente, token, cliente_id, vehiculo_id, titulo="Se queda")
+    crear_orden(cliente, token, cliente_id, otro_vehiculo, titulo="Se queda")
 
     archivar(cliente, token, archivada)
 

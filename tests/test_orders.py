@@ -265,11 +265,57 @@ def test_sin_token_no_se_puede_listar(cliente, dueno):
     assert respuesta.status_code == 401
 
 
+def test_un_auto_no_puede_tener_dos_ordenes_abiertas(cliente, dueno):
+    """Dos ordenes del mismo auto al mismo tiempo son dos tableros para un solo trabajo.
+
+    Hoy lo evita el boton de la pantalla, que se deshabilita mientras guarda. Eso deja
+    la proteccion en el lugar fragil: cualquier pantalla nueva o un reintento lo destapa.
+    """
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id, vehiculo_id = taller_con_auto(cliente, token)
+    crear_orden(cliente, token, cliente_id, vehiculo_id, titulo="Frenos")
+
+    respuesta = crear_orden(cliente, token, cliente_id, vehiculo_id, titulo="Frenos")
+
+    assert respuesta.status_code == 409
+
+
+def test_un_auto_que_ya_se_entrego_puede_volver_al_taller(cliente, dueno):
+    """El mismo auto vuelve en tres meses: eso no es un duplicado."""
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id, vehiculo_id = taller_con_auto(cliente, token)
+    primera = crear_orden(cliente, token, cliente_id, vehiculo_id).json()["data"]["id"]
+    cliente.post(
+        f"/orders/{primera}/status", json={"status": "entregado"}, headers=con_token(token)
+    )
+
+    respuesta = crear_orden(cliente, token, cliente_id, vehiculo_id, titulo="Aceite")
+
+    assert respuesta.status_code == 201
+
+
+def test_un_auto_con_su_orden_archivada_puede_tener_otra(cliente, dueno):
+    """La orden creada por error se archiva y el auto tiene que poder empezar de nuevo."""
+    token = entrar(cliente, "dueno@taller.cl")
+    cliente_id, vehiculo_id = taller_con_auto(cliente, token)
+    mal_creada = crear_orden(cliente, token, cliente_id, vehiculo_id).json()["data"]["id"]
+    cliente.delete(f"/orders/{mal_creada}", headers=con_token(token))
+
+    respuesta = crear_orden(cliente, token, cliente_id, vehiculo_id, titulo="Frenos")
+
+    assert respuesta.status_code == 201
+
+
 def test_el_historial_del_vehiculo_muestra_sus_ordenes(cliente, dueno):
     """La pregunta de siempre: que le hemos hecho antes a este auto."""
     token = entrar(cliente, "dueno@taller.cl")
     cliente_id, vehiculo_id = taller_con_auto(cliente, token)
-    crear_orden(cliente, token, cliente_id, vehiculo_id, titulo="Frenos")
+    primera = crear_orden(cliente, token, cliente_id, vehiculo_id, titulo="Frenos")
+    cliente.post(
+        f"/orders/{primera.json()['data']['id']}/status",
+        json={"status": "entregado"},
+        headers=con_token(token),
+    )
     crear_orden(cliente, token, cliente_id, vehiculo_id, titulo="Cambio de aceite")
 
     respuesta = cliente.get(f"/vehicles/{vehiculo_id}/history", headers=con_token(token))

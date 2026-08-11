@@ -186,6 +186,24 @@ def crear(
 ):
     cliente, vehiculo = _cliente_y_vehiculo(sesion, usuario, datos.client_id, datos.vehicle_id)
 
+    abierta = sesion.scalar(
+        select(Order).where(
+            Order.vehicle_id == vehiculo.id,
+            Order.workshop_id == usuario.workshop_id,
+            Order.status != ESTADO_CERRADO,
+            Order.deleted_at.is_(None),
+        )
+    )
+    if abierta is not None:
+        # Un auto esta en el taller una vez a la vez. Dos ordenes abiertas del mismo
+        # vehiculo son dos tableros para un solo trabajo, y el cliente recibe avisos
+        # cruzados de las dos. El auto que vuelve en tres meses no cae aca: esa ya
+        # esta entregada.
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ese vehiculo ya tiene una orden abierta en el taller",
+        )
+
     orden = Order(
         workshop_id=usuario.workshop_id,
         client_id=cliente.id,
