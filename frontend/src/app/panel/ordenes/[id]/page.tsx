@@ -55,6 +55,10 @@ function OrdenDetailContent() {
   const [order, setOrder] = useState<ApiOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    { type: "status"; status: string } | { type: "delete" } | null
+  >(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [draftMessage, setDraftMessage] = useState("");
@@ -130,6 +134,8 @@ function OrdenDetailContent() {
   async function changeStatus(next: string) {
     if (!order) return;
     setSaving(true);
+    setActionError(null);
+    setPendingAction({ type: "status", status: next });
     try {
       const { data } = await apiFetch<ApiOrder>(`/orders/${order.id}/status`, {
         method: "POST",
@@ -144,14 +150,26 @@ function OrdenDetailContent() {
       setOrder(normalized);
       applyDraftFrom(data, order.client?.phone);
       setMessageSent(false);
+      setPendingAction(null);
       setFlash(
         `Estado actualizado a “${statusLabel(next)}”. Revisa el aviso y mándalo por WhatsApp.`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cambiar");
+      setActionError(
+        err instanceof Error ? err.message : "No se pudo cambiar el estado",
+      );
     } finally {
       setSaving(false);
     }
+  }
+
+  function retryAction() {
+    if (!pendingAction) return;
+    if (pendingAction.type === "status") {
+      void changeStatus(pendingAction.status);
+      return;
+    }
+    void deleteOrder();
   }
 
   async function markSent() {
@@ -175,12 +193,15 @@ function OrdenDetailContent() {
   async function deleteOrder() {
     if (!order) return;
     setDeleting(true);
+    setActionError(null);
+    setPendingAction({ type: "delete" });
     try {
       await apiFetch(`/orders/${order.id}`, { method: "DELETE" });
+      setPendingAction(null);
       router.replace("/panel");
     } catch (err) {
       setDeleteConfirmOpen(false);
-      setError(
+      setActionError(
         err instanceof Error
           ? err.message
           : "No se pudo eliminar la orden. Si el backend aún no tiene DELETE, avísale a Claude.",
@@ -230,6 +251,23 @@ function OrdenDetailContent() {
           className="animate-rise mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
         >
           {flash}
+        </div>
+      )}
+
+      {actionError && (
+        <div
+          role="alert"
+          className="mb-4 flex flex-col gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p>{actionError}</p>
+          <button
+            type="button"
+            disabled={saving || deleting}
+            onClick={() => retryAction()}
+            className="tap-target shrink-0 rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-100 disabled:opacity-60"
+          >
+            Reintentar
+          </button>
         </div>
       )}
 
