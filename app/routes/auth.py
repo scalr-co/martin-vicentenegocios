@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ from app.schemas.auth import (
 )
 from app.security.admin import exigir_clave_de_administracion
 from app.security.dependencias import usuario_actual
+from app.security.intentos import demasiados_intentos, olvidar, registrar_fallo
 from app.security.passwords import verificar
 from app.security.tokens import crear_token
 from app.services.altas import crear_taller_con_dueno
@@ -32,14 +33,35 @@ def _credenciales_invalidas() -> HTTPException:
     )
 
 
+def _demasiados_intentos() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail="Demasiados intentos con esa cuenta. Espera unos minutos y vuelve a probar.",
+    )
+
+
 @router.post("/login")
-def login(datos: LoginEntrada, sesion: Session = Depends(obtener_sesion)):
+def login(
+    datos: LoginEntrada,
+    peticion: Request,
+    sesion: Session = Depends(obtener_sesion),
+):
+    direccion = peticion.client.host if peticion.client else "desconocida"
+
+    # El freno va antes de mirar la clave: si la correcta pasara igual, no frenaria nada.
+    if demasiados_intentos(datos.email, direccion):
+        raise _demasiados_intentos()
+
     usuario = sesion.scalar(select(User).where(User.email == datos.email))
 
     if usuario is None or not verificar(datos.password, usuario.password_hash):
+        registrar_fallo(datos.email, direccion)
         raise _credenciales_invalidas()
     if not usuario.active or not usuario.workshop.active:
+        registrar_fallo(datos.email, direccion)
         raise _credenciales_invalidas()
+
+    olvidar(datos.email, direccion)
 
     token = crear_token(
         user_id=usuario.id,
