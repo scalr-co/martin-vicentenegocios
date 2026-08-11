@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import Field, field_validator
 
-from app.schemas.base import Esquema, Texto, TextoOpcional
+from app.schemas.base import Esquema, FechaUTC, Texto, TextoOpcional
 from app.services.normalizacion import DatoInvalido, normalizar_rut, normalizar_telefono
 
 
@@ -66,4 +66,4 @@ class ClienteSalida(Esquema):
     phone: str
     rut: str | None
     notes: str | None
-    created_at: datetime
+    created_at: FechaUTC

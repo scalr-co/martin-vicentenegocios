@@ -102,6 +102,21 @@
         }
       }
     },
+    "/auth/logout-all": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Cerrar Todas Las Sesiones",
+        "description": "Deja fuera a todos los tokens ya emitidos de esta persona.\n\nEs lo que se hace cuando a alguien le roban el celular con la sesion abierta. No\ndesactiva la cuenta: puede volver a entrar con su clave enseguida.\n\nUn JWT no se puede borrar del aparato donde quedo, asi que lo que se mueve es la\nversion de sesion: el token viejo trae la anterior y deja de calzar.",
+        "operationId": "cerrar_todas_las_sesiones_auth_logout_all_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
     "/auth/me": {
       "get": {
         "tags": [
@@ -135,6 +150,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 100000,
               "minimum": 1,
               "default": 1,
               "title": "Page"
@@ -399,6 +415,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 100000,
               "minimum": 1,
               "default": 1,
               "title": "Page"
@@ -588,6 +605,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 100000,
               "minimum": 1,
               "default": 1,
               "title": "Page"
@@ -685,6 +703,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 100000,
               "minimum": 1,
               "default": 1,
               "title": "Page"
@@ -1010,63 +1029,6 @@
         }
       }
     },
-    "/admin/accounts": {
-      "post": {
-        "tags": [
-          "admin"
-        ],
-        "summary": "Crear Cuenta De Admin",
-        "operationId": "crear_cuenta_de_admin_admin_accounts_post",
-        "parameters": [
-          {
-            "name": "X-Admin-Key",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Admin-Key"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CuentaAdminEntrada"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/admin/workshops": {
       "get": {
         "tags": [
@@ -1180,7 +1142,7 @@
           "admin"
         ],
         "summary": "Cambiar Clave Del Dueno",
-        "description": "Para el dueno que perdio su clave. Sin esto, la unica salida es crearle otra\ncuenta -y ahi pierde sus ordenes, sus clientes y su historial por patente.",
+        "description": "Para el dueno que perdio su clave. Sin esto, la unica salida es crearle otra\ncuenta -y ahi pierde sus ordenes, sus clientes y su historial por patente.\n\nEs la accion mas delicada del panel: deja a una persona fuera de su propio sistema\nsin avisarle. Por eso queda anotada en `admin_audit` con nombre y apellido.",
         "operationId": "cambiar_clave_del_dueno_admin_workshops__taller_id__owner_password_post",
         "parameters": [
           {
@@ -1441,35 +1403,6 @@
           "phone"
         ],
         "title": "ClienteEntrada"
-      },
-      "CuentaAdminEntrada": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 120,
-            "minLength": 2,
-            "title": "Name"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          },
-          "password": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 8,
-            "title": "Password"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "email",
-          "password"
-        ],
-        "title": "CuentaAdminEntrada",
-        "description": "Una cuenta de Solve. No pertenece a ningun taller de verdad."
       },
       "HTTPValidationError": {
         "properties": {

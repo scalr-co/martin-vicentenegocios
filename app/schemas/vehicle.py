@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import Field, computed_field, field_validator
 
-from app.schemas.base import Esquema, TextoOpcional
+from app.schemas.base import Esquema, FechaUTC, TextoOpcional
 from app.services.normalizacion import DatoInvalido, normalizar_patente
 from app.services.presentacion import describir_vehiculo
 
@@ -46,7 +46,7 @@ class VehiculoSalida(Esquema):
     plate: str
     brand: str | None
     model: str | None
-    created_at: datetime
+    created_at: FechaUTC
 
     @computed_field(alias="vehicleOrItem")
     @property

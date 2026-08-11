@@ -3,7 +3,7 @@ from datetime import date, datetime
 from pydantic import Field, computed_field, field_validator
 
 from app.models.order import ESTADOS
-from app.schemas.base import Esquema, Texto, TextoOpcional
+from app.schemas.base import Esquema, FechaUTC, Texto, TextoOpcional
 from app.services.presentacion import describir_vehiculo
 
 
@@ -58,8 +58,8 @@ class OrdenSalida(Esquema):
     description: str | None
     status: str
     estimated_at: date | None
-    created_at: datetime
-    updated_at: datetime
+    created_at: FechaUTC
+    updated_at: FechaUTC
     client: ClienteResumen
     vehicle: VehiculoResumen
 
@@ -107,5 +107,5 @@ class AvisoSalida(Esquema):
     to_phone: str
     message: str
     status: str
-    created_at: datetime
-    sent_at: datetime | None = None
+    created_at: FechaUTC
+    sent_at: FechaUTC | None = None

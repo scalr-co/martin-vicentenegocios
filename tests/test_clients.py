@@ -161,6 +161,21 @@ def test_el_rut_es_opcional_y_sin_el_la_ficha_queda_igual(cliente, dueno):
     assert respuesta.json()["data"]["rut"] is None
 
 
+def test_la_fecha_sale_igual_al_crear_y_al_releer(cliente, dueno):
+    """Salia con Z al crear y sin Z al releer, porque SQLite la devuelve sin huso.
+
+    Un frontend que lea la segunda como hora local se equivoca en las 3 o 4 horas que
+    Chile esta detras de UTC.
+    """
+    token = entrar(cliente, "dueno@taller.cl")
+
+    creado = crear_cliente(cliente, token).json()["data"]
+    releido = cliente.get(f"/clients/{creado['id']}", headers=con_token(token)).json()["data"]
+
+    assert creado["createdAt"].endswith("Z")
+    assert releido["createdAt"] == creado["createdAt"]
+
+
 def test_un_nombre_de_puros_espacios_se_rechaza(cliente, dueno):
     """Tres espacios miden 3, pasaban el minimo de 2, y la ficha quedaba en blanco.
 

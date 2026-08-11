@@ -1,7 +1,25 @@
+from datetime import UTC, datetime
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict
+from pydantic import BaseModel, BeforeValidator, ConfigDict, PlainSerializer
 from pydantic.alias_generators import to_camel
+
+
+def _siempre_en_utc(valor: datetime) -> str:
+    """Toda fecha sale igual: en UTC y terminada en Z.
+
+    La misma fecha salia con Z al crear y sin Z al releer, porque SQLite devuelve las
+    fechas sin huso aunque la columna sea DateTime(timezone=True). Un frontend que lea
+    la segunda como hora local se equivoca en las 3 o 4 horas que Chile esta detras.
+    """
+    en_utc = valor.replace(tzinfo=UTC) if valor.tzinfo is None else valor.astimezone(UTC)
+    return en_utc.isoformat().replace("+00:00", "Z")
+
+
+# Solo al serializar a JSON: en modo python la fecha se sigue entregando como datetime.
+FechaUTC = Annotated[
+    datetime, PlainSerializer(_siempre_en_utc, return_type=str, when_used="json")
+]
 
 
 def _sin_espacios_en_los_bordes(valor: object) -> object:

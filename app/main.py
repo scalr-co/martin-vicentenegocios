@@ -1,31 +1,54 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
+from app import config
 from app.errores import registrar_manejadores
 from app.routes import admin, auth, clients, notifications, orders, statuses, vehicles
 
-app = FastAPI(title="TallerTrack API")
 
-registrar_manejadores(app)
+def crear_app() -> FastAPI:
+    """Arma la aplicacion leyendo la configuracion en el momento, no al importar.
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.origenes_permitidos,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    Asi los tests pueden levantarla como si fuera produccion sin tocar el .env de la
+    maquina, que es la unica forma de comprobar lo que se apaga alla.
+    """
+    ajustes = config.settings
 
-app.include_router(auth.router)
-app.include_router(clients.router)
-app.include_router(vehicles.router)
-app.include_router(orders.router)
-app.include_router(notifications.router)
-app.include_router(statuses.router)
-app.include_router(admin.router)
+    # En produccion la documentacion no se publica. Con ella abierta, cualquiera lista
+    # las rutas -incluidas las de /admin- y ve el nombre de la cabecera de
+    # administracion. Para trabajar sirve; para estar en internet, no.
+    sin_documentacion = ajustes.es_produccion
+
+    aplicacion = FastAPI(
+        title="Motor Ping API",
+        docs_url=None if sin_documentacion else "/docs",
+        redoc_url=None if sin_documentacion else "/redoc",
+        openapi_url=None if sin_documentacion else "/openapi.json",
+    )
+
+    registrar_manejadores(aplicacion)
+
+    aplicacion.add_middleware(
+        CORSMiddleware,
+        allow_origins=ajustes.origenes_permitidos,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    aplicacion.include_router(auth.router)
+    aplicacion.include_router(clients.router)
+    aplicacion.include_router(vehicles.router)
+    aplicacion.include_router(orders.router)
+    aplicacion.include_router(notifications.router)
+    aplicacion.include_router(statuses.router)
+    aplicacion.include_router(admin.router)
+
+    @aplicacion.get("/health")
+    def health():
+        return {"data": {"status": "ok"}}
+
+    return aplicacion
 
 
-@app.get("/health")
-def health():
-    return {"data": {"status": "ok"}}
+app = crear_app()
