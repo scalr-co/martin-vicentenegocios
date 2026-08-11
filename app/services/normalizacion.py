@@ -13,6 +13,15 @@ CODIGO_CHILE = "56"
 LARGO_NACIONAL = 9
 INICIOS_DE_NUMERO_CHILENO = "23456789"
 
+# Lo que la gente usa para separar la patente al escribirla. El resto de los simbolos
+# no se limpia: se rechaza, porque borrarlos cambia la patente sin decirlo.
+SEPARADORES_DE_PATENTE = re.compile(r"[\s.\-]")
+
+# Una patente chilena mide 6 (AABB12, AA1234); las de moto y las provisorias, menos.
+# Se deja holgura por arriba para las de arrastre y las extranjeras que llegan al taller.
+LARGO_MINIMO_DE_PATENTE = 5
+LARGO_MAXIMO_DE_PATENTE = 8
+
 # Un rut chileno tiene 7 u 8 digitos. Se deja holgura: 6 para los ruts viejos de los
 # clientes mas grandes, 9 por si el registro civil algun dia llega ahi.
 LARGO_MINIMO_DEL_CUERPO = 6
@@ -61,11 +70,25 @@ def normalizar_telefono(texto: str) -> str:
 
 
 def normalizar_patente(texto: str) -> str:
-    """Mayusculas, sin espacios ni guiones."""
-    limpia = re.sub(r"[^A-Za-z0-9]", "", texto or "").upper()
+    """Mayusculas, sin espacios ni guiones. Lo que no sea letra o numero se rechaza.
+
+    Antes se borraba en silencio: una patente escrita con enes quedaba solo con sus
+    numeros, se guardaba con 201 y sin ninguna advertencia. El mecanico veia el campo
+    lleno y la ficha del auto tenia otra cosa adentro.
+    """
+    limpia = SEPARADORES_DE_PATENTE.sub("", texto or "").upper()
 
     if not limpia:
         raise DatoInvalido("La patente viene vacia")
+
+    if not (limpia.isascii() and limpia.isalnum()):
+        raise DatoInvalido(f"La patente '{texto}' tiene caracteres que no son letras ni numeros")
+
+    if not LARGO_MINIMO_DE_PATENTE <= len(limpia) <= LARGO_MAXIMO_DE_PATENTE:
+        raise DatoInvalido(f"La patente '{texto}' no tiene el largo de una patente")
+
+    if not any(c.isalpha() for c in limpia) or not any(c.isdigit() for c in limpia):
+        raise DatoInvalido(f"La patente '{texto}' tiene que llevar letras y numeros")
 
     return limpia
 

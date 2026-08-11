@@ -90,6 +90,22 @@ def test_una_patente_vacia_se_rechaza():
         normalizar_patente("  ")
 
 
+@pytest.mark.parametrize("escrita", ["ÑÑ7788", "AB*12+", "京A1234"])
+def test_una_patente_con_caracteres_raros_se_rechaza_en_vez_de_recortarse(escrita):
+    """Antes "NN7788" con enes se guardaba como "7788", con 201 y sin una palabra.
+
+    El mecanico veia el campo lleno y la ficha guardaba otra cosa.
+    """
+    with pytest.raises(DatoInvalido):
+        normalizar_patente(escrita)
+
+
+@pytest.mark.parametrize("escrita", ["ABCD", "123456", "AB1"])
+def test_una_patente_que_no_parece_una_patente_se_rechaza(escrita):
+    with pytest.raises(DatoInvalido):
+        normalizar_patente(escrita)
+
+
 @pytest.mark.parametrize(
     "escrito, guardado",
     [
