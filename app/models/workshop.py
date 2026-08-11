@@ -32,6 +32,15 @@ class Workshop(Base):
     # taller mecanico: no aparece en la lista del panel.
     internal: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # La baja definitiva: el taller se fue. Sale de la lista del panel y nadie de ahi
+    # entra, pero sus ordenes, sus clientes y su historial por patente quedan enteros,
+    # por si vuelve. Se guarda la fecha y no un booleano por lo mismo que en clientes:
+    # cuando se pregunta por un taller que falta, lo que se quiere saber es cuando dejo
+    # de estar.
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
+
     # Que admin lo dio de alta. Nulo en los que se crearon antes del panel y en el
     # interno. `use_alter` porque users apunta a workshops y workshops apunta a users:
     # sin eso, SQLAlchemy no sabe cual tabla crear primero.

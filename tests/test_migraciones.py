@@ -35,3 +35,17 @@ def test_las_migraciones_se_pueden_deshacer_y_volver_a_aplicar(tmp_path, monkeyp
     command.upgrade(config, "head")
     command.downgrade(config, "base")
     command.upgrade(config, "head")
+
+
+def test_los_talleres_tienen_fecha_de_baja(sesion):
+    """Dar de baja un taller no borra nada: escribe la fecha, como en clientes."""
+    from app.models.base import ahora
+    from tests.conftest import crear_taller
+
+    taller = crear_taller(sesion)
+    assert taller.deleted_at is None
+
+    taller.deleted_at = ahora()
+    sesion.commit()
+
+    assert taller.deleted_at is not None
