@@ -20,6 +20,10 @@ router = APIRouter(prefix="/vehicles", tags=["vehicles"])
 
 TOPE_POR_PAGINA = 100
 
+# Tope por arriba del numero de pagina. Sin el, un numero enorme desborda el motor de
+# la base al calcular el salto y lo que sale es un 500.
+TOPE_DE_PAGINAS = 100_000
+
 
 def _salida(vehiculo: Vehicle) -> dict:
     return VehiculoSalida.model_validate(vehiculo).model_dump(by_alias=True, mode="json")
@@ -76,7 +80,7 @@ def _patente_repetida() -> HTTPException:
 def listar(
     client_id: str | None = Query(default=None, alias="clientId"),
     plate: str | None = Query(default=None),
-    page: int = Query(default=1, ge=1),
+    page: int = Query(default=1, ge=1, le=TOPE_DE_PAGINAS),
     limit: int = Query(default=20, ge=1, le=TOPE_POR_PAGINA),
     usuario: User = Depends(usuario_actual),
     sesion: Session = Depends(obtener_sesion),
@@ -155,7 +159,7 @@ def obtener(
 @router.get("/{vehiculo_id}/history")
 def historial(
     vehiculo_id: str,
-    page: int = Query(default=1, ge=1),
+    page: int = Query(default=1, ge=1, le=TOPE_DE_PAGINAS),
     limit: int = Query(default=20, ge=1, le=TOPE_POR_PAGINA),
     usuario: User = Depends(usuario_actual),
     sesion: Session = Depends(obtener_sesion),

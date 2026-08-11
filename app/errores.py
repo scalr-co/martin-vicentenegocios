@@ -5,10 +5,15 @@ FastAPI responde por defecto { "detail": ... }. El contrato acordado con el fron
 Martin no tenga que programar dos caminos distintos.
 """
 
+import logging
+import uuid
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as ExcepcionHTTP
+
+registro = logging.getLogger("motorping")
 
 CODIGOS_POR_ESTADO = {
     400: "BAD_REQUEST",
@@ -56,3 +61,20 @@ def registrar_manejadores(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def _errores_de_validacion(_: Request, error: RequestValidationError) -> JSONResponse:
         return respuesta_de_error(422, _mensaje_de_validacion(error), "VALIDATION_ERROR")
+
+    @app.exception_handler(Exception)
+    async def _error_no_previsto(_: Request, error: Exception) -> JSONResponse:
+        """Lo que nadie penso. Al taller se le da un numero; el detalle va al log.
+
+        Los otros dos manejadores cubren los errores que la aplicacion levanta a
+        proposito. Este es la red de seguridad del proximo bug: sin el, un error
+        inesperado sale como "Internal Server Error" en texto plano, con la forma que
+        el frontend no sabe leer.
+        """
+        referencia = uuid.uuid4().hex[:8]
+        registro.exception("Error no previsto [%s]", referencia)
+        return respuesta_de_error(
+            500,
+            f"Algo se rompio de nuestro lado. Codigo del incidente: {referencia}",
+            "INTERNAL_ERROR",
+        )

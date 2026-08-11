@@ -36,6 +36,10 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 
 TOPE_POR_PAGINA = 100
 
+# Tope por arriba del numero de pagina. Sin el, un numero enorme desborda el motor de
+# la base al calcular el salto y lo que sale es un 500.
+TOPE_DE_PAGINAS = 100_000
+
 
 def salida_de_orden(orden: Order) -> dict:
     return OrdenSalida.model_validate(orden).model_dump(by_alias=True, mode="json")
@@ -147,7 +151,7 @@ def listar(
     abiertas: bool = Query(default=False, alias="open"),
     search: str | None = Query(default=None, max_length=120),
     estado: str | None = Query(default=None, alias="status"),
-    page: int = Query(default=1, ge=1),
+    page: int = Query(default=1, ge=1, le=TOPE_DE_PAGINAS),
     limit: int = Query(default=20, ge=1, le=TOPE_POR_PAGINA),
     usuario: User = Depends(usuario_actual),
     sesion: Session = Depends(obtener_sesion),
