@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/ui";
 
+/** Acento neutro de la landing: taupe cálido (no naranja). */
+const ACCENT = "#c4b5a0";
+const CTA = "#e7e5e4";
+const CTA_TEXT = "#1c1917";
+
 const PLAN_BASICO = [
   "Órdenes de trabajo ilimitadas",
   "Estados claros (incluye espera de aprobación y repuesto)",
@@ -38,7 +43,8 @@ function PlanFeature({ label }: { label: string }) {
         {label}
       </span>
       <span
-        className="shrink-0 text-[#ea580c]"
+        className="shrink-0"
+        style={{ color: ACCENT }}
         aria-label="Incluido"
         title="Incluido"
       >
@@ -65,7 +71,6 @@ function TicketCheck() {
 export default function HomePage() {
   return (
     <div className="flex min-h-dvh flex-col">
-      {/* Hero: el fondo oscuro/imagen llega hasta el borde superior (sin franja) */}
       <section
         className="relative isolate min-h-svh overflow-hidden"
         style={{ backgroundColor: "#1c1917" }}
@@ -80,7 +85,11 @@ export default function HomePage() {
         />
         <div
           aria-hidden
-          className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(232,93,4,0.28),transparent_55%)]"
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at top right, rgba(196,181,160,0.18), transparent 55%)",
+          }}
         />
 
         <header className="absolute inset-x-0 top-0 z-20">
@@ -95,7 +104,8 @@ export default function HomePage() {
               </a>
               <Link
                 href="/login"
-                className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark"
+                className="rounded-md px-4 py-2 text-sm font-semibold transition hover:brightness-110"
+                style={{ backgroundColor: CTA, color: CTA_TEXT }}
               >
                 Ingresar
               </Link>
@@ -105,12 +115,17 @@ export default function HomePage() {
 
         <div className="relative z-10 mx-auto flex min-h-svh max-w-6xl flex-col justify-end px-5 pb-16 pt-28 md:justify-center md:px-8 md:pb-24">
           <div className="max-w-2xl">
-            <p className="animate-rise mb-4 font-[family-name:var(--font-display)] text-sm font-semibold uppercase tracking-[0.22em] text-brand">
+            <p
+              className="animate-rise mb-4 font-[family-name:var(--font-display)] text-sm font-semibold uppercase tracking-[0.22em]"
+              style={{ color: ACCENT }}
+            >
               Motor Ping
             </p>
             <h1 className="animate-rise-delay font-[family-name:var(--font-display)] text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl">
               El cliente sabe en qué va.
-              <span className="block text-white/85">Sin llamarte veinte veces.</span>
+              <span className="block text-white/85">
+                Sin llamarte veinte veces.
+              </span>
             </h1>
             <p className="animate-fade mt-5 max-w-lg text-base leading-relaxed text-white/75 md:text-lg">
               Órdenes de trabajo para talleres: estados claros, historial por
@@ -120,7 +135,8 @@ export default function HomePage() {
             <div className="animate-fade mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <Link
                 href="/login"
-                className="tap-target inline-flex items-center justify-center rounded-md bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
+                className="tap-target inline-flex items-center justify-center rounded-md px-6 py-3.5 text-sm font-semibold transition hover:brightness-110"
+                style={{ backgroundColor: CTA, color: CTA_TEXT }}
               >
                 Ingresar
               </Link>
@@ -163,8 +179,11 @@ export default function HomePage() {
             ].map((item, i) => (
               <div
                 key={item.title}
-                className="border-t-2 border-[#c2410c] pt-5"
-                style={{ animationDelay: `${i * 80}ms` }}
+                className="border-t-2 pt-5"
+                style={{
+                  borderColor: ACCENT,
+                  animationDelay: `${i * 80}ms`,
+                }}
               >
                 <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold text-white">
                   {item.title}
@@ -194,7 +213,10 @@ export default function HomePage() {
                 key={step}
                 className="rounded-lg border border-white/15 bg-[#292524] p-4"
               >
-                <p className="font-[family-name:var(--font-display)] text-sm font-bold text-[#ea580c]">
+                <p
+                  className="font-[family-name:var(--font-display)] text-sm font-bold"
+                  style={{ color: ACCENT }}
+                >
                   {String(index + 1).padStart(2, "0")}
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-white/85">
@@ -220,7 +242,6 @@ export default function HomePage() {
           </p>
 
           <div className="mt-12 grid items-start gap-6 lg:grid-cols-2">
-            {/* Básico */}
             <article className="overflow-hidden rounded-xl border border-white/15 bg-[#292524]">
               <div className="border-b border-white/10 px-6 py-5">
                 <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide text-white">
@@ -255,23 +276,37 @@ export default function HomePage() {
               </div>
             </article>
 
-            {/* Extra — se nota más: borde y cabecera naranja de marca */}
-            <article className="overflow-hidden rounded-xl border border-[#c2410c]/60 bg-[#292524] shadow-[0_0_0_1px_rgba(194,65,12,0.25)]">
-              <div className="border-b border-[#c2410c]/40 bg-[#c2410c] px-6 py-5 text-white">
-                <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide">
+            <article
+              className="overflow-hidden rounded-xl bg-[#292524]"
+              style={{
+                border: `1px solid ${ACCENT}66`,
+                boxShadow: `0 0 0 1px ${ACCENT}22`,
+              }}
+            >
+              <div
+                className="border-b px-6 py-5"
+                style={{
+                  backgroundColor: "#3f3a36",
+                  borderColor: `${ACCENT}55`,
+                }}
+              >
+                <p
+                  className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide"
+                  style={{ color: ACCENT }}
+                >
                   Extra
                 </p>
-                <p className="mt-1 text-sm text-white/95">
+                <p className="mt-1 text-sm text-white/75">
                   Todo el Básico, sin tope de mecánicos y con más potencia
                 </p>
-                <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold">
+                <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold text-white">
                   $44.990
-                  <span className="text-base font-semibold text-white/90">
+                  <span className="text-base font-semibold text-white/70">
                     {" "}
                     / mes
                   </span>
                 </p>
-                <p className="mt-1 text-xs text-white/85">
+                <p className="mt-1 text-xs text-white/55">
                   + setup $150.000 (una vez)
                 </p>
               </div>
@@ -283,7 +318,8 @@ export default function HomePage() {
               <div className="px-6 pb-6 pt-2">
                 <a
                   href="https://wa.me/56981875498?text=Hola%2C%20quiero%20el%20plan%20Extra%20de%20Motor%20Ping"
-                  className="tap-target inline-flex w-full items-center justify-center rounded-md bg-[#c2410c] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#9a3412]"
+                  className="tap-target inline-flex w-full items-center justify-center rounded-md px-4 py-3 text-sm font-semibold transition hover:brightness-110"
+                  style={{ backgroundColor: ACCENT, color: CTA_TEXT }}
                 >
                   Quiero el Extra
                 </a>
