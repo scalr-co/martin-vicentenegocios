@@ -209,21 +209,9 @@ function AdminContent() {
 
   return (
     <PanelShell
-      title="Administración"
-      subtitle="Talleres del SaaS — vista previa hasta conectar la API"
-    >
-      {flash && <Flash msg={flash} />}
-
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <Stat label="Cuentas totales" value={counts.total} />
-        <Stat label="Activas" value={counts.active} tone="ok" />
-        <Stat label="Suspendidas" value={counts.suspended} tone="warn" />
-      </div>
-
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted">
-          Lista de talleres registrados. Toca uno para ver el detalle.
-        </p>
+      title="Talleres del SaaS"
+      subtitle="Cuentas registradas · vista previa hasta conectar la API"
+      headerAction={
         <button
           type="button"
           onClick={() => {
@@ -234,6 +222,21 @@ function AdminContent() {
         >
           Crear cuenta de taller
         </button>
+      }
+    >
+      {flash && <Flash msg={flash} />}
+
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        <Stat label="Cuentas totales" value={counts.total} />
+        <Stat label="Activas" value={counts.active} tone="ok" />
+        <Stat label="Suspendidas" value={counts.suspended} tone="warn" />
+      </div>
+
+      <div className="mb-5">
+        <p className="text-sm text-muted">
+          Lista de talleres. Toca uno para ver el detalle, o suspende desde la
+          vista previa.
+        </p>
       </div>
 
       <ul className="space-y-3">

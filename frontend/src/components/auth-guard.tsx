@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { clearSession, getToken } from "@/lib/auth";
+import { usePathname, useRouter } from "next/navigation";
+import { clearSession, getToken, isAdmin } from "@/lib/auth";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -15,8 +16,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       router.replace("/login?razon=sesion");
       return;
     }
+    // Admin de plataforma no usa el panel de órdenes del taller
+    if (isAdmin() && !pathname.startsWith("/panel/admin")) {
+      router.replace("/panel/admin");
+      return;
+    }
     setReady(true);
-  }, [router]);
+  }, [router, pathname]);
 
   if (!ready) {
     return (

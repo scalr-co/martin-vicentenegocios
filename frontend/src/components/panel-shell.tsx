@@ -87,10 +87,12 @@ function useClientWorkshopName() {
 export function PanelShell({
   title,
   subtitle,
+  headerAction,
   children,
 }: {
   title: string;
   subtitle?: string;
+  headerAction?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -148,9 +150,11 @@ export function PanelShell({
           <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-3 px-4 py-2 sm:gap-4 sm:py-3">
             <div className="flex min-w-0 items-center gap-4 sm:gap-6">
               <Link
-                href="/panel"
+                href={admin ? "/panel/admin" : "/panel"}
                 className="min-w-0"
-                onClick={(e) => requestNavigate("/panel", e)}
+                onClick={(e) =>
+                  requestNavigate(admin ? "/panel/admin" : "/panel", e)
+                }
               >
                 <span className="block truncate font-[family-name:var(--font-display)] text-base font-bold tracking-tight text-ink sm:text-lg">
                   {admin ? "Motor Ping Admin" : workshop}
@@ -217,6 +221,9 @@ export function PanelShell({
                 </p>
               )}
             </div>
+            {headerAction ? (
+              <div className="shrink-0">{headerAction}</div>
+            ) : null}
           </div>
           <div className="mt-4 min-w-0 sm:mt-6">{children}</div>
         </main>
