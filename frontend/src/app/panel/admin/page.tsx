@@ -346,9 +346,17 @@ function Stat({
         ? "border-[color:var(--ok-line)] bg-ok-soft"
         : "border-line bg-surface";
   const labelClass =
-    tone === "neutral" ? "text-muted" : "text-[color:var(--tone-ink)]";
+    tone === "warn"
+      ? "text-[color:var(--warn-ink)]"
+      : tone === "ok"
+        ? "text-[color:var(--ok-ink)]"
+        : "text-muted";
   const valueClass =
-    tone === "neutral" ? "text-ink" : "text-[color:var(--tone-ink)]";
+    tone === "warn"
+      ? "text-[color:var(--warn-ink)]"
+      : tone === "ok"
+        ? "text-[color:var(--ok-ink)]"
+        : "text-ink";
 
   return (
     <div className={`rounded-lg border px-4 py-3 ${toneClass}`}>
