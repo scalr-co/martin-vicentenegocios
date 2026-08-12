@@ -137,13 +137,13 @@ export default function HomePage() {
               <a
                 href="#precios"
                 onClick={(e) => scrollToId("precios", e)}
-                className="hidden rounded-md px-3 py-2 text-sm font-medium text-white/80 transition hover:text-white sm:inline"
+                className="tap-target inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-white/80 transition hover:text-white"
               >
                 Precios
               </a>
               <Link
                 href="/login"
-                className="rounded-md px-4 py-2 text-sm font-semibold transition hover:brightness-110"
+                className="tap-target inline-flex items-center rounded-md px-4 py-2 text-sm font-semibold transition hover:brightness-110"
                 style={{ backgroundColor: CTA, color: CTA_TEXT }}
               >
                 Ingresar
