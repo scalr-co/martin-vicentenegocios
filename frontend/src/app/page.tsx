@@ -34,11 +34,11 @@ const PLAN_EXTRA = [
 function PlanFeature({ label }: { label: string }) {
   return (
     <li className="flex items-center gap-3 px-5 py-3.5">
-      <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-stone-900">
+      <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-stone-100">
         {label}
       </span>
       <span
-        className="shrink-0 text-stone-900"
+        className="shrink-0 text-[#ea580c]"
         aria-label="Incluido"
         title="Incluido"
       >
@@ -135,12 +135,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-line bg-surface px-5 py-20 text-ink md:px-8">
+      <section className="border-t border-white/10 bg-[#1c1917] px-5 py-20 text-white md:px-8">
         <div className="mx-auto max-w-6xl">
           <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight md:text-4xl">
             Hecho para el caos real del taller
           </h2>
-          <p className="mt-3 max-w-xl text-muted">
+          <p className="mt-3 max-w-xl text-white/70">
             No es otra agenda. Es el seguimiento del auto mientras está en tu
             piso — incluyendo cuando está quieto esperando al cliente o a una
             pieza.
@@ -163,13 +163,13 @@ export default function HomePage() {
             ].map((item, i) => (
               <div
                 key={item.title}
-                className="border-t-2 border-brand pt-5"
+                className="border-t-2 border-[#c2410c] pt-5"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
-                <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold">
+                <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold text-white">
                   {item.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">
+                <p className="mt-2 text-sm leading-relaxed text-white/65">
                   {item.text}
                 </p>
               </div>
@@ -178,7 +178,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-background px-5 py-16 text-ink md:px-8">
+      <section className="bg-[#141210] px-5 py-16 text-white md:px-8">
         <div className="mx-auto max-w-6xl">
           <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight md:text-3xl">
             Flujo del día
@@ -192,12 +192,14 @@ export default function HomePage() {
             ].map((step, index) => (
               <li
                 key={step}
-                className="rounded-lg border border-line bg-surface p-4"
+                className="rounded-lg border border-white/15 bg-[#292524] p-4"
               >
-                <p className="font-[family-name:var(--font-display)] text-sm font-bold text-brand">
+                <p className="font-[family-name:var(--font-display)] text-sm font-bold text-[#ea580c]">
                   {String(index + 1).padStart(2, "0")}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed">{step}</p>
+                <p className="mt-2 text-sm leading-relaxed text-white/85">
+                  {step}
+                </p>
               </li>
             ))}
           </ol>
@@ -218,27 +220,27 @@ export default function HomePage() {
           </p>
 
           <div className="mt-12 grid items-start gap-6 lg:grid-cols-2">
-            {/* Básico — card clara sobre fondo negro */}
-            <article className="overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
-              <div className="border-b border-stone-200 bg-white px-6 py-5">
-                <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide text-stone-900">
+            {/* Básico */}
+            <article className="overflow-hidden rounded-xl border border-white/15 bg-[#292524]">
+              <div className="border-b border-white/10 px-6 py-5">
+                <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide text-white">
                   Básico
                 </p>
-                <p className="mt-1 text-sm text-stone-600">
+                <p className="mt-1 text-sm text-white/65">
                   Ideal para talleres chicos con poco equipo
                 </p>
-                <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold text-stone-900">
+                <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold text-white">
                   $24.990
-                  <span className="text-base font-semibold text-stone-600">
+                  <span className="text-base font-semibold text-white/65">
                     {" "}
                     / mes
                   </span>
                 </p>
-                <p className="mt-1 text-xs text-stone-600">
+                <p className="mt-1 text-xs text-white/55">
                   + setup $120.000 (una vez)
                 </p>
               </div>
-              <ul className="divide-y divide-stone-200">
+              <ul className="divide-y divide-white/10">
                 {PLAN_BASICO.map((item) => (
                   <PlanFeature key={item} label={item} />
                 ))}
@@ -246,16 +248,16 @@ export default function HomePage() {
               <div className="px-6 pb-6 pt-2">
                 <a
                   href="https://wa.me/56981875498?text=Hola%2C%20quiero%20el%20plan%20B%C3%A1sico%20de%20Motor%20Ping"
-                  className="tap-target inline-flex w-full items-center justify-center rounded-md border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+                  className="tap-target inline-flex w-full items-center justify-center rounded-md border border-white/25 bg-transparent px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                 >
                   Quiero el Básico
                 </a>
               </div>
             </article>
 
-            {/* Extra — destacado */}
-            <article className="overflow-hidden rounded-xl border border-orange-500/40 bg-white shadow-md ring-1 ring-orange-500/20">
-              <div className="bg-[#c2410c] px-6 py-5 text-white">
+            {/* Extra — se nota más: borde y cabecera naranja de marca */}
+            <article className="overflow-hidden rounded-xl border border-[#c2410c]/60 bg-[#292524] shadow-[0_0_0_1px_rgba(194,65,12,0.25)]">
+              <div className="border-b border-[#c2410c]/40 bg-[#c2410c] px-6 py-5 text-white">
                 <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide">
                   Extra
                 </p>
@@ -273,7 +275,7 @@ export default function HomePage() {
                   + setup $150.000 (una vez)
                 </p>
               </div>
-              <ul className="divide-y divide-stone-200">
+              <ul className="divide-y divide-white/10">
                 {PLAN_EXTRA.map((item) => (
                   <PlanFeature key={item} label={item} />
                 ))}
@@ -289,22 +291,22 @@ export default function HomePage() {
             </article>
           </div>
 
-          <p className="mt-8 text-center text-sm text-white/60">
+          <p className="mt-8 text-center text-sm text-white/55">
             Precios de lanzamiento en Chile · IVA no incluido · Se pueden ajustar
             al cerrar contigo
           </p>
         </div>
       </section>
 
-      <footer className="border-t border-line bg-background px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-ink md:px-8">
+      <footer className="border-t border-white/10 bg-[#141210] px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-white md:px-8">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <BrandMark />
-            <p className="mt-2 text-sm text-muted">
+            <BrandMark light />
+            <p className="mt-2 text-sm text-white/60">
               Chillán · Temuco · Hecho para talleres locales
             </p>
           </div>
-          <p className="text-xs leading-relaxed text-muted sm:text-right">
+          <p className="text-xs leading-relaxed text-white/45 sm:text-right">
             © {new Date().getFullYear()} Motor Ping
             <br />
             Un producto de Martin Web Studio &amp; Solve
