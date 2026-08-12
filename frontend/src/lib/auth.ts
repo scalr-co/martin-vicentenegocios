@@ -17,6 +17,8 @@ export type SessionWorkshop = {
   id?: string;
   name?: string;
   phone?: string;
+  /** Plan del taller (basico | plus). Lo enviará la API. */
+  plan?: "basico" | "plus" | string;
 };
 
 export type SessionUser = {

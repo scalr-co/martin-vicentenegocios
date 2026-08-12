@@ -37,7 +37,7 @@ export default function TerminosPage() {
           Motor Ping permite registrar órdenes, estados, clientes, vehículos y
           preparar avisos por WhatsApp (modo enlace wa.me). Las cuentas de
           taller las da de alta el equipo de Motor Ping; el taller puede crear
-          cuentas de mecánicos según su plan (Básico: hasta 3; Extra: sin tope,
+          cuentas de mecánicos según su plan (Básico: hasta 3; Plus: sin tope,
           según lo publicado).
         </p>
       </section>
@@ -89,7 +89,7 @@ export default function TerminosPage() {
       <section>
         <LegalH2>5. Planes, precios y pago</LegalH2>
         <p className="mt-3">
-          Los planes (Básico / Extra), precios de setup y mensualidad se
+          Los planes (Básico / Plus), precios de setup y mensualidad se
           publican en el sitio y pueden actualizarse. Los cobros se acuerdan al
           contratar. El no pago puede implicar suspensión o término del acceso,
           previo aviso razonable cuando sea posible.

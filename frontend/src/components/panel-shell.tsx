@@ -121,12 +121,12 @@ export function PanelShell({
     [requestNavigate],
   );
 
-  const nav = [
-    ...links,
-    ...(admin
-      ? [{ href: "/panel/admin", label: "Admin", exact: false as const }]
-      : []),
-  ];
+  const nav = admin
+    ? [{ href: "/panel/admin", label: "Admin", exact: false as const }]
+    : [
+        ...links,
+        { href: "/panel/mecanicos", label: "Mecánicos", exact: false as const },
+      ];
 
   function confirmLeave() {
     const href = pendingHref || "/panel";

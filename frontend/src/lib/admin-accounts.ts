@@ -1,3 +1,5 @@
+import type { WorkshopPlan } from "@/lib/plans";
+
 export type WorkshopAccountStatus = "active" | "suspended" | "deleted";
 
 export type WorkshopAccount = {
@@ -6,14 +8,16 @@ export type WorkshopAccount = {
   ownerName: string;
   email: string;
   phone: string;
+  plan: WorkshopPlan;
   status: WorkshopAccountStatus;
+  /** Fecha fin suspensión; null = indefinida (hasta que la reactivemos). */
   suspendedUntil?: string | null;
+  suspendIndefinite?: boolean;
   createdAt: string;
 };
 
-const STORAGE_KEY = "motorping_admin_accounts_demo";
+const STORAGE_KEY = "motorping_admin_accounts_demo_v2";
 
-/** Cuentas demo locales hasta que exista la API de admin. */
 const SEED: WorkshopAccount[] = [
   {
     id: "ws_demo_1",
@@ -21,6 +25,7 @@ const SEED: WorkshopAccount[] = [
     ownerName: "Carlos Pérez",
     email: "carlos@elpino.cl",
     phone: "56911111111",
+    plan: "basico",
     status: "active",
     createdAt: "2026-07-12",
   },
@@ -30,6 +35,7 @@ const SEED: WorkshopAccount[] = [
     ownerName: "Ana Rojas",
     email: "ana@desabolladurasur.cl",
     phone: "56922222222",
+    plan: "plus",
     status: "suspended",
     suspendedUntil: "2026-09-01",
     createdAt: "2026-06-03",
@@ -44,7 +50,11 @@ function readAll(): WorkshopAccount[] {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED));
       return SEED;
     }
-    return JSON.parse(raw) as WorkshopAccount[];
+    const parsed = JSON.parse(raw) as WorkshopAccount[];
+    return parsed.map((a) => ({
+      ...a,
+      plan: a.plan === "plus" ? "plus" : "basico",
+    }));
   } catch {
     return SEED;
   }
@@ -56,6 +66,10 @@ function writeAll(list: WorkshopAccount[]) {
 
 export function listWorkshopAccounts(): WorkshopAccount[] {
   return readAll().filter((a) => a.status !== "deleted");
+}
+
+export function getWorkshopAccount(id: string): WorkshopAccount | null {
+  return listWorkshopAccounts().find((a) => a.id === id) ?? null;
 }
 
 export function countWorkshopAccounts() {
@@ -73,6 +87,7 @@ export function createWorkshopAccount(input: {
   email: string;
   phone: string;
   password: string;
+  plan: WorkshopPlan;
 }): WorkshopAccount {
   void input.password;
   const next: WorkshopAccount = {
@@ -81,33 +96,48 @@ export function createWorkshopAccount(input: {
     ownerName: input.ownerName.trim(),
     email: input.email.trim().toLowerCase(),
     phone: input.phone.replace(/\D/g, ""),
+    plan: input.plan,
     status: "active",
     createdAt: new Date().toISOString().slice(0, 10),
   };
-  const list = readAll();
-  writeAll([next, ...list]);
+  writeAll([next, ...readAll()]);
   return next;
 }
 
-export function suspendWorkshopAccount(id: string, days: number) {
-  const until = new Date();
-  until.setDate(until.getDate() + days);
-  const list = readAll().map((a) =>
-    a.id === id
-      ? {
-          ...a,
-          status: "suspended" as const,
-          suspendedUntil: until.toISOString().slice(0, 10),
-        }
-      : a,
-  );
+export type SuspendOption = 7 | 14 | 21 | 31 | "indefinite";
+
+export function suspendWorkshopAccount(id: string, option: SuspendOption) {
+  const list = readAll().map((a) => {
+    if (a.id !== id) return a;
+    if (option === "indefinite") {
+      return {
+        ...a,
+        status: "suspended" as const,
+        suspendIndefinite: true,
+        suspendedUntil: null,
+      };
+    }
+    const until = new Date();
+    until.setDate(until.getDate() + option);
+    return {
+      ...a,
+      status: "suspended" as const,
+      suspendIndefinite: false,
+      suspendedUntil: until.toISOString().slice(0, 10),
+    };
+  });
   writeAll(list);
 }
 
 export function reactivateWorkshopAccount(id: string) {
   const list = readAll().map((a) =>
     a.id === id
-      ? { ...a, status: "active" as const, suspendedUntil: null }
+      ? {
+          ...a,
+          status: "active" as const,
+          suspendedUntil: null,
+          suspendIndefinite: false,
+        }
       : a,
   );
   writeAll(list);

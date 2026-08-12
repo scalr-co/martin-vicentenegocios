@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { BrandMark } from "@/components/ui";
+import { PLAN_BASICO_FEATURES, PLAN_PLUS_FEATURES } from "@/lib/plans";
 
 /**
  * Acento para mecánicos en celular: arena/cemento.
@@ -10,34 +11,6 @@ import { BrandMark } from "@/components/ui";
 const ACCENT = "#c9bfb0";
 const CTA = "#e7e5e4";
 const CTA_TEXT = "#1c1917";
-
-const PLAN_BASICO = [
-  "Órdenes de trabajo ilimitadas",
-  "Estados claros (incluye espera de aprobación y repuesto)",
-  "Historial por patente",
-  "Clientes y vehículos del taller",
-  "Aviso al cliente por WhatsApp (link listo)",
-  "1 cuenta dueño + hasta 3 mecánicos",
-  "El taller crea las cuentas de sus mecánicos",
-  "Soporte por WhatsApp",
-  "Setup e acompañamiento inicial",
-];
-
-/** Extra = todo lo del Básico + más valor (mecánicos sin tope y extras). */
-const PLAN_EXTRA = [
-  "Órdenes de trabajo ilimitadas",
-  "Estados claros (incluye espera de aprobación y repuesto)",
-  "Historial por patente",
-  "Clientes y vehículos del taller",
-  "Aviso al cliente por WhatsApp (link listo)",
-  "1 cuenta dueño + mecánicos ilimitados",
-  "El taller crea las cuentas de sus mecánicos",
-  "Soporte prioritario por WhatsApp",
-  "Setup e acompañamiento inicial prioritario",
-  "Plantillas de aviso personalizables al taller",
-  "Resumen semanal del taller (cuando esté listo)",
-  "Exportar clientes e historial (CSV, cuando esté listo)",
-];
 
 function PlanFeature({ label }: { label: string }) {
   return (
@@ -301,7 +274,7 @@ export default function HomePage() {
                 </p>
               </div>
               <ul className="divide-y divide-white/10">
-                {PLAN_BASICO.map((item) => (
+                {PLAN_BASICO_FEATURES.map((item) => (
                   <PlanFeature key={item} label={item} />
                 ))}
               </ul>
@@ -333,7 +306,7 @@ export default function HomePage() {
                   className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide"
                   style={{ color: ACCENT }}
                 >
-                  Extra
+                  Plus
                 </p>
                 <p className="mt-1 text-sm text-white/75">
                   Todo el Básico, sin tope de mecánicos y con más potencia
@@ -350,17 +323,17 @@ export default function HomePage() {
                 </p>
               </div>
               <ul className="divide-y divide-white/10">
-                {PLAN_EXTRA.map((item) => (
+                {PLAN_PLUS_FEATURES.map((item) => (
                   <PlanFeature key={item} label={item} />
                 ))}
               </ul>
               <div className="px-6 pb-6 pt-2">
                 <a
-                  href="https://wa.me/56981875498?text=Hola%2C%20quiero%20el%20plan%20Extra%20de%20Motor%20Ping"
+                  href="https://wa.me/56981875498?text=Hola%2C%20quiero%20el%20plan%20Plus%20de%20Motor%20Ping"
                   className="tap-target inline-flex w-full items-center justify-center rounded-md px-4 py-3 text-sm font-semibold transition hover:brightness-110"
                   style={{ backgroundColor: ACCENT, color: CTA_TEXT }}
                 >
-                  Quiero el Extra
+                  Quiero el Plus
                 </a>
               </div>
             </article>
