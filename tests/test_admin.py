@@ -10,11 +10,12 @@ Dos reglas que sostienen todo lo de aca:
 """
 
 import pytest
+from fastapi import HTTPException
 from sqlalchemy import select
 
 from app.config import Settings
 from app.models import User, Workshop
-from scripts.crear_admin import NoSePudoCrear, crear_admin
+from scripts.crear_admin import crear_admin
 from tests.conftest import (
     con_token,
     crear_cliente_api,
@@ -83,13 +84,26 @@ def test_la_consola_no_deja_crear_dos_cuentas_con_el_mismo_correo(sesion):
     crear_admin(sesion, "Vicente", "vicente@solve.cl", CLAVE_DEL_ADMIN)
     sesion.commit()
 
-    with pytest.raises(NoSePudoCrear):
+    with pytest.raises(HTTPException) as fallo:
         crear_admin(sesion, "Otro", "vicente@solve.cl", CLAVE_DEL_ADMIN)
+
+    assert fallo.value.status_code == 409
 
 
 def test_la_consola_no_deja_una_clave_corta_en_la_cuenta_mas_poderosa(sesion):
-    with pytest.raises(NoSePudoCrear):
+    with pytest.raises(HTTPException) as fallo:
         crear_admin(sesion, "Vicente", "vicente@solve.cl", "corta")
+
+    assert fallo.value.status_code == 422
+
+
+def test_el_correo_del_admin_tambien_se_normaliza(sesion):
+    """La consola y el panel comparten el alta, asi que comparten la normalizacion."""
+    admin = crear_admin(sesion, "  Vicente ", "  Vicente@Solve.CL ", CLAVE_DEL_ADMIN)
+    sesion.commit()
+
+    assert admin.email == "vicente@solve.cl"
+    assert admin.name == "Vicente"
 
 
 def test_sin_token_no_se_entra_al_panel(cliente):
@@ -224,3 +238,24 @@ def test_ser_admin_de_la_plataforma_no_da_acceso_a_las_ordenes(cliente, token_ad
 
     assert ordenes.status_code == 200
     assert ordenes.json()["data"] == []
+
+
+def test_el_correo_se_guarda_en_minusculas_y_sin_espacios(cliente, token_admin, sesion):
+    """El dueno escribe su correo como le sale. Si una puerta normaliza y otra no, el
+    mismo correo entra dos veces y despues el login no sabe a quien se refiere."""
+    respuesta = alta_de_taller(cliente, token_admin, email="  Marcela@SanCristobal.CL ")
+    assert respuesta.status_code == 201, respuesta.text
+
+    guardado = sesion.scalar(select(User).where(User.role == "owner"))
+    assert guardado.email == "marcela@sancristobal.cl"
+
+
+def test_no_se_puede_repetir_el_correo_aunque_cambie_la_capitalizacion(cliente, token_admin):
+    alta_de_taller(cliente, token_admin, email="marcela@sancristobal.cl")
+
+    repetido = alta_de_taller(
+        cliente, token_admin, email="MARCELA@sancristobal.cl", workshopName="Otro Taller"
+    )
+
+    assert repetido.status_code == 409
+    assert repetido.json()["error"]["code"] == "CONFLICT"
