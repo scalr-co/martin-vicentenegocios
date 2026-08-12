@@ -71,6 +71,41 @@ function TicketCheck() {
   );
 }
 
+/** Baja suave hasta un ancla (más pausado que el smooth nativo). */
+function scrollToId(id: string, e?: React.MouseEvent) {
+  e?.preventDefault();
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+  if (reduceMotion) {
+    el.scrollIntoView();
+    history.replaceState(null, "", `#${id}`);
+    return;
+  }
+
+  const start = window.scrollY;
+  const end = el.getBoundingClientRect().top + window.scrollY;
+  const distance = end - start;
+  const duration = Math.min(1400, Math.max(700, Math.abs(distance) * 0.55));
+  let startTime: number | null = null;
+
+  function step(now: number) {
+    if (startTime === null) startTime = now;
+    const t = Math.min((now - startTime) / duration, 1);
+    // easeInOutCubic
+    const eased =
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    window.scrollTo(0, start + distance * eased);
+    if (t < 1) requestAnimationFrame(step);
+    else history.replaceState(null, "", `#${id}`);
+  }
+
+  requestAnimationFrame(step);
+}
+
 export default function HomePage() {
   return (
     <div className="flex min-h-dvh flex-col">
@@ -101,6 +136,7 @@ export default function HomePage() {
             <nav className="flex items-center gap-2 sm:gap-3">
               <a
                 href="#precios"
+                onClick={(e) => scrollToId("precios", e)}
                 className="hidden rounded-md px-3 py-2 text-sm font-medium text-white/80 transition hover:text-white sm:inline"
               >
                 Precios

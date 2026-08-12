@@ -72,6 +72,7 @@ html {
   min-height: 100dvh;
   /* Coincide con el hero para que el overscroll del celular no muestre franja rara */
   background: #1c1917;
+  scroll-behavior: smooth;
 }
 
 html.dark {
@@ -151,6 +152,10 @@ select option {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   .animate-rise,
   .animate-rise-delay,
   .animate-fade {
