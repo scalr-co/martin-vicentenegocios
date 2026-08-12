@@ -374,17 +374,35 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-white/10 bg-[#141210] px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-white md:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <BrandMark light />
             <p className="mt-2 text-sm text-white/60">
               Chillán · Temuco · Hecho para talleres locales
             </p>
+            <nav className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              <Link
+                href="/privacidad"
+                className="text-white/70 underline-offset-2 hover:text-white hover:underline"
+              >
+                Política de privacidad
+              </Link>
+              <Link
+                href="/terminos"
+                className="text-white/70 underline-offset-2 hover:text-white hover:underline"
+              >
+                Términos de uso
+              </Link>
+            </nav>
           </div>
           <p className="text-xs leading-relaxed text-white/45 sm:text-right">
             © {new Date().getFullYear()} Motor Ping
             <br />
             Un producto de Martin Web Studio &amp; Solve
+            <br />
+            <span className="mt-1 inline-block text-white/35">
+              Privacidad alineada a la Ley 21.719 (Chile)
+            </span>
           </p>
         </div>
       </footer>

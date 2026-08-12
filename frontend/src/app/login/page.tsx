@@ -147,6 +147,15 @@ function LoginForm() {
           ← Volver a la landing
         </Link>
       </p>
+      <p className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] text-muted">
+        <Link href="/privacidad" className="hover:text-ink hover:underline">
+          Privacidad
+        </Link>
+        <span aria-hidden>·</span>
+        <Link href="/terminos" className="hover:text-ink hover:underline">
+          Términos
+        </Link>
+      </p>
     </LoginShell>
   );
 }
