@@ -379,7 +379,7 @@ function NuevaOrdenContent() {
             <button
               type="submit"
               disabled={saving}
-              className="tap-target rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60"
+              className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
             >
               {saving ? "Guardando…" : "Crear orden"}
             </button>

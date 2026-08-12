@@ -416,7 +416,7 @@ function OrdenDetailBody({
               onClick={() => {
                 void markSent();
               }}
-              className="tap-target mt-4 inline-flex w-full items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark active:scale-[0.99]"
+              className="btn-brand tap-target mt-4 inline-flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-semibold transition active:scale-[0.99]"
             >
               {markingSent ? "Registrando aviso…" : "Avisar por WhatsApp"}
             </a>

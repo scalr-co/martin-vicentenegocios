@@ -244,7 +244,7 @@ export function PanelShell({
               <button
                 type="button"
                 onClick={confirmLeave}
-                className="tap-target inline-flex items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+                className="btn-brand tap-target inline-flex items-center justify-center rounded-md px-4 py-2.5 text-sm font-semibold"
               >
                 Sí, salir
               </button>
@@ -284,7 +284,7 @@ export function PanelShell({
               <button
                 type="button"
                 onClick={doLogout}
-                className="tap-target inline-flex items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+                className="btn-brand tap-target inline-flex items-center justify-center rounded-md px-4 py-2.5 text-sm font-semibold"
               >
                 Sí, cerrar sesión
               </button>

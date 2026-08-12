@@ -126,7 +126,7 @@ function PanelContent() {
         </div>
         <Link
           href="/panel/nueva-orden"
-          className="hidden rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark sm:inline-flex"
+          className="btn-brand hidden rounded-md px-4 py-2 text-sm font-semibold sm:inline-flex"
         >
           Nueva orden
         </Link>
@@ -183,7 +183,7 @@ function PanelContent() {
               </p>
               <Link
                 href="/panel/nueva-orden"
-                className="mt-4 inline-flex rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+                className="btn-brand mt-4 inline-flex rounded-md px-4 py-2 text-sm font-semibold"
               >
                 Nueva orden
               </Link>
@@ -194,7 +194,7 @@ function PanelContent() {
 
       <Link
         href="/panel/nueva-orden"
-        className="fixed bottom-5 right-5 z-40 inline-flex items-center rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-900/20 hover:bg-brand-dark sm:hidden"
+        className="btn-brand fixed bottom-5 right-5 z-40 inline-flex items-center rounded-full px-5 py-3 text-sm font-semibold shadow-lg shadow-black/25 sm:hidden"
       >
         + Nueva
       </Link>

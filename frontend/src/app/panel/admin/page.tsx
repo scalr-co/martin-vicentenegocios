@@ -106,7 +106,7 @@ function AdminContent() {
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="tap-target rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+          className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold"
         >
           Crear cuenta
         </button>
@@ -247,7 +247,7 @@ function AdminContent() {
             <div className="flex flex-col gap-2 pt-2 sm:flex-row-reverse">
               <button
                 type="submit"
-                className="tap-target rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+                className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold"
               >
                 Crear cuenta
               </button>
@@ -287,7 +287,7 @@ function AdminContent() {
             <button
               type="button"
               onClick={onSuspendConfirm}
-              className="tap-target rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+              className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold"
             >
               Confirmar suspensión
             </button>

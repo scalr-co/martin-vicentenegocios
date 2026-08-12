@@ -51,7 +51,7 @@ export const STATUS_COLORS: Record<OrderStatus, string> = {
   recibido: "bg-stone-200 text-stone-800",
   en_diagnostico: "bg-amber-100 text-amber-900",
   esperando_aprobacion: "bg-yellow-100 text-yellow-900",
-  en_reparacion: "bg-orange-100 text-orange-900",
+  en_reparacion: "bg-stone-200 text-stone-800",
   esperando_repuesto: "bg-sky-100 text-sky-900",
   listo: "bg-emerald-100 text-emerald-900",
   entregado: "bg-stone-100 text-stone-500",

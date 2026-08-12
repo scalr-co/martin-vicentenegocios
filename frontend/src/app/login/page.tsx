@@ -27,7 +27,7 @@ function LoginShell({ children }: { children?: React.ReactNode }) {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at top, rgba(194,65,12,0.25), transparent 55%)",
+            "radial-gradient(ellipse at top, rgba(201,191,176,0.22), transparent 55%)",
         }}
       />
       <div className="relative w-full max-w-sm rounded-lg border border-white/10 bg-white p-6 shadow-xl dark:border-line dark:bg-surface">
@@ -133,7 +133,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="tap-target w-full rounded-md bg-brand py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60"
+          className="btn-brand tap-target w-full rounded-md py-2.5 text-sm font-semibold disabled:opacity-60"
         >
           {loading ? "Entrando…" : "Entrar al panel"}
         </button>

@@ -5,9 +5,10 @@
 :root {
   --background: #f4f1ec;
   --foreground: #1c1917;
-  /* G21: blanco sobre #c2410c ≈ 5.18:1 (WCAG AA 4.5:1) */
-  --brand: #c2410c;
-  --brand-dark: #9a3412;
+  /* Arena/cemento (familia de la landing). En claro: tono más oscuro para contraste con blanco. */
+  --brand: #6f675c;
+  --brand-dark: #5c554c;
+  --brand-ink: #ffffff;
   --ink: #1c1917;
   --muted: #57534e;
   --surface: #ffffff;
@@ -27,9 +28,10 @@
 html.dark {
   --background: #141210;
   --foreground: #f5f5f4;
-  /* G21: mismo naranja oscuro en dark ≈ 5.18:1 con blanco */
-  --brand: #c2410c;
-  --brand-dark: #9a3412;
+  /* Arena/cemento clara sobre fondos oscuros; texto de botón va oscuro */
+  --brand: #c9bfb0;
+  --brand-dark: #b8aea2;
+  --brand-ink: #1c1917;
   --ink: #f5f5f4;
   --muted: #a8a29e;
   --surface: #1c1917;
@@ -51,6 +53,7 @@ html.dark {
   --color-foreground: var(--foreground);
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
+  --color-brand-ink: var(--brand-ink);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-surface: var(--surface);
@@ -158,6 +161,16 @@ select option {
 .tap-target {
   min-height: 44px;
   min-width: 44px;
+}
+
+/* Botón primario de marca: tinta adaptada a claro/oscuro */
+.btn-brand {
+  background-color: var(--brand);
+  color: var(--brand-ink);
+}
+
+.btn-brand:hover {
+  background-color: var(--brand-dark);
 }
 
 .card-lift {
