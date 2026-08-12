@@ -206,20 +206,20 @@ export default function HomePage() {
 
       <section
         id="precios"
-        className="border-t border-stone-300 bg-stone-200 px-5 py-20 md:px-8"
+        className="border-t border-white/10 bg-[#1c1917] px-5 py-20 md:px-8"
       >
         <div className="mx-auto max-w-6xl">
-          <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-stone-900 md:text-4xl">
+          <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-white md:text-4xl">
             Planes para tu taller
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-700 md:text-base">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70 md:text-base">
             Nosotros te damos de alta el taller. Tú creas las cuentas de tus
             mecánicos. Elige según cuántas personas usan el sistema.
           </p>
 
           <div className="mt-12 grid items-start gap-6 lg:grid-cols-2">
-            {/* Básico — fondo claro y texto oscuro fijos (legible en modo oscuro del sistema) */}
-            <article className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
+            {/* Básico — card clara sobre fondo negro */}
+            <article className="overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
               <div className="border-b border-stone-200 bg-white px-6 py-5">
                 <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide text-stone-900">
                   Básico
@@ -254,7 +254,7 @@ export default function HomePage() {
             </article>
 
             {/* Extra — destacado */}
-            <article className="overflow-hidden rounded-xl border border-orange-800/30 bg-white shadow-md ring-1 ring-orange-800/15">
+            <article className="overflow-hidden rounded-xl border border-orange-500/40 bg-white shadow-md ring-1 ring-orange-500/20">
               <div className="bg-[#c2410c] px-6 py-5 text-white">
                 <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide">
                   Extra
@@ -289,7 +289,7 @@ export default function HomePage() {
             </article>
           </div>
 
-          <p className="mt-8 text-center text-sm text-stone-700">
+          <p className="mt-8 text-center text-sm text-white/60">
             Precios de lanzamiento en Chile · IVA no incluido · Se pueden ajustar
             al cerrar contigo
           </p>
