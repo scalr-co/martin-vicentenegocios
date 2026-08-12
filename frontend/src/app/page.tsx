@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/ui";
 
-/** Acento neutro de la landing: taupe cálido (no naranja). */
-const ACCENT = "#c4b5a0";
+/**
+ * Acento para mecánicos en celular: arena/cemento.
+ * Contrasta en fondos oscuros (sol / taller), sin gritar como un naranja.
+ */
+const ACCENT = "#c9bfb0";
 const CTA = "#e7e5e4";
 const CTA_TEXT = "#1c1917";
 
@@ -88,7 +91,7 @@ export default function HomePage() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at top right, rgba(196,181,160,0.18), transparent 55%)",
+              "radial-gradient(ellipse at top right, rgba(201,191,176,0.2), transparent 55%)",
           }}
         />
 
