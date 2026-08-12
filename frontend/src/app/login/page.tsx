@@ -5,7 +5,12 @@ import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandMark } from "@/components/ui";
 import { apiFetch, extractToken } from "@/lib/api";
-import { extractSessionFromLogin, isAdmin, setSession } from "@/lib/auth";
+import {
+  extractSessionFromLogin,
+  isAdmin,
+  resolveSessionRole,
+  setSession,
+} from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
 import { fieldClass } from "@/lib/form-styles";
 
@@ -66,11 +71,17 @@ function LoginForm() {
       }
 
       const { workshop, user } = extractSessionFromLogin(data);
-      setSession(token, workshop, {
-        ...user,
-        email: user?.email || email,
-        role: user?.role,
-      });
+      const sessionEmail = user?.email || email;
+      const sessionRole = resolveSessionRole(user?.role, sessionEmail);
+      setSession(
+        token,
+        sessionRole === "platform_admin" ? null : workshop,
+        {
+          ...user,
+          email: sessionEmail,
+          role: sessionRole,
+        },
+      );
       router.replace(isAdmin() ? "/panel/admin" : "/panel");
     } catch (err) {
       setError(errorMessage(err, "No se pudo iniciar sesión"));

@@ -85,14 +85,41 @@ function normalizeRole(role?: string | null) {
   return (role || "").trim().toLowerCase();
 }
 
+function normalizeEmail(email?: string | null) {
+  return (email || "").trim().toLowerCase();
+}
+
+/**
+ * Cuenta de admin de plataforma usada en demo / producción mientras
+ * el backend no marque siempre `platform_admin`.
+ */
+export const PLATFORM_ADMIN_EMAIL = "demo@tallertrack.cl";
+
+export function isPlatformAdminEmail(email?: string | null): boolean {
+  return normalizeEmail(email) === PLATFORM_ADMIN_EMAIL;
+}
+
 /** Admin de plataforma (Martín / Vicente). El backend envía `platform_admin`. */
 export function isAdmin(): boolean {
-  const role = normalizeRole(getUser()?.role);
-  return (
+  const user = getUser();
+  const role = normalizeRole(user?.role);
+  if (
     role === "platform_admin" ||
     role === "admin" ||
     role === "superadmin"
-  );
+  ) {
+    return true;
+  }
+  return isPlatformAdminEmail(user?.email);
+}
+
+/** Rol efectivo tras login: fuerza admin si el correo es el de plataforma. */
+export function resolveSessionRole(
+  role: string | undefined,
+  email: string | undefined,
+): string | undefined {
+  if (isPlatformAdminEmail(email)) return "platform_admin";
+  return role;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
