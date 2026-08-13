@@ -5,14 +5,24 @@ import { BrandMark } from "@/components/ui";
 import { PLAN_BASICO_FEATURES, PLAN_PLUS_FEATURES } from "@/lib/plans";
 
 /**
- * Acento para mecánicos en celular: arena/cemento.
- * Contrasta en fondos oscuros (sol / taller), sin gritar como un naranja.
+ * Dirección visual: piedra de taller + cobre/ámbar (luz de piso, metal).
+ * Más contraste que el beige anterior; sigue profesional, no neon.
  */
-const ACCENT = "#c9bfb0";
-const CTA = "#e7e5e4";
+const ACCENT = "#e0a45a";
+const ACCENT_SOFT = "#f0c48a";
+const CTA = "#f5f0e8";
 const CTA_TEXT = "#1c1917";
+const INK = "#12100e";
+const SURFACE = "#1a1714";
+const SURFACE_RAISED = "#26211c";
 
-function PlanFeature({ label }: { label: string }) {
+function PlanFeature({
+  label,
+  checkColor = ACCENT,
+}: {
+  label: string;
+  checkColor?: string;
+}) {
   return (
     <li className="flex items-center gap-3 px-5 py-3.5">
       <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-stone-100">
@@ -20,7 +30,7 @@ function PlanFeature({ label }: { label: string }) {
       </span>
       <span
         className="shrink-0"
-        style={{ color: ACCENT }}
+        style={{ color: checkColor }}
         aria-label="Incluido"
         title="Incluido"
       >
@@ -68,7 +78,6 @@ function scrollToId(id: string, e?: React.MouseEvent) {
   function step(now: number) {
     if (startTime === null) startTime = now;
     const t = Math.min((now - startTime) / duration, 1);
-    // easeInOutCubic
     const eased =
       t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     window.scrollTo(0, start + distance * eased);
@@ -81,17 +90,17 @@ function scrollToId(id: string, e?: React.MouseEvent) {
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col" style={{ backgroundColor: INK }}>
       <section
         className="relative isolate min-h-svh overflow-hidden"
-        style={{ backgroundColor: "#1c1917" }}
+        style={{ backgroundColor: INK }}
       >
         <div
           aria-hidden
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage:
-              "linear-gradient(105deg, rgba(28,25,23,0.94) 0%, rgba(28,25,23,0.75) 50%, rgba(28,25,23,0.4) 100%), url('https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=2000&q=80')",
+              "linear-gradient(105deg, rgba(18,16,14,0.94) 0%, rgba(18,16,14,0.72) 48%, rgba(18,16,14,0.35) 100%), url('https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=2000&q=80')",
           }}
         />
         <div
@@ -99,7 +108,7 @@ export default function HomePage() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at top right, rgba(201,191,176,0.2), transparent 55%)",
+              "radial-gradient(ellipse at top right, rgba(224,164,90,0.28), transparent 52%)",
           }}
         />
 
@@ -129,17 +138,17 @@ export default function HomePage() {
           <div className="max-w-2xl">
             <p
               className="animate-rise mb-4 font-[family-name:var(--font-display)] text-sm font-semibold uppercase tracking-[0.22em]"
-              style={{ color: ACCENT }}
+              style={{ color: ACCENT_SOFT }}
             >
               Motor Ping
             </p>
             <h1 className="animate-rise-delay font-[family-name:var(--font-display)] text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl">
               El cliente sabe en qué va.
-              <span className="block text-white/85">
+              <span className="block text-white/90">
                 Sin llamarte veinte veces.
               </span>
             </h1>
-            <p className="animate-fade mt-5 max-w-lg text-base leading-relaxed text-white/75 md:text-lg">
+            <p className="animate-fade mt-5 max-w-lg text-base leading-relaxed text-white/78 md:text-lg">
               Órdenes de trabajo para talleres: estados claros, historial por
               patente y aviso por WhatsApp cuando el trabajo avanza o se queda
               esperando aprobación o repuesto.
@@ -154,7 +163,7 @@ export default function HomePage() {
               </Link>
               <a
                 href="https://wa.me/56981875498?text=Hola%2C%20quiero%20saber%20de%20Motor%20Ping"
-                className="tap-target inline-flex items-center justify-center rounded-md border border-white/30 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/10"
+                className="tap-target inline-flex items-center justify-center rounded-md border border-white/35 bg-white/8 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/14"
               >
                 Hablar por WhatsApp
               </a>
@@ -163,12 +172,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-white/10 bg-[#1c1917] px-5 py-20 text-white md:px-8">
+      <section
+        className="border-t border-white/10 px-5 py-20 text-white md:px-8"
+        style={{
+          background:
+            `linear-gradient(180deg, ${SURFACE} 0%, ${INK} 100%)`,
+        }}
+      >
         <div className="mx-auto max-w-6xl">
           <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight md:text-4xl">
             Hecho para el caos real del taller
           </h2>
-          <p className="mt-3 max-w-xl text-white/70">
+          <p className="mt-3 max-w-xl text-white/72">
             No es otra agenda. Es el seguimiento del auto mientras está en tu
             piso — incluyendo cuando está quieto esperando al cliente o a una
             pieza.
@@ -191,7 +206,7 @@ export default function HomePage() {
             ].map((item, i) => (
               <div
                 key={item.title}
-                className="border-t-2 pt-5"
+                className="border-t-[3px] pt-5"
                 style={{
                   borderColor: ACCENT,
                   animationDelay: `${i * 80}ms`,
@@ -200,7 +215,7 @@ export default function HomePage() {
                 <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold text-white">
                   {item.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/65">
+                <p className="mt-2 text-sm leading-relaxed text-white/68">
                   {item.text}
                 </p>
               </div>
@@ -209,7 +224,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-[#141210] px-5 py-16 text-white md:px-8">
+      <section
+        className="px-5 py-16 text-white md:px-8"
+        style={{ backgroundColor: INK }}
+      >
         <div className="mx-auto max-w-6xl">
           <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight md:text-3xl">
             Flujo del día
@@ -223,7 +241,8 @@ export default function HomePage() {
             ].map((step, index) => (
               <li
                 key={step}
-                className="rounded-lg border border-white/15 bg-[#292524] p-4"
+                className="rounded-lg border border-white/12 p-4"
+                style={{ backgroundColor: SURFACE_RAISED }}
               >
                 <p
                   className="font-[family-name:var(--font-display)] text-sm font-bold"
@@ -231,7 +250,7 @@ export default function HomePage() {
                 >
                   {String(index + 1).padStart(2, "0")}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed text-white/85">
+                <p className="mt-2 text-sm leading-relaxed text-white/88">
                   {step}
                 </p>
               </li>
@@ -242,78 +261,111 @@ export default function HomePage() {
 
       <section
         id="precios"
-        className="border-t border-white/10 bg-[#1c1917] px-5 py-20 md:px-8"
+        className="relative overflow-hidden border-t border-white/10 px-5 py-20 md:px-8"
+        style={{
+          background:
+            `radial-gradient(ellipse at 70% 0%, rgba(224,164,90,0.16), transparent 55%), linear-gradient(180deg, ${SURFACE} 0%, ${INK} 100%)`,
+        }}
       >
-        <div className="mx-auto max-w-6xl">
+        <div className="relative mx-auto max-w-6xl">
           <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-white md:text-4xl">
             Planes para tu taller
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70 md:text-base">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/72 md:text-base">
             Nosotros te damos de alta el taller. Tú creas las cuentas de tus
             mecánicos. Elige según cuántas personas usan el sistema.
           </p>
 
-          <div className="mt-12 grid items-start gap-6 lg:grid-cols-2">
-            <article className="overflow-hidden rounded-xl border border-white/15 bg-[#292524]">
+          <div className="mt-12 grid items-stretch gap-6 lg:grid-cols-2 lg:gap-8">
+            {/* Básico: quieto, profesional */}
+            <article
+              className="flex flex-col overflow-hidden rounded-xl border border-white/14"
+              style={{ backgroundColor: SURFACE_RAISED }}
+            >
               <div className="border-b border-white/10 px-6 py-5">
-                <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide text-white">
+                <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide text-white/90">
                   Básico
                 </p>
-                <p className="mt-1 text-sm text-white/65">
+                <p className="mt-1 text-sm text-white/60">
                   Ideal para talleres chicos con poco equipo
                 </p>
                 <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold text-white">
                   $24.990
-                  <span className="text-base font-semibold text-white/65">
+                  <span className="text-base font-semibold text-white/60">
                     {" "}
                     / mes
                   </span>
                 </p>
-                <p className="mt-1 text-xs text-white/55">
+                <p className="mt-1 text-xs text-white/50">
                   + setup $120.000 (una vez)
                 </p>
               </div>
-              <ul className="divide-y divide-white/10">
+              <ul className="flex-1 divide-y divide-white/10">
                 {PLAN_BASICO_FEATURES.map((item) => (
-                  <PlanFeature key={item} label={item} />
+                  <PlanFeature
+                    key={item}
+                    label={item}
+                    checkColor="#a8a29e"
+                  />
                 ))}
               </ul>
               <div className="px-6 pb-6 pt-2">
                 <a
                   href="https://wa.me/56981875498?text=Hola%2C%20quiero%20el%20plan%20B%C3%A1sico%20de%20Motor%20Ping"
-                  className="tap-target inline-flex w-full items-center justify-center rounded-md border border-white/25 bg-transparent px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                  className="tap-target inline-flex w-full items-center justify-center rounded-md border border-white/28 bg-transparent px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                 >
                   Quiero el Básico
                 </a>
               </div>
             </article>
 
+            {/* Plus: acento cobre, claramente destacado */}
             <article
-              className="overflow-hidden rounded-xl bg-[#292524]"
+              className="relative flex flex-col overflow-hidden rounded-xl"
               style={{
-                border: `1px solid ${ACCENT}66`,
-                boxShadow: `0 0 0 1px ${ACCENT}22`,
+                backgroundColor: "#2c241c",
+                border: `1.5px solid ${ACCENT}`,
+                boxShadow:
+                  `0 0 0 1px rgba(224,164,90,0.25), 0 18px 50px -20px rgba(224,164,90,0.45)`,
               }}
             >
               <div
+                className="absolute inset-x-0 top-0 h-1"
+                style={{
+                  background: `linear-gradient(90deg, ${ACCENT}, ${ACCENT_SOFT}, ${ACCENT})`,
+                }}
+              />
+              <div
                 className="border-b px-6 py-5"
                 style={{
-                  backgroundColor: "#3f3a36",
-                  borderColor: `${ACCENT}55`,
+                  background:
+                    "linear-gradient(160deg, rgba(224,164,90,0.22) 0%, rgba(44,36,28,0.95) 70%)",
+                  borderColor: "rgba(224,164,90,0.35)",
                 }}
               >
-                <p
-                  className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide"
-                  style={{ color: ACCENT }}
-                >
-                  Plus
-                </p>
-                <p className="mt-1 text-sm text-white/75">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p
+                    className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide"
+                    style={{ color: ACCENT_SOFT }}
+                  >
+                    Plus
+                  </p>
+                  <span
+                    className="rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
+                    style={{
+                      backgroundColor: ACCENT,
+                      color: CTA_TEXT,
+                    }}
+                  >
+                    Recomendado
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-white/80">
                   Todo el Básico, sin tope de mecánicos y con más potencia
                 </p>
                 <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold text-white">
                   $44.990
-                  <span className="text-base font-semibold text-white/70">
+                  <span className="text-base font-semibold text-white/75">
                     {" "}
                     / mes
                   </span>
@@ -322,9 +374,9 @@ export default function HomePage() {
                   + setup $150.000 (una vez)
                 </p>
               </div>
-              <ul className="divide-y divide-white/10">
+              <ul className="flex-1 divide-y divide-white/10">
                 {PLAN_PLUS_FEATURES.map((item) => (
-                  <PlanFeature key={item} label={item} />
+                  <PlanFeature key={item} label={item} checkColor={ACCENT} />
                 ))}
               </ul>
               <div className="px-6 pb-6 pt-2">
@@ -346,7 +398,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-white/10 bg-[#141210] px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-white md:px-8">
+      <footer
+        className="border-t border-white/10 px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-white md:px-8"
+        style={{ backgroundColor: "#0c0a09" }}
+      >
         <div className="mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <BrandMark light />
