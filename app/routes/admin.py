@@ -10,7 +10,7 @@ puerta abierta a internet, y la llave del servidor no alcanza para sostenerla.
 Todo lo que el admin hace sobre un taller queda registrado en `admin_audit`.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -18,8 +18,10 @@ from app.db import obtener_sesion
 from app.models import (
     ACCION_CLAVE_DEL_DUENO_CAMBIADA,
     ACCION_TALLER_CREADO,
+    ACCION_TALLER_DADO_DE_BAJA,
     ACCION_TALLER_EDITADO,
     ACCION_TALLER_REACTIVADO,
+    ACCION_TALLER_RESTAURADO,
     ACCION_TALLER_SUSPENDIDO,
     ROL_DUENO,
     AdminAudit,
@@ -27,6 +29,7 @@ from app.models import (
     User,
     Workshop,
 )
+from app.models.base import ahora
 from app.schemas.admin import ClaveNueva, TallerEdicion, UsuarioAdminSalida
 from app.schemas.auth import AltaTallerEntrada, UserSalida, WorkshopSalida
 from app.security.dependencias import solo_admin_plataforma
@@ -56,10 +59,19 @@ def _anotar(
     )
 
 
-def _taller_o_404(sesion: Session, taller_id: str) -> Workshop:
-    taller = sesion.scalar(
-        select(Workshop).where(Workshop.id == taller_id, Workshop.internal.is_(False))
-    )
+def _taller_o_404(
+    sesion: Session, taller_id: str, incluir_dados_de_baja: bool = False
+) -> Workshop:
+    """El taller del panel. Nunca el interno de Solve: ese no se administra desde aca.
+
+    Por defecto ignora los dados de baja, para que una peticion vieja no reviva sin
+    querer un taller que ya se fue. Solo `restore` pide verlos.
+    """
+    condiciones = [Workshop.id == taller_id, Workshop.internal.is_(False)]
+    if not incluir_dados_de_baja:
+        condiciones.append(Workshop.deleted_at.is_(None))
+
+    taller = sesion.scalar(select(Workshop).where(*condiciones))
     if taller is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Taller no encontrado")
     return taller
@@ -84,7 +96,10 @@ def crear_taller(
 
 
 @router.get("/workshops", dependencies=[Depends(solo_admin_plataforma)])
-def listar_talleres(sesion: Session = Depends(obtener_sesion)):
+def listar_talleres(
+    archived: bool = Query(default=False),
+    sesion: Session = Depends(obtener_sesion),
+):
     """La lista sirve para una sola pregunta: quien esta usando esto de verdad.
 
     Por eso trae el conteo de ordenes y no solo los datos de contacto. Se arma con dos
@@ -103,9 +118,17 @@ def listar_talleres(sesion: Session = Depends(obtener_sesion)):
         .scalar_subquery()
     )
 
+    condiciones = [Workshop.internal.is_(False)]
+    # Los suspendidos si salen: son los que se van a reactivar. Los dados de baja no,
+    # salvo que se pidan, para que la lista responda "quien esta usando esto" y no
+    # "quien lo uso alguna vez".
+    condiciones.append(
+        Workshop.deleted_at.is_not(None) if archived else Workshop.deleted_at.is_(None)
+    )
+
     filas = sesion.execute(
         select(Workshop, correo_del_dueno, ordenes)
-        .where(Workshop.internal.is_(False))
+        .where(*condiciones)
         .order_by(Workshop.created_at.desc())
     ).all()
 
@@ -202,3 +225,49 @@ def cambiar_clave_del_dueno(
     sesion.commit()
 
     return {"data": UsuarioAdminSalida.model_validate(dueno).model_dump(by_alias=True)}
+
+
+@router.delete("/workshops/{taller_id}", status_code=status.HTTP_204_NO_CONTENT)
+def dar_de_baja(
+    taller_id: str,
+    admin: User = Depends(solo_admin_plataforma),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """El taller se fue. Sale de la lista y nadie de ahi entra, pero no se borra nada.
+
+    Sus ordenes, sus clientes y su historial por patente quedan enteros: si vuelve en dos
+    meses, `restore` le devuelve todo donde lo dejo. Es la misma decision que con los
+    clientes y las ordenes, y por la misma razon.
+    """
+    taller = _taller_o_404(sesion, taller_id, incluir_dados_de_baja=True)
+
+    # Repetirlo no mueve la fecha original: es la respuesta a "cuando se fue".
+    if taller.deleted_at is None:
+        taller.deleted_at = ahora()
+        taller.active = False
+        _anotar(sesion, admin, ACCION_TALLER_DADO_DE_BAJA, taller_id=taller.id)
+        sesion.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/workshops/{taller_id}/restore")
+def restaurar(
+    taller_id: str,
+    admin: User = Depends(solo_admin_plataforma),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Devuelve a la vida un taller dado de baja, con todo lo suyo adentro.
+
+    Pedir lo que ya se cumple no es un error: sobre un taller vigente lo deja activo y
+    responde igual, para que el panel pueda reintentar sin miedo.
+    """
+    taller = _taller_o_404(sesion, taller_id, incluir_dados_de_baja=True)
+
+    if taller.deleted_at is not None or not taller.active:
+        taller.deleted_at = None
+        taller.active = True
+        _anotar(sesion, admin, ACCION_TALLER_RESTAURADO, taller_id=taller.id)
+        sesion.commit()
+
+    return {"data": WorkshopSalida.model_validate(taller).model_dump(by_alias=True)}

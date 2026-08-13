@@ -344,3 +344,113 @@ def test_suspender_no_se_confunde_con_una_edicion_cualquiera(cliente, token_admi
     )
     assert "workshop_suspended" in acciones
     assert "workshop_updated" in acciones
+
+
+def test_dar_de_baja_saca_el_taller_de_la_lista_sin_borrar_nada(cliente, token_admin, sesion):
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+
+    baja = cliente.delete(f"/admin/workshops/{taller_id}", headers=con_token(token_admin))
+    assert baja.status_code == 204
+
+    lista = cliente.get("/admin/workshops", headers=con_token(token_admin)).json()["data"]
+    assert [t for t in lista if t["id"] == taller_id] == []
+
+    # No se borro: sigue en la base, con su fecha de baja.
+    guardado = sesion.get(Workshop, taller_id)
+    assert guardado is not None
+    assert guardado.deleted_at is not None
+    assert guardado.active is False
+
+
+def test_los_dados_de_baja_se_ven_pidiendolos(cliente, token_admin):
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+    cliente.delete(f"/admin/workshops/{taller_id}", headers=con_token(token_admin))
+
+    lista = cliente.get(
+        "/admin/workshops?archived=true", headers=con_token(token_admin)
+    ).json()["data"]
+
+    assert [t["id"] for t in lista] == [taller_id]
+
+
+def test_el_suspendido_si_sale_en_la_lista(cliente, token_admin):
+    """Es el que se va a reactivar: esconderlo lo volveria irrecuperable desde el panel."""
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+    cliente.patch(
+        f"/admin/workshops/{taller_id}",
+        json={"active": False},
+        headers=con_token(token_admin),
+    )
+
+    lista = cliente.get("/admin/workshops", headers=con_token(token_admin)).json()["data"]
+
+    assert [t["active"] for t in lista if t["id"] == taller_id] == [False]
+
+
+def test_restaurar_devuelve_el_taller_entero(cliente, token_admin):
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+    cliente.delete(f"/admin/workshops/{taller_id}", headers=con_token(token_admin))
+
+    vuelto = cliente.post(
+        f"/admin/workshops/{taller_id}/restore", headers=con_token(token_admin)
+    )
+
+    assert vuelto.status_code == 200
+    assert vuelto.json()["data"]["active"] is True
+    assert entrar(cliente, "marcela@sancristobal.cl", clave=CLAVE_DE_MARCELA)
+
+
+def test_repetir_la_baja_no_mueve_la_fecha(cliente, token_admin, sesion):
+    """El frontend puede reintentar sin miedo, igual que con los avisos enviados.
+
+    La fecha es la respuesta a "cuando se fue": pisarla con la de hoy la vuelve mentira.
+    """
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+
+    cliente.delete(f"/admin/workshops/{taller_id}", headers=con_token(token_admin))
+    primera = sesion.get(Workshop, taller_id).deleted_at
+
+    segunda = cliente.delete(f"/admin/workshops/{taller_id}", headers=con_token(token_admin))
+
+    assert segunda.status_code == 204
+    assert sesion.get(Workshop, taller_id).deleted_at == primera
+
+
+def test_el_taller_interno_de_solve_no_se_toca(cliente, token_admin, sesion):
+    """Suspenderlo dejaria a la propia administracion fuera del sistema: las cuentas de
+    Solve viven en ese taller, y `usuario_actual` exige que el taller este activo."""
+    interno = sesion.scalar(select(Workshop).where(Workshop.internal.is_(True)))
+    assert interno is not None
+
+    suspension = cliente.patch(
+        f"/admin/workshops/{interno.id}",
+        json={"active": False},
+        headers=con_token(token_admin),
+    )
+    baja = cliente.delete(
+        f"/admin/workshops/{interno.id}", headers=con_token(token_admin)
+    )
+
+    assert suspension.status_code == 404
+    assert baja.status_code == 404
+    assert sesion.get(Workshop, interno.id).active is True
+    # Y quien administra sigue entrando.
+    assert entrar(cliente, "vicente@solve.cl", clave=CLAVE_DEL_ADMIN)
+
+
+def test_el_taller_interno_no_sale_en_la_lista(cliente, token_admin):
+    """No es un taller mecanico: no tiene ordenes ni clientes que mirar."""
+    lista = cliente.get("/admin/workshops", headers=con_token(token_admin)).json()["data"]
+
+    assert "Solve" not in [t["name"] for t in lista]
+
+
+def test_restaurar_uno_que_no_estaba_de_baja_no_falla(cliente, token_admin):
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+
+    respuesta = cliente.post(
+        f"/admin/workshops/{taller_id}/restore", headers=con_token(token_admin)
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["data"]["active"] is True
