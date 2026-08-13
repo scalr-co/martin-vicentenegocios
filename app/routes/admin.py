@@ -31,6 +31,7 @@ from app.models import (
     ACCION_USUARIO_CREADO,
     ROL_ADMIN_PLATAFORMA,
     ROL_DUENO,
+    ROL_MECANICO,
     AdminAudit,
     Order,
     User,
@@ -49,6 +50,7 @@ from app.schemas.user import UsuarioDeRespaldoEntrada, UsuarioSalida
 from app.security.dependencias import solo_admin_plataforma
 from app.security.passwords import hashear
 from app.services.altas import correo_libre, crear_admin, crear_taller_con_dueno
+from app.services.planes import verificar_cupo
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -321,6 +323,13 @@ def crear_usuario_de_respaldo(
     entrar en la casa de otro, queda anotada en `admin_audit` con nombre y apellido.
     """
     taller = taller_del_panel(sesion, taller_id)
+
+    # El tope es del taller y no de quien lo pide: si Solve necesita pasarse, primero sube
+    # el plan, y ese cambio queda anotado. Un dueno de repuesto nunca se bloquea: el tope
+    # es de mecanicos, y esta es la unica puerta que queda cuando adentro no hay nadie
+    # que pueda administrar.
+    if datos.role == ROL_MECANICO:
+        verificar_cupo(sesion, taller)
 
     usuario = User(
         workshop_id=taller.id,

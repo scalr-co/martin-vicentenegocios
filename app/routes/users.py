@@ -16,6 +16,7 @@ from app.schemas.user import UsuarioEdicion, UsuarioEntrada, UsuarioSalida
 from app.security.dependencias import solo_dueno
 from app.security.passwords import hashear
 from app.services.altas import correo_libre
+from app.services.planes import verificar_cupo
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -51,6 +52,8 @@ def crear(
     El rol lo pone esta linea y no el cuerpo del pedido: si se pudiera elegir, cualquier
     dueno se clonaria y la guarda del ultimo dueno activo no protegeria nada.
     """
+    verificar_cupo(sesion, dueno.workshop)
+
     usuario = User(
         workshop_id=dueno.workshop_id,
         name=datos.name,
@@ -106,6 +109,16 @@ def editar(
             status_code=status.HTTP_409_CONFLICT,
             detail="No puedes desactivar tu propia cuenta",
         )
+
+    # Encender a alguien ocupa un cupo igual que contratarlo. Sin esto el tope del plan
+    # se salta con dos clicks: apagar a uno, contratar a otro y volver a encender al
+    # primero.
+    if (
+        cambios.get("active") is True
+        and not objetivo.active
+        and objetivo.role == ROL_MECANICO
+    ):
+        verificar_cupo(sesion, dueno.workshop)
 
     for campo, valor in cambios.items():
         if valor is not None:
