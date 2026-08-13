@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, field_validator
 
+from app.models import ROL_DUENO, ROL_MECANICO
 from app.schemas.base import Esquema, Texto
 
 LARGO_MINIMO_DE_CLAVE = 8
@@ -13,6 +14,20 @@ class UsuarioEntrada(Esquema):
     name: Texto = Field(min_length=2, max_length=120)
     email: EmailStr
     password: str = Field(min_length=LARGO_MINIMO_DE_CLAVE, max_length=200)
+
+
+class UsuarioDeRespaldoEntrada(UsuarioEntrada):
+    """El alta que hace Solve. Aca si viaja el rol: es la unica puerta que puede
+    devolverle un dueno al taller que perdio al suyo."""
+
+    role: str = Field(default=ROL_MECANICO)
+
+    @field_validator("role")
+    @classmethod
+    def _rol_conocido(cls, valor: str) -> str:
+        if valor not in (ROL_DUENO, ROL_MECANICO):
+            raise ValueError("El rol tiene que ser owner o mechanic")
+        return valor
 
 
 class UsuarioEdicion(Esquema):

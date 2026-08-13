@@ -454,3 +454,96 @@ def test_restaurar_uno_que_no_estaba_de_baja_no_falla(cliente, token_admin):
 
     assert respuesta.status_code == 200
     assert respuesta.json()["data"]["active"] is True
+
+
+def test_solve_ve_el_equipo_de_un_taller(cliente, token_admin):
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+
+    equipo = cliente.get(
+        f"/admin/workshops/{taller_id}/users", headers=con_token(token_admin)
+    )
+
+    assert equipo.status_code == 200
+    assert [u["email"] for u in equipo.json()["data"]] == ["marcela@sancristobal.cl"]
+
+
+def test_solve_crea_un_mecanico_de_respaldo(cliente, token_admin):
+    """Para cuando el dueno se pierde y hay que sacarlo del apuro."""
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+
+    creado = cliente.post(
+        f"/admin/workshops/{taller_id}/users",
+        json={"name": "Pedro", "email": "pedro@sancristobal.cl", "password": "clave-larga-1"},
+        headers=con_token(token_admin),
+    )
+
+    assert creado.status_code == 201
+    assert creado.json()["data"]["role"] == "mechanic"
+    assert entrar(cliente, "pedro@sancristobal.cl", clave="clave-larga-1")
+
+
+def test_solve_puede_crear_otro_dueno(cliente, token_admin):
+    """El taller que perdio al suyo. Es la unica puerta que puede hacerlo."""
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+
+    creado = cliente.post(
+        f"/admin/workshops/{taller_id}/users",
+        json={
+            "name": "Ana",
+            "email": "ana@sancristobal.cl",
+            "password": "clave-larga-1",
+            "role": "owner",
+        },
+        headers=con_token(token_admin),
+    )
+
+    assert creado.status_code == 201
+    assert creado.json()["data"]["role"] == "owner"
+
+
+def test_el_alta_de_respaldo_queda_anotada(cliente, token_admin, sesion):
+    from app.models import AdminAudit
+
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+    cliente.post(
+        f"/admin/workshops/{taller_id}/users",
+        json={"name": "Pedro", "email": "pedro@sancristobal.cl", "password": "clave-larga-1"},
+        headers=con_token(token_admin),
+    )
+
+    anotado = sesion.scalar(select(AdminAudit).where(AdminAudit.action == "user_created"))
+    assert anotado is not None and anotado.workshop_id == taller_id
+
+
+def test_ni_el_dueno_ni_el_mecanico_entran_al_panel_de_solve(cliente, token_admin, sesion):
+    """Administrar el propio taller no es administrar la plataforma.
+
+    Se prueban las rutas nuevas una por una: si alguna se agrega manana sin la
+    dependencia, este test es el que lo cuenta.
+    """
+    from tests.conftest import crear_usuario
+
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+    token_dueno = entrar(cliente, "marcela@sancristobal.cl", clave=CLAVE_DE_MARCELA)
+
+    taller_propio = sesion.scalar(select(Workshop).where(Workshop.id == taller_id))
+    crear_usuario(sesion, taller_propio, email="pedro@sancristobal.cl", role="mechanic")
+    token_mecanico = entrar(cliente, "pedro@sancristobal.cl")
+
+    for token in (token_dueno, token_mecanico):
+        cabeceras = con_token(token)
+        assert cliente.get("/admin/workshops", headers=cabeceras).status_code == 403
+        assert cliente.get(
+            f"/admin/workshops/{taller_id}/users", headers=cabeceras
+        ).status_code == 403
+        assert cliente.post(
+            f"/admin/workshops/{taller_id}/users",
+            json={"name": "Colado", "email": "colado@x.cl", "password": "clave-larga-1"},
+            headers=cabeceras,
+        ).status_code == 403
+        assert cliente.delete(
+            f"/admin/workshops/{taller_id}", headers=cabeceras
+        ).status_code == 403
+        assert cliente.post(
+            f"/admin/workshops/{taller_id}/restore", headers=cabeceras
+        ).status_code == 403

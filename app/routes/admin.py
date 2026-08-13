@@ -23,6 +23,7 @@ from app.models import (
     ACCION_TALLER_REACTIVADO,
     ACCION_TALLER_RESTAURADO,
     ACCION_TALLER_SUSPENDIDO,
+    ACCION_USUARIO_CREADO,
     ROL_DUENO,
     AdminAudit,
     Order,
@@ -32,9 +33,10 @@ from app.models import (
 from app.models.base import ahora
 from app.schemas.admin import ClaveNueva, TallerEdicion, UsuarioAdminSalida
 from app.schemas.auth import AltaTallerEntrada, UserSalida, WorkshopSalida
+from app.schemas.user import UsuarioDeRespaldoEntrada, UsuarioSalida
 from app.security.dependencias import solo_admin_plataforma
 from app.security.passwords import hashear
-from app.services.altas import crear_taller_con_dueno
+from app.services.altas import correo_libre, crear_taller_con_dueno
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -271,3 +273,56 @@ def restaurar(
         sesion.commit()
 
     return {"data": WorkshopSalida.model_validate(taller).model_dump(by_alias=True)}
+
+
+@router.get("/workshops/{taller_id}/users", dependencies=[Depends(solo_admin_plataforma)])
+def equipo_del_taller(taller_id: str, sesion: Session = Depends(obtener_sesion)):
+    """Ver quien trabaja en un taller. Es lo que se mira antes de ayudar por telefono."""
+    taller = _taller_o_404(sesion, taller_id, incluir_dados_de_baja=True)
+
+    equipo = sesion.scalars(
+        select(User).where(User.workshop_id == taller.id).order_by(User.created_at)
+    ).all()
+
+    return {
+        "data": [
+            UsuarioSalida.model_validate(usuario).model_dump(by_alias=True)
+            for usuario in equipo
+        ]
+    }
+
+
+@router.post("/workshops/{taller_id}/users", status_code=status.HTTP_201_CREATED)
+def crear_usuario_de_respaldo(
+    taller_id: str,
+    datos: UsuarioDeRespaldoEntrada,
+    admin: User = Depends(solo_admin_plataforma),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """La puerta de respaldo: crear una cuenta dentro de un taller que no es de Solve.
+
+    Existe para el dueno que se perdio o que perdio a su unico dueno activo. Como es
+    entrar en la casa de otro, queda anotada en `admin_audit` con nombre y apellido.
+    """
+    taller = _taller_o_404(sesion, taller_id)
+
+    usuario = User(
+        workshop_id=taller.id,
+        name=datos.name,
+        email=correo_libre(sesion, datos.email),
+        password_hash=hashear(datos.password),
+        role=datos.role,
+    )
+    sesion.add(usuario)
+    sesion.flush()
+    _anotar(
+        sesion,
+        admin,
+        ACCION_USUARIO_CREADO,
+        taller_id=taller.id,
+        usuario_id=usuario.id,
+        detalle=datos.role,
+    )
+    sesion.commit()
+
+    return {"data": UsuarioSalida.model_validate(usuario).model_dump(by_alias=True)}

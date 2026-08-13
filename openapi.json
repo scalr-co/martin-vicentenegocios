@@ -1444,6 +1444,96 @@
         }
       }
     },
+    "/admin/workshops/{taller_id}/users": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Equipo Del Taller",
+        "description": "Ver quien trabaja en un taller. Es lo que se mira antes de ayudar por telefono.",
+        "operationId": "equipo_del_taller_admin_workshops__taller_id__users_get",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Crear Usuario De Respaldo",
+        "description": "La puerta de respaldo: crear una cuenta dentro de un taller que no es de Solve.\n\nExiste para el dueno que se perdio o que perdio a su unico dueno activo. Como es\nentrar en la casa de otro, queda anotada en `admin_audit` con nombre y apellido.",
+        "operationId": "crear_usuario_de_respaldo_admin_workshops__taller_id__users_post",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioDeRespaldoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -1838,6 +1928,40 @@
         "type": "object",
         "title": "TallerEdicion",
         "description": "Solo lo que se corrige a mano. El nombre sale en el WhatsApp que lee el cliente.\n\n`active` en falso suspende el taller: nadie de ahi entra, y sus datos quedan enteros."
+      },
+      "UsuarioDeRespaldoEntrada": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "mechanic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "UsuarioDeRespaldoEntrada",
+        "description": "El alta que hace Solve. Aca si viaja el rol: es la unica puerta que puede\ndevolverle un dueno al taller que perdio al suyo."
       },
       "UsuarioEdicion": {
         "properties": {
