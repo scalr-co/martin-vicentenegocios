@@ -1,6 +1,7 @@
 from pydantic import EmailStr, Field
 
 from app.schemas.base import Esquema, Texto
+from app.services.altas import LARGO_MINIMO_DE_CLAVE_ADMIN
 
 LARGO_MINIMO_DE_CLAVE = 8
 
@@ -8,9 +9,14 @@ LARGO_MINIMO_DE_CLAVE = 8
 class CuentaAdminEntrada(Esquema):
     """Una cuenta de Solve. No pertenece a ningun taller de verdad."""
 
-    name: str = Field(min_length=2, max_length=120)
+    name: Texto = Field(min_length=2, max_length=120)
     email: EmailStr
-    password: str = Field(min_length=LARGO_MINIMO_DE_CLAVE, max_length=200)
+    password: str = Field(min_length=LARGO_MINIMO_DE_CLAVE_ADMIN, max_length=200)
+
+
+class CuentaAdminEdicion(Esquema):
+    name: Texto | None = Field(default=None, min_length=2, max_length=120)
+    active: bool | None = None
 
 
 class UsuarioAdminSalida(Esquema):
@@ -18,6 +24,7 @@ class UsuarioAdminSalida(Esquema):
     name: str
     email: str
     role: str
+    active: bool
 
 
 class TallerEdicion(Esquema):

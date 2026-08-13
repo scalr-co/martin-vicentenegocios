@@ -1534,6 +1534,115 @@
         }
       }
     },
+    "/admin/accounts": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Listar Cuentas De Admin",
+        "description": "Quien tiene las llaves del panel. Se mira antes de crear otra o apagar una.",
+        "operationId": "listar_cuentas_de_admin_admin_accounts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Crear Cuenta De Admin",
+        "description": "La segunda cuenta de Solve y las que sigan.\n\nNo resucita la ruta que se borro: aquella pedia una llave que viajaba por internet y\ncreaba la cuenta mas poderosa del sistema sin dejar rastro de quien lo hizo. Esta\nexige una sesion de administrador, asi que hay una persona identificable detras y\nqueda anotada. La primera cuenta sigue naciendo en la consola del servidor.\n\n`crear_admin` levanta sus fallas como HTTPException, asi que aca no se traduce nada.",
+        "operationId": "crear_cuenta_de_admin_admin_accounts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaAdminEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/accounts/{cuenta_id}": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Editar Cuenta De Admin",
+        "description": "Apagar o renombrar una cuenta de Solve.\n\nNunca la ultima activa, y nunca la propia: quedarse sin ninguna cuenta de plataforma\ndeja el panel cerrado para todos, y la unica salida seria volver a la consola del\nservidor.",
+        "operationId": "editar_cuenta_de_admin_admin_accounts__cuenta_id__patch",
+        "parameters": [
+          {
+            "name": "cuenta_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cuenta Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaAdminEdicion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -1750,6 +1859,65 @@
           "phone"
         ],
         "title": "ClienteEntrada"
+      },
+      "CuentaAdminEdicion": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          }
+        },
+        "type": "object",
+        "title": "CuentaAdminEdicion"
+      },
+      "CuentaAdminEntrada": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 12,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "CuentaAdminEntrada",
+        "description": "Una cuenta de Solve. No pertenece a ningun taller de verdad."
       },
       "HTTPValidationError": {
         "properties": {

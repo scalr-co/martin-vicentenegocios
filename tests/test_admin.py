@@ -54,12 +54,13 @@ def alta_de_taller(cliente, token, **cambios):
     return cliente.post("/admin/workshops", json=cuerpo, headers=con_token(token))
 
 
-def test_la_cuenta_de_admin_ya_no_se_puede_crear_por_http(cliente):
+def test_la_cuenta_de_admin_ya_no_se_crea_con_la_llave(cliente):
     """Creaba la cuenta mas poderosa del sistema con solo una cabecera y sin sesion.
 
     Con esa llave se le cambiaba la clave al dueno de cualquier taller, se entraba a sus
-    datos y no quedaba registro. Ahora la cuenta se crea con scripts/crear_admin.py,
-    desde adentro del servidor.
+    datos y no quedaba registro. La ruta volvio a existir, pero ahora exige la sesion de
+    un admin: hay una persona identificable detras y queda anotada. La llave sola no abre
+    nada, y la primera cuenta sigue naciendo en scripts/crear_admin.py.
     """
     respuesta = cliente.post(
         "/admin/accounts",
@@ -67,7 +68,7 @@ def test_la_cuenta_de_admin_ya_no_se_puede_crear_por_http(cliente):
         headers={"X-Admin-Key": CLAVE_ADMIN},
     )
 
-    assert respuesta.status_code == 404
+    assert respuesta.status_code == 401
 
 
 def test_la_cuenta_creada_por_consola_puede_entrar(cliente, sesion):
@@ -547,3 +548,103 @@ def test_ni_el_dueno_ni_el_mecanico_entran_al_panel_de_solve(cliente, token_admi
         assert cliente.post(
             f"/admin/workshops/{taller_id}/restore", headers=cabeceras
         ).status_code == 403
+        assert cliente.get("/admin/accounts", headers=cabeceras).status_code == 403
+
+
+def test_un_admin_crea_la_segunda_cuenta_desde_el_panel(cliente, token_admin):
+    """Es lo que promete scripts/crear_admin.py: la primera por consola, las siguientes
+    con la sesion de quien ya entro."""
+    creada = cliente.post(
+        "/admin/accounts",
+        json={"name": "Martin", "email": "martin@solve.cl", "password": "clave-larga-de-martin"},
+        headers=con_token(token_admin),
+    )
+
+    assert creada.status_code == 201
+    assert creada.json()["data"]["role"] == "platform_admin"
+    assert entrar(cliente, "martin@solve.cl", clave="clave-larga-de-martin")
+
+
+def test_la_clave_de_un_admin_necesita_doce_caracteres(cliente, token_admin):
+    """Es la cuenta con mas poder del sistema."""
+    corta = cliente.post(
+        "/admin/accounts",
+        json={"name": "Martin", "email": "martin@solve.cl", "password": "corta-1"},
+        headers=con_token(token_admin),
+    )
+
+    assert corta.status_code == 422
+
+
+def test_sin_sesion_de_admin_no_se_crean_cuentas(cliente, taller, dueno):
+    """Ya no hay llave que valga: la ruta con X-Admin-Key se borro por algo."""
+    token_dueno = entrar(cliente, dueno.email)
+
+    respuesta = cliente.post(
+        "/admin/accounts",
+        json={"name": "Colado", "email": "colado@solve.cl", "password": "clave-larga-de-colado"},
+        headers=con_token(token_dueno),
+    )
+
+    assert respuesta.status_code == 403
+    assert cliente.post(
+        "/admin/accounts",
+        json={"name": "Colado", "email": "colado@solve.cl", "password": "clave-larga-de-colado"},
+        headers={"X-Admin-Key": CLAVE_ADMIN},
+    ).status_code == 401
+
+
+def test_las_cuentas_de_solve_se_pueden_mirar(cliente, token_admin):
+    lista = cliente.get("/admin/accounts", headers=con_token(token_admin))
+
+    assert lista.status_code == 200
+    assert [c["email"] for c in lista.json()["data"]] == ["vicente@solve.cl"]
+
+
+def test_se_puede_dar_de_baja_a_un_admin(cliente, token_admin):
+    otro = cliente.post(
+        "/admin/accounts",
+        json={"name": "Martin", "email": "martin@solve.cl", "password": "clave-larga-de-martin"},
+        headers=con_token(token_admin),
+    ).json()["data"]
+
+    apagado = cliente.patch(
+        f"/admin/accounts/{otro['id']}",
+        json={"active": False},
+        headers=con_token(token_admin),
+    )
+
+    assert apagado.status_code == 200
+    assert cliente.post(
+        "/auth/login",
+        json={"email": "martin@solve.cl", "password": "clave-larga-de-martin"},
+    ).status_code == 401
+
+
+def test_el_panel_nunca_se_queda_sin_ninguna_cuenta_activa(cliente, token_admin, sesion):
+    """Si las dos cuentas se apagaran, el panel quedaria cerrado para todos y la unica
+    salida seria volver a la consola del servidor.
+
+    Basta con prohibir apagarse a si mismo: quien hace la peticion es un admin activo,
+    asi que apagando al otro siempre queda el, y apagandose a el mismo choca con esto.
+    """
+    yo = sesion.scalar(select(User).where(User.email == "vicente@solve.cl"))
+    otro = cliente.post(
+        "/admin/accounts",
+        json={"name": "Martin", "email": "martin@solve.cl", "password": "clave-larga-de-martin"},
+        headers=con_token(token_admin),
+    ).json()["data"]
+
+    # Apagar al otro se puede: yo sigo activo.
+    assert cliente.patch(
+        f"/admin/accounts/{otro['id']}",
+        json={"active": False},
+        headers=con_token(token_admin),
+    ).status_code == 200
+
+    # Apagarme a mi, no.
+    respuesta = cliente.patch(
+        f"/admin/accounts/{yo.id}", json={"active": False}, headers=con_token(token_admin)
+    )
+    assert respuesta.status_code == 409
+    assert entrar(cliente, "vicente@solve.cl", clave=CLAVE_DEL_ADMIN)

@@ -1,13 +1,12 @@
-"""El panel de Solve: dar de alta talleres, mirarlos y corregirlos.
+"""El panel de Solve: dar de alta talleres, mirarlos, corregirlos y suspenderlos.
 
 Nada de aca toca los datos de un taller. Un admin de plataforma no ve ordenes, clientes
 ni vehiculos: esos endpoints siguen filtrando por el taller del token, sin excepcion.
 
-Las cuentas de admin NO se crean por aca. Se crean con `scripts/crear_admin.py`, en la
-consola del servidor: una ruta HTTP que crea la cuenta mas poderosa del sistema es una
-puerta abierta a internet, y la llave del servidor no alcanza para sostenerla.
-
-Todo lo que el admin hace sobre un taller queda registrado en `admin_audit`.
+La PRIMERA cuenta de administracion se crea con `scripts/crear_admin.py`, en la consola
+del servidor. Las siguientes se crean aca, pero con la sesion de un admin que ya entro:
+lo que se borro fue la ruta que las creaba con una llave suelta, sin nadie identificable
+detras. Todo lo que hace el admin queda registrado en `admin_audit`.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -17,6 +16,8 @@ from sqlalchemy.orm import Session
 from app.db import obtener_sesion
 from app.models import (
     ACCION_CLAVE_DEL_DUENO_CAMBIADA,
+    ACCION_CUENTA_ADMIN_CREADA,
+    ACCION_CUENTA_ADMIN_EDITADA,
     ACCION_TALLER_CREADO,
     ACCION_TALLER_DADO_DE_BAJA,
     ACCION_TALLER_EDITADO,
@@ -24,6 +25,7 @@ from app.models import (
     ACCION_TALLER_RESTAURADO,
     ACCION_TALLER_SUSPENDIDO,
     ACCION_USUARIO_CREADO,
+    ROL_ADMIN_PLATAFORMA,
     ROL_DUENO,
     AdminAudit,
     Order,
@@ -31,12 +33,18 @@ from app.models import (
     Workshop,
 )
 from app.models.base import ahora
-from app.schemas.admin import ClaveNueva, TallerEdicion, UsuarioAdminSalida
+from app.schemas.admin import (
+    ClaveNueva,
+    CuentaAdminEdicion,
+    CuentaAdminEntrada,
+    TallerEdicion,
+    UsuarioAdminSalida,
+)
 from app.schemas.auth import AltaTallerEntrada, UserSalida, WorkshopSalida
 from app.schemas.user import UsuarioDeRespaldoEntrada, UsuarioSalida
 from app.security.dependencias import solo_admin_plataforma
 from app.security.passwords import hashear
-from app.services.altas import correo_libre, crear_taller_con_dueno
+from app.services.altas import correo_libre, crear_admin, crear_taller_con_dueno
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -326,3 +334,82 @@ def crear_usuario_de_respaldo(
     sesion.commit()
 
     return {"data": UsuarioSalida.model_validate(usuario).model_dump(by_alias=True)}
+
+
+@router.post("/accounts", status_code=status.HTTP_201_CREATED)
+def crear_cuenta_de_admin(
+    datos: CuentaAdminEntrada,
+    admin: User = Depends(solo_admin_plataforma),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """La segunda cuenta de Solve y las que sigan.
+
+    No resucita la ruta que se borro: aquella pedia una llave que viajaba por internet y
+    creaba la cuenta mas poderosa del sistema sin dejar rastro de quien lo hizo. Esta
+    exige una sesion de administrador, asi que hay una persona identificable detras y
+    queda anotada. La primera cuenta sigue naciendo en la consola del servidor.
+
+    `crear_admin` levanta sus fallas como HTTPException, asi que aca no se traduce nada.
+    """
+    nuevo = crear_admin(sesion, datos.name, datos.email, datos.password)
+
+    sesion.flush()
+    _anotar(sesion, admin, ACCION_CUENTA_ADMIN_CREADA, usuario_id=nuevo.id)
+    sesion.commit()
+
+    return {"data": UsuarioAdminSalida.model_validate(nuevo).model_dump(by_alias=True)}
+
+
+@router.get("/accounts", dependencies=[Depends(solo_admin_plataforma)])
+def listar_cuentas_de_admin(sesion: Session = Depends(obtener_sesion)):
+    """Quien tiene las llaves del panel. Se mira antes de crear otra o apagar una."""
+    cuentas = sesion.scalars(
+        select(User)
+        .where(User.role == ROL_ADMIN_PLATAFORMA)
+        .order_by(User.created_at)
+    ).all()
+
+    return {
+        "data": [
+            UsuarioAdminSalida.model_validate(cuenta).model_dump(by_alias=True)
+            for cuenta in cuentas
+        ]
+    }
+
+
+@router.patch("/accounts/{cuenta_id}")
+def editar_cuenta_de_admin(
+    cuenta_id: str,
+    datos: CuentaAdminEdicion,
+    admin: User = Depends(solo_admin_plataforma),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Apagar o renombrar una cuenta de Solve.
+
+    Nunca la ultima activa, y nunca la propia: quedarse sin ninguna cuenta de plataforma
+    deja el panel cerrado para todos, y la unica salida seria volver a la consola del
+    servidor.
+    """
+    cuenta = sesion.scalar(
+        select(User).where(User.id == cuenta_id, User.role == ROL_ADMIN_PLATAFORMA)
+    )
+    if cuenta is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cuenta no encontrada")
+
+    cambios = datos.model_dump(exclude_unset=True)
+    # Igual que con el equipo del taller: quien pide esto es un admin activo, asi que
+    # apagando a otro siempre queda al menos uno. Prohibir apagarse a si mismo es lo
+    # unico que hace falta para que el panel no quede cerrado para todos.
+    if cambios.get("active") is False and cuenta.id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No puedes desactivar tu propia cuenta",
+        )
+
+    for campo, valor in cambios.items():
+        if valor is not None:
+            setattr(cuenta, campo, valor)
+    _anotar(sesion, admin, ACCION_CUENTA_ADMIN_EDITADA, usuario_id=cuenta.id)
+    sesion.commit()
+
+    return {"data": UsuarioAdminSalida.model_validate(cuenta).model_dump(by_alias=True)}
