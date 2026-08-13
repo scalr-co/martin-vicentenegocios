@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PanelShell } from "@/components/panel-shell";
+import { PlusActions } from "@/components/plus-actions";
 import { apiList } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import {
@@ -59,6 +60,7 @@ function ClientesContent() {
       title="Clientes"
       subtitle="Clientes y vehículos del taller"
     >
+      <PlusActions />
       {loading && <p className="text-sm text-muted">Cargando…</p>}
       {error && (
         <div

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PanelShell } from "@/components/panel-shell";
+import { PlusActions } from "@/components/plus-actions";
 import { StatusBadge } from "@/components/ui";
 import { apiList } from "@/lib/api";
 import { formatDateCl } from "@/lib/date";
@@ -106,6 +107,8 @@ function PanelContent() {
           compact
         />
       </div>
+
+      <PlusActions />
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">

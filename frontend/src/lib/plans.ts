@@ -25,8 +25,8 @@ export const PLAN_PLUS_FEATURES = [
   "Soporte prioritario por WhatsApp",
   "Setup e acompañamiento inicial prioritario",
   "Plantillas de aviso personalizables al taller",
-  "Resumen semanal del taller (cuando esté listo)",
-  "Exportar clientes e historial (CSV, cuando esté listo)",
+  "Resumen semanal del taller",
+  "Exportar clientes e historial (CSV)",
 ] as const;
 
 export const MAX_MECHANICS_BASIC = 3;
