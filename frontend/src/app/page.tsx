@@ -290,7 +290,7 @@ export default function HomePage() {
                   Ideal para talleres chicos con poco equipo
                 </p>
                 <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold text-white">
-                  $24.990
+                  $29.990
                   <span className="text-base font-semibold text-white/60">
                     {" "}
                     / mes
