@@ -7,7 +7,7 @@ La regla que sostiene todo lo de aca: un dueno solo alcanza a la gente de SU tal
 tocar a alguien de otro recibe 404 y no 403, porque un 403 confirmaria que ese id existe.
 """
 
-from tests.conftest import con_token, entrar
+from tests.conftest import CLAVE_DE_PRUEBA, con_token, entrar
 
 CLAVE_NUEVA = "clave-nueva-del-mecanico"
 
@@ -172,3 +172,62 @@ def test_el_dueno_no_toca_a_nadie_del_taller_vecino(cliente, sesion, dueno, duen
 
     assert respuesta.status_code == 404
     assert respuesta.json()["error"]["code"] == "NOT_FOUND"
+
+
+def test_resetear_la_clave_de_un_mecanico(cliente, sesion, dueno, mecanico):
+    token = entrar(cliente, dueno.email)
+
+    cambio = cliente.post(
+        f"/users/{mecanico.id}/password",
+        json={"password": CLAVE_NUEVA},
+        headers=con_token(token),
+    )
+
+    assert cambio.status_code == 200
+    assert entrar(cliente, mecanico.email, clave=CLAVE_NUEVA)
+    vieja = cliente.post(
+        "/auth/login", json={"email": mecanico.email, "password": CLAVE_DE_PRUEBA}
+    )
+    assert vieja.status_code == 401
+
+
+def test_cambiar_la_clave_corta_la_sesion_que_estaba_abierta(cliente, sesion, dueno, mecanico):
+    """Si no, quien tuviera el token de antes sigue adentro hasta 12 horas mas, con una
+    clave que ya no sirve. Es lo mismo que hace el panel con la clave del dueno."""
+    token_dueno = entrar(cliente, dueno.email)
+    token_viejo = entrar(cliente, mecanico.email)
+    assert cliente.get("/clients", headers=con_token(token_viejo)).status_code == 200
+
+    cliente.post(
+        f"/users/{mecanico.id}/password",
+        json={"password": CLAVE_NUEVA},
+        headers=con_token(token_dueno),
+    )
+
+    assert cliente.get("/clients", headers=con_token(token_viejo)).status_code == 401
+
+
+def test_no_se_resetea_la_clave_de_otro_taller(cliente, sesion, dueno, dueno_vecino):
+    token = entrar(cliente, dueno.email)
+
+    respuesta = cliente.post(
+        f"/users/{dueno_vecino.id}/password",
+        json={"password": CLAVE_NUEVA},
+        headers=con_token(token),
+    )
+
+    assert respuesta.status_code == 404
+    # Y su clave de siempre le sigue sirviendo.
+    assert entrar(cliente, dueno_vecino.email)
+
+
+def test_la_clave_corta_no_se_acepta(cliente, sesion, dueno, mecanico):
+    token = entrar(cliente, dueno.email)
+
+    respuesta = cliente.post(
+        f"/users/{mecanico.id}/password",
+        json={"password": "corta"},
+        headers=con_token(token),
+    )
+
+    assert respuesta.status_code == 422

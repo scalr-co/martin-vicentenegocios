@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
 from app.models import ROL_MECANICO, User
+from app.schemas.admin import ClaveNueva
 from app.schemas.user import UsuarioEdicion, UsuarioEntrada, UsuarioSalida
 from app.security.dependencias import solo_dueno
 from app.security.passwords import hashear
@@ -109,6 +110,27 @@ def editar(
     for campo, valor in cambios.items():
         if valor is not None:
             setattr(objetivo, campo, valor)
+    sesion.commit()
+
+    return {"data": _salida(objetivo)}
+
+
+@router.post("/{usuario_id}/password")
+def cambiar_clave(
+    usuario_id: str,
+    datos: ClaveNueva,
+    dueno: User = Depends(solo_dueno),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Para el mecanico que perdio su clave. La escribe el dueno y se la pasa.
+
+    Sube la version de sesion: cambiar la clave tiene que cortar lo que ya estaba
+    abierto, o quien tuviera el token de antes seguiria adentro con una clave muerta.
+    """
+    objetivo = _del_taller(sesion, dueno, usuario_id)
+
+    objetivo.password_hash = hashear(datos.password)
+    objetivo.token_version += 1
     sesion.commit()
 
     return {"data": _salida(objetivo)}

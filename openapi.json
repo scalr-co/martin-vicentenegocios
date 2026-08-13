@@ -1138,6 +1138,57 @@
         }
       }
     },
+    "/users/{usuario_id}/password": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Cambiar Clave",
+        "description": "Para el mecanico que perdio su clave. La escribe el dueno y se la pasa.\n\nSube la version de sesion: cambiar la clave tiene que cortar lo que ya estaba\nabierto, o quien tuviera el token de antes seguiria adentro con una clave muerta.",
+        "operationId": "cambiar_clave_users__usuario_id__password_post",
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Usuario Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaveNueva"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/workshops": {
       "post": {
         "tags": [
