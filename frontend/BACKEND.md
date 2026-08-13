@@ -274,6 +274,12 @@ Error:
 { "error": { "message": "Cliente no encontrado", "code": "NOT_FOUND" } }
 ```
 
+**Desde el 13-08-2026 no hay que adivinar los nombres de los campos.** Cada ruta declara
+su respuesta, así que `openapi.json` —el archivo versionado en la raíz del repo— dice
+exactamente qué sale de cada una, no solo qué entra. Es el contrato: en producción `/docs`
+está cerrada, y ese archivo se regenera en el mismo commit que cambia la API (hay un test
+que falla si quedó viejo). Si un campo no está ahí, no existe.
+
 ---
 
 ## 8. Prioridad de construcción (backend)
@@ -356,13 +362,49 @@ PATCH  /admin/accounts/:id                  renombrar o apagar una (nunca la pro
 
 `GET /admin/workshops` devuelve cada taller con `ownerEmail` y `ordersCount`.
 
-**Dos cosas que el panel del frontend promete y el backend no tiene:**
+### El plan del taller y el tope de mecánicos
 
-- **No existe el plan `basico` / `plus`.** No hay campo `plan` en `workshops`. Si lo
-  quieren, se pide y se agrega; mientras tanto, cualquier límite de mecánicos que muestre
-  el panel es decorativo.
-- **La suspensión no tiene fecha de término.** Es un interruptor: `active: false` deja al
-  taller fuera hasta que alguien lo reactive con `active: true`. No hay `suspendedUntil`.
+Agregado el 13-08-2026. **Las dos cosas que el panel prometía y el backend no tenía ya
+existen.**
+
+`plan` es `"basico"` o `"plus"`, viaja en **todo** taller que devuelve la API (login,
+`GET /auth/me`, lista y ficha del panel) y se elige en el alta (`plan` en
+`POST /admin/workshops`, por defecto `basico`) o se cambia después con
+`PATCH /admin/workshops/:id`. Cualquier otro valor es 422.
+
+El tope **lo aplica el servidor**: un taller en `basico` no puede tener más de **3
+mecánicos activos**. `POST /users`, `PATCH /users/:id` con `active: true` y
+`POST /admin/workshops/:id/users` responden **409** cuando ya está lleno. El dueño no
+ocupa cupo y los apagados tampoco. Nunca es retroactivo: un taller que se pasa a `basico`
+con cinco mecánicos se queda con los cinco: lo único que no puede es sumar al sexto.
+
+### Suspensión, con o sin fecha
+
+Todo taller que devuelve la API trae estos cuatro campos, y significan una sola cosa cada
+uno:
+
+```jsonc
+{
+  "active": false,                          // ¿puede entrar HOY? (no es "qué dice la columna")
+  "status": "suspended",                    // "active" | "suspended" | "deleted"
+  "suspendedUntil": "2026-09-01T00:00:00Z", // null si no hay fecha de término
+  "suspendIndefinite": false                // true = suspendido hasta que alguien lo reactive
+}
+```
+
+Cómo se pide, con `PATCH /admin/workshops/:id`:
+
+| Cuerpo | Qué hace |
+|---|---|
+| `{ "active": false }` | suspende hasta que alguien lo reactive |
+| `{ "active": false, "suspendedUntil": "2026-09-01T00:00:00Z" }` | suspende y **vuelve solo** ese día |
+| `{ "active": true }` | reactiva y borra la fecha |
+| `suspendedUntil` sola, o con `active: true` | **422** |
+| `suspendedUntil` en el pasado | **422** |
+
+Mientras dura, la gente de ese taller recibe 401 en el login y en cada pedido. Cumplida la
+fecha vuelve a entrar sin que nadie toque nada — **y con el mismo token de antes**: la
+suspensión corta el paso, no cierra sesiones.
 
 ### Mirar un taller (solo lectura)
 
@@ -380,7 +422,9 @@ La ficha:
 ```jsonc
 { "data": {
   "id": "...", "name": "Taller San Cristóbal", "phone": "56987654321",
-  "whatsappMode": "link", "active": true,
+  "whatsappMode": "link", "plan": "basico",
+  "active": true, "status": "active",
+  "suspendedUntil": null, "suspendIndefinite": false,
   "createdAt": "2026-08-01T12:00:00Z", "deletedAt": null,
   "stats": {
     "ordersTotal": 57,

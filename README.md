@@ -21,6 +21,7 @@ subir fotos y desplegar.
 | F5 | `GET /statuses`, filtros y paginacion | ✅ |
 | F6 | Envio automatico por WhatsApp API (modo `api`) | ⬜ |
 | F7 | Equipo del taller, suspension y baja de talleres | ✅ |
+| F8 | Planes con tope de mecanicos, suspension con fecha, contrato de salida | ✅ |
 
 Los estados de una orden, en orden: `recibido`, `en_diagnostico`, `esperando_aprobacion`,
 `en_reparacion`, `esperando_repuesto`, `listo`, `entregado`. `GET /orders?open=true` trae

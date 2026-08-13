@@ -1,12 +1,17 @@
 # Lo que el frontend todavía no conecta
 
-12-08-2026. Escrito para Martín.
+12-08-2026. Escrito para Martín. **Actualizado el 13-08-2026: ya no falta nada del lado
+del backend** — las dos cosas que el panel prometía y el servidor no tenía (los planes con
+su tope de mecánicos, y la suspensión con fecha de término) están construidas y probadas.
+Lo que queda es conectar las pantallas.
 
 El backend está en producción y probado. Hay tres pantallas del frontend que no lo usan:
 funcionan sobre datos guardados en el navegador, así que se ven bien y no muestran nada
 real. Esta es la lista, con el endpoint que ya existe para cada una.
 
-El contrato completo de cada endpoint está en `frontend/BACKEND.md`, sección 11.
+El contrato completo de cada endpoint está en `frontend/BACKEND.md`, sección 11. Los
+nombres de los campos ya no hay que adivinarlos: `openapi.json` documenta también lo que
+devuelve cada ruta.
 
 ---
 
@@ -27,15 +32,18 @@ Los talleres de verdad están en:
 | Eliminar | `DELETE /admin/workshops/:id` (no borra: se deshace con `POST /admin/workshops/:id/restore`) |
 | Ver los dados de baja | `GET /admin/workshops?archived=true` |
 
-Dos cosas de esa pantalla no tienen respaldo en el backend y hay que sacarlas o pedirlas:
+Las dos cosas que esta pantalla prometía **ya existen en el backend** (13-08-2026):
 
-- **El plan `basico` / `plus`** (`src/lib/plans.ts`). No existe el campo `plan` en la
-  tabla `workshops`. El límite de 3 mecánicos que muestra el panel hoy no lo aplica nadie.
-- **"Suspender hasta una fecha"** (`suspendedUntil`, `suspendIndefinite`). La suspensión
-  es un interruptor: queda fuera hasta que alguien la reactive. No hay vencimiento.
+| Lo que muestra la pantalla | Endpoint real |
+|---|---|
+| El plan `basico` / `plus` (`src/lib/plans.ts`) | viene en `plan` de cada taller; se cambia con `PATCH /admin/workshops/:id` con `{ "plan": "plus" }` |
+| El límite de 3 mecánicos | lo aplica el servidor: `POST /users` responde **409** cuando el taller básico está lleno. `MAX_MECHANICS_BASIC` del frontend ya no es la única barrera — muéstralo, pero el que manda es el 409 |
+| Suspender hasta una fecha | `PATCH /admin/workshops/:id` con `{ "active": false, "suspendedUntil": "..." }`. Sin la fecha al lado es 422 |
+| El estado de la tarjeta | `status` (`active` / `suspended` / `deleted`), `suspendedUntil` y `suspendIndefinite` vienen en la respuesta con esos mismos nombres |
 
-Si los quieren de verdad, se agregan al backend — pero conviene decidirlo antes de que un
-taller vea una promesa que el sistema no cumple.
+Ojo con uno: **`active` ahora significa "puede entrar hoy"**, no "qué dice la columna". Un
+taller suspendido hasta el 1 de septiembre vuelve solo ese día, sin que nadie lo reactive,
+y desde ese momento se lista como activo.
 
 ## 2. La pantalla de mecánicos no da de alta a nadie
 
