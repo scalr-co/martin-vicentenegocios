@@ -17,15 +17,17 @@ export type SessionWorkshop = {
   id?: string;
   name?: string;
   phone?: string;
-  /** Plan del taller (basico | plus). Lo enviará la API. */
+  /** Plan del taller (basico | plus). Viene en login /auth/me. */
   plan?: "basico" | "plus" | string;
+  active?: boolean;
+  status?: string;
 };
 
 export type SessionUser = {
   id?: string;
   email?: string;
   name?: string;
-  /** Backend usa `platform_admin` para Martín/Vicente. */
+  /** Backend: platform_admin | owner | mechanic */
   role?: "platform_admin" | "admin" | "owner" | "mechanic" | string;
 };
 
@@ -85,41 +87,19 @@ function normalizeRole(role?: string | null) {
   return (role || "").trim().toLowerCase();
 }
 
-function normalizeEmail(email?: string | null) {
-  return (email || "").trim().toLowerCase();
-}
-
-/**
- * Cuenta de admin de plataforma usada en demo / producción mientras
- * el backend no marque siempre `platform_admin`.
- */
-export const PLATFORM_ADMIN_EMAIL = "demo@tallertrack.cl";
-
-export function isPlatformAdminEmail(email?: string | null): boolean {
-  return normalizeEmail(email) === PLATFORM_ADMIN_EMAIL;
-}
-
-/** Admin de plataforma (Martín / Vicente). El backend envía `platform_admin`. */
+/** Admin de plataforma. Solo confía en el rol del login. */
 export function isAdmin(): boolean {
-  const user = getUser();
-  const role = normalizeRole(user?.role);
-  if (
+  const role = normalizeRole(getUser()?.role);
+  return (
     role === "platform_admin" ||
     role === "admin" ||
     role === "superadmin"
-  ) {
-    return true;
-  }
-  return isPlatformAdminEmail(user?.email);
+  );
 }
 
-/** Rol efectivo tras login: fuerza admin si el correo es el de plataforma. */
-export function resolveSessionRole(
-  role: string | undefined,
-  email: string | undefined,
-): string | undefined {
-  if (isPlatformAdminEmail(email)) return "platform_admin";
-  return role;
+/** Dueño del taller (puede gestionar /users). */
+export function isOwner(): boolean {
+  return normalizeRole(getUser()?.role) === "owner";
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -161,6 +141,16 @@ export function extractSessionFromLogin(data: Record<string, unknown>): {
           (typeof workshopRaw.workshopPhone === "string" &&
             workshopRaw.workshopPhone) ||
           undefined,
+        plan:
+          typeof workshopRaw.plan === "string" ? workshopRaw.plan : undefined,
+        active:
+          typeof workshopRaw.active === "boolean"
+            ? workshopRaw.active
+            : undefined,
+        status:
+          typeof workshopRaw.status === "string"
+            ? workshopRaw.status
+            : undefined,
       }
     : null;
 

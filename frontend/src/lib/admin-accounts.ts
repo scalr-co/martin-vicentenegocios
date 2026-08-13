@@ -1,79 +1,72 @@
+import { apiFetch, apiList } from "@/lib/api";
 import type { WorkshopPlan } from "@/lib/plans";
 
 export type WorkshopAccountStatus = "active" | "suspended" | "deleted";
 
+/** TallerEnLista / FichaDeTaller (openapi). */
 export type WorkshopAccount = {
   id: string;
   name: string;
-  ownerName: string;
-  email: string;
   phone: string;
-  plan: WorkshopPlan;
-  status: WorkshopAccountStatus;
-  /** Fecha fin suspensión; null = indefinida (hasta que la reactivemos). */
-  suspendedUntil?: string | null;
-  suspendIndefinite?: boolean;
-  createdAt: string;
+  whatsappMode?: string;
+  plan: WorkshopPlan | string;
+  active: boolean;
+  status: WorkshopAccountStatus | string;
+  suspendedUntil: string | null;
+  suspendIndefinite: boolean;
+  ownerEmail?: string | null;
+  ordersCount?: number;
+  createdAt?: string;
+  deletedAt?: string | null;
+  stats?: {
+    ordersTotal?: number;
+    ordersOpen?: number;
+    lastActivityAt?: string | null;
+    noticesPending?: number;
+    usersActive?: number;
+  };
 };
 
-const STORAGE_KEY = "motorping_admin_accounts_demo_v2";
+export type SuspendOption = 7 | 14 | 21 | 31 | "indefinite";
 
-const SEED: WorkshopAccount[] = [
-  {
-    id: "ws_demo_1",
-    name: "Taller El Pino",
-    ownerName: "Carlos Pérez",
-    email: "carlos@elpino.cl",
-    phone: "56911111111",
-    plan: "basico",
-    status: "active",
-    createdAt: "2026-07-12",
-  },
-  {
-    id: "ws_demo_2",
-    name: "Desabolladura Sur",
-    ownerName: "Ana Rojas",
-    email: "ana@desabolladurasur.cl",
-    phone: "56922222222",
-    plan: "plus",
-    status: "suspended",
-    suspendedUntil: "2026-09-01",
-    createdAt: "2026-06-03",
-  },
-];
+function asPlan(plan: unknown): WorkshopPlan {
+  return plan === "plus" ? "plus" : "basico";
+}
 
-function readAll(): WorkshopAccount[] {
-  if (typeof window === "undefined") return SEED;
+function normalizeWorkshop(raw: WorkshopAccount): WorkshopAccount {
+  return {
+    ...raw,
+    plan: asPlan(raw.plan),
+    suspendedUntil: raw.suspendedUntil ?? null,
+    suspendIndefinite: Boolean(raw.suspendIndefinite),
+    active: Boolean(raw.active),
+  };
+}
+
+export async function listWorkshopAccounts(
+  opts: { archived?: boolean } = {},
+): Promise<WorkshopAccount[]> {
+  const path = opts.archived
+    ? "/admin/workshops?archived=true"
+    : "/admin/workshops";
+  const list = await apiList<WorkshopAccount>(path);
+  return list.map(normalizeWorkshop);
+}
+
+export async function getWorkshopAccount(
+  id: string,
+): Promise<WorkshopAccount | null> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED));
-      return SEED;
-    }
-    const parsed = JSON.parse(raw) as WorkshopAccount[];
-    return parsed.map((a) => ({
-      ...a,
-      plan: a.plan === "plus" ? "plus" : "basico",
-    }));
-  } catch {
-    return SEED;
+    const { data } = await apiFetch<WorkshopAccount>(`/admin/workshops/${id}`);
+    return normalizeWorkshop(data);
+  } catch (err) {
+    const status = (err as { status?: number })?.status;
+    if (status === 404) return null;
+    throw err;
   }
 }
 
-function writeAll(list: WorkshopAccount[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-}
-
-export function listWorkshopAccounts(): WorkshopAccount[] {
-  return readAll().filter((a) => a.status !== "deleted");
-}
-
-export function getWorkshopAccount(id: string): WorkshopAccount | null {
-  return listWorkshopAccounts().find((a) => a.id === id) ?? null;
-}
-
-export function countWorkshopAccounts() {
-  const list = listWorkshopAccounts();
+export function countWorkshopAccounts(list: WorkshopAccount[]) {
   return {
     total: list.length,
     active: list.filter((a) => a.status === "active").length,
@@ -81,71 +74,81 @@ export function countWorkshopAccounts() {
   };
 }
 
-export function createWorkshopAccount(input: {
-  name: string;
+export async function createWorkshopAccount(input: {
+  workshopName: string;
+  workshopPhone: string;
   ownerName: string;
   email: string;
-  phone: string;
   password: string;
   plan: WorkshopPlan;
-}): WorkshopAccount {
-  void input.password;
-  const next: WorkshopAccount = {
-    id: `ws_${Date.now()}`,
-    name: input.name.trim(),
-    ownerName: input.ownerName.trim(),
-    email: input.email.trim().toLowerCase(),
-    phone: input.phone.replace(/\D/g, ""),
-    plan: input.plan,
-    status: "active",
-    createdAt: new Date().toISOString().slice(0, 10),
-  };
-  writeAll([next, ...readAll()]);
-  return next;
-}
-
-export type SuspendOption = 7 | 14 | 21 | 31 | "indefinite";
-
-export function suspendWorkshopAccount(id: string, option: SuspendOption) {
-  const list = readAll().map((a) => {
-    if (a.id !== id) return a;
-    if (option === "indefinite") {
-      return {
-        ...a,
-        status: "suspended" as const,
-        suspendIndefinite: true,
-        suspendedUntil: null,
-      };
-    }
-    const until = new Date();
-    until.setDate(until.getDate() + option);
-    return {
-      ...a,
-      status: "suspended" as const,
-      suspendIndefinite: false,
-      suspendedUntil: until.toISOString().slice(0, 10),
-    };
+}): Promise<WorkshopAccount> {
+  const { data } = await apiFetch<WorkshopAccount>("/admin/workshops", {
+    method: "POST",
+    body: JSON.stringify({
+      workshopName: input.workshopName.trim(),
+      workshopPhone: input.workshopPhone.replace(/\D/g, ""),
+      ownerName: input.ownerName.trim(),
+      email: input.email.trim().toLowerCase(),
+      password: input.password,
+      plan: input.plan,
+    }),
   });
-  writeAll(list);
+  return normalizeWorkshop(data);
 }
 
-export function reactivateWorkshopAccount(id: string) {
-  const list = readAll().map((a) =>
-    a.id === id
-      ? {
-          ...a,
-          status: "active" as const,
-          suspendedUntil: null,
-          suspendIndefinite: false,
-        }
-      : a,
-  );
-  writeAll(list);
+function suspendUntilIso(days: number): string {
+  const until = new Date();
+  until.setUTCDate(until.getUTCDate() + days);
+  until.setUTCHours(0, 0, 0, 0);
+  return until.toISOString();
 }
 
-export function deleteWorkshopAccount(id: string) {
-  const list = readAll().map((a) =>
-    a.id === id ? { ...a, status: "deleted" as const } : a,
+export async function suspendWorkshopAccount(
+  id: string,
+  option: SuspendOption,
+): Promise<WorkshopAccount> {
+  const body =
+    option === "indefinite"
+      ? { active: false }
+      : { active: false, suspendedUntil: suspendUntilIso(option) };
+  const { data } = await apiFetch<WorkshopAccount>(`/admin/workshops/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  return normalizeWorkshop(data);
+}
+
+export async function reactivateWorkshopAccount(
+  id: string,
+): Promise<WorkshopAccount> {
+  const { data } = await apiFetch<WorkshopAccount>(`/admin/workshops/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ active: true }),
+  });
+  return normalizeWorkshop(data);
+}
+
+export async function deleteWorkshopAccount(id: string): Promise<void> {
+  await apiFetch(`/admin/workshops/${id}`, { method: "DELETE" });
+}
+
+export async function restoreWorkshopAccount(
+  id: string,
+): Promise<WorkshopAccount> {
+  const { data } = await apiFetch<WorkshopAccount>(
+    `/admin/workshops/${id}/restore`,
+    { method: "POST" },
   );
-  writeAll(list);
+  return normalizeWorkshop(data);
+}
+
+export async function patchWorkshopPlan(
+  id: string,
+  plan: WorkshopPlan,
+): Promise<WorkshopAccount> {
+  const { data } = await apiFetch<WorkshopAccount>(`/admin/workshops/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ plan }),
+  });
+  return normalizeWorkshop(data);
 }

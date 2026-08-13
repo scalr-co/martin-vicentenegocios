@@ -7,7 +7,6 @@ import { apiFetch, extractToken } from "@/lib/api";
 import {
   extractSessionFromLogin,
   isAdmin,
-  resolveSessionRole,
   setSession,
 } from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
@@ -85,7 +84,7 @@ function LoginForm() {
 
       const { workshop, user } = extractSessionFromLogin(data);
       const sessionEmail = user?.email || email;
-      const sessionRole = resolveSessionRole(user?.role, sessionEmail);
+      const sessionRole = user?.role;
       setSession(
         token,
         sessionRole === "platform_admin" ? null : workshop,

@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { AdminGuard } from "@/components/admin-guard";
 import { PanelShell } from "@/components/panel-shell";
+import { errorMessage } from "@/lib/errors";
 import { fieldClass } from "@/lib/form-styles";
 import {
   countWorkshopAccounts,
@@ -11,6 +12,7 @@ import {
   getWorkshopAccount,
   listWorkshopAccounts,
   reactivateWorkshopAccount,
+  restoreWorkshopAccount,
   suspendWorkshopAccount,
   type SuspendOption,
   type WorkshopAccount,
@@ -30,77 +32,188 @@ export default function AdminPage() {
 }
 
 function AdminContent() {
-  const [accounts, setAccounts] = useState<WorkshopAccount[]>(() =>
-    listWorkshopAccounts(),
-  );
+  const [accounts, setAccounts] = useState<WorkshopAccount[]>([]);
+  const [archived, setArchived] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createPlan, setCreatePlan] = useState<WorkshopPlan>("basico");
+  const [saving, setSaving] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<WorkshopAccount | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [suspendId, setSuspendId] = useState<string | null>(null);
   const [suspendOption, setSuspendOption] = useState<SuspendOption>(7);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const counts = useMemo(() => countWorkshopAccounts(), [accounts]);
-  const detail = detailId ? getWorkshopAccount(detailId) : null;
+  const counts = useMemo(() => countWorkshopAccounts(accounts), [accounts]);
 
-  function refresh() {
-    setAccounts(listWorkshopAccounts());
-  }
-
-  function showFlash(msg: string) {
+  const showFlash = useCallback((msg: string) => {
     setFlash(msg);
     window.setTimeout(() => setFlash(null), 3200);
-  }
+  }, []);
 
-  function onCreate(e: FormEvent<HTMLFormElement>) {
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      setAccounts(await listWorkshopAccounts({ archived }));
+      setListError(null);
+    } catch (err) {
+      setListError(errorMessage(err, "No se pudieron cargar los talleres"));
+    } finally {
+      setLoading(false);
+    }
+  }, [archived]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!detailId) {
+      setDetail(null);
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    void getWorkshopAccount(detailId)
+      .then((w) => {
+        if (!cancelled) setDetail(w);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setActionError(errorMessage(err, "No se pudo cargar el detalle"));
+          setDetail(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [detailId]);
+
+  async function onCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setActionError(null);
+    setSaving(true);
     const form = new FormData(e.currentTarget);
-    const name = String(form.get("name") || "").trim();
+    const workshopName = String(form.get("workshopName") || "").trim();
     const ownerName = String(form.get("ownerName") || "").trim();
     const email = String(form.get("email") || "").trim();
-    const phone = String(form.get("phone") || "").trim();
+    const workshopPhone = String(form.get("workshopPhone") || "").trim();
     const password = String(form.get("password") || "").trim();
     const plan = (String(form.get("plan") || "basico") === "plus"
       ? "plus"
       : "basico") as WorkshopPlan;
 
-    createWorkshopAccount({ name, ownerName, email, phone, password, plan });
-    refresh();
-    setCreateOpen(false);
-    setCreatePlan("basico");
-    showFlash(`Cuenta creada: “${name}” · Plan ${planLabel(plan)}`);
-    e.currentTarget.reset();
+    try {
+      await createWorkshopAccount({
+        workshopName,
+        workshopPhone,
+        ownerName,
+        email,
+        password,
+        plan,
+      });
+      setCreateOpen(false);
+      setCreatePlan("basico");
+      showFlash(`Cuenta creada: “${workshopName}” · Plan ${planLabel(plan)}`);
+      e.currentTarget.reset();
+      await refresh();
+    } catch (err) {
+      setActionError(errorMessage(err, "No se pudo crear la cuenta"));
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function onSuspendConfirm() {
+  async function onSuspendConfirm() {
     if (!suspendId) return;
-    suspendWorkshopAccount(suspendId, suspendOption);
-    refresh();
-    setSuspendId(null);
-    showFlash(
-      suspendOption === "indefinite"
-        ? "Cuenta suspendida hasta que la reactiven."
-        : `Cuenta suspendida por ${suspendOption} días.`,
-    );
+    const id = suspendId;
+    setActionError(null);
+    setSaving(true);
+    try {
+      await suspendWorkshopAccount(id, suspendOption);
+      setSuspendId(null);
+      showFlash(
+        suspendOption === "indefinite"
+          ? "Cuenta suspendida hasta que la reactiven."
+          : `Cuenta suspendida por ${suspendOption} días.`,
+      );
+      await refresh();
+      if (detailId === id) {
+        setDetail(await getWorkshopAccount(id));
+      }
+    } catch (err) {
+      setActionError(errorMessage(err, "No se pudo suspender"));
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function onDeleteConfirm() {
+  async function onReactivate(id: string) {
+    setActionError(null);
+    setSaving(true);
+    try {
+      await reactivateWorkshopAccount(id);
+      showFlash("Cuenta reactivada.");
+      await refresh();
+      if (detailId === id) setDetail(await getWorkshopAccount(id));
+    } catch (err) {
+      setActionError(errorMessage(err, "No se pudo reactivar"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onDeleteConfirm() {
     if (!confirmDeleteId) return;
-    deleteWorkshopAccount(confirmDeleteId);
-    refresh();
-    if (detailId === confirmDeleteId) setDetailId(null);
-    setConfirmDeleteId(null);
-    showFlash("Cuenta eliminada.");
+    setActionError(null);
+    setSaving(true);
+    try {
+      await deleteWorkshopAccount(confirmDeleteId);
+      setConfirmDeleteId(null);
+      if (detailId === confirmDeleteId) setDetailId(null);
+      showFlash("Taller dado de baja.");
+      await refresh();
+    } catch (err) {
+      setActionError(errorMessage(err, "No se pudo dar de baja"));
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (detail) {
+  async function onRestore(id: string) {
+    setActionError(null);
+    setSaving(true);
+    try {
+      await restoreWorkshopAccount(id);
+      showFlash("Taller restaurado.");
+      await refresh();
+      if (detailId === id) setDetail(await getWorkshopAccount(id));
+    } catch (err) {
+      setActionError(errorMessage(err, "No se pudo restaurar"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (detailId) {
     return (
       <PanelShell
-        title={detail.name}
-        subtitle="Detalle del taller (vista previa local)"
+        title={detail?.name || "Taller"}
+        subtitle="Detalle del taller"
       >
         {flash && <Flash msg={flash} />}
+        {actionError && (
+          <p role="alert" className="mb-4 text-sm text-red-700">
+            {actionError}
+          </p>
+        )}
         <button
           type="button"
           onClick={() => setDetailId(null)}
@@ -109,97 +222,141 @@ function AdminContent() {
           ← Volver a talleres
         </button>
 
-        <div className="rounded-lg border border-line bg-surface p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Plan {planLabel(detail.plan)}
-              </p>
-              <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
-                {detail.name}
-              </p>
+        {detailLoading && (
+          <p className="text-sm text-muted">Cargando ficha…</p>
+        )}
+
+        {detail && !detailLoading && (
+          <div className="rounded-lg border border-line bg-surface p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  Plan {planLabel(detail.plan === "plus" ? "plus" : "basico")}
+                </p>
+                <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
+                  {detail.name}
+                </p>
+              </div>
+              <StatusPill status={detail.status} />
             </div>
-            <StatusPill status={detail.status} />
-          </div>
 
-          <dl className="mt-6 grid gap-4 sm:grid-cols-2">
-            <Info label="Dueño / contacto" value={detail.ownerName} />
-            <Info label="Email de acceso" value={detail.email} />
-            <Info label="WhatsApp" value={detail.phone} />
-            <Info label="Alta" value={detail.createdAt} />
-            <Info
-              label="Suspensión"
-              value={
-                detail.status !== "suspended"
-                  ? "—"
-                  : detail.suspendIndefinite
-                    ? "Hasta que la reactivemos"
-                    : detail.suspendedUntil
-                      ? `Hasta ${detail.suspendedUntil}`
-                      : "—"
-              }
-            />
-          </dl>
+            <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+              <Info
+                label="Email dueño"
+                value={detail.ownerEmail || "—"}
+              />
+              <Info label="WhatsApp" value={detail.phone} />
+              <Info
+                label="Puede entrar hoy"
+                value={detail.active ? "Sí" : "No"}
+              />
+              <Info label="Alta" value={detail.createdAt || "—"} />
+              <Info
+                label="Suspensión"
+                value={
+                  detail.status !== "suspended"
+                    ? "—"
+                    : detail.suspendIndefinite
+                      ? "Hasta que la reactivemos"
+                      : detail.suspendedUntil
+                        ? `Hasta ${detail.suspendedUntil}`
+                        : "—"
+                }
+              />
+              {detail.stats && (
+                <>
+                  <Info
+                    label="Órdenes (abiertas / total)"
+                    value={`${detail.stats.ordersOpen ?? 0} / ${detail.stats.ordersTotal ?? 0}`}
+                  />
+                  <Info
+                    label="Avisos sin enviar"
+                    value={String(detail.stats.noticesPending ?? 0)}
+                  />
+                  <Info
+                    label="Usuarios activos"
+                    value={String(detail.stats.usersActive ?? 0)}
+                  />
+                  <Info
+                    label="Última actividad"
+                    value={detail.stats.lastActivityAt || "—"}
+                  />
+                </>
+              )}
+            </dl>
 
-          <div className="mt-6">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Ventajas del plan
-            </p>
-            <ul className="mt-2 space-y-1.5">
-              {planFeatures(detail.plan).map((f) => (
-                <li key={f} className="text-sm text-ink">
-                  · {f}
-                </li>
-              ))}
-            </ul>
-          </div>
+            <div className="mt-6">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                Ventajas del plan
+              </p>
+              <ul className="mt-2 space-y-1.5">
+                {planFeatures(
+                  detail.plan === "plus" ? "plus" : "basico",
+                ).map((f) => (
+                  <li key={f} className="text-sm text-ink">
+                    · {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-          <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-5">
-            {detail.status === "active" ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setSuspendId(detail.id);
-                  setSuspendOption(7);
-                }}
-                className="tap-target rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800"
-              >
-                Suspender cuenta
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  reactivateWorkshopAccount(detail.id);
-                  refresh();
-                  showFlash("Cuenta reactivada.");
-                }}
-                className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold"
-              >
-                Reactivar
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setConfirmDeleteId(detail.id)}
-              className="tap-target rounded-md border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50"
-            >
-              Eliminar
-            </button>
+            <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-5">
+              {detail.status === "deleted" ? (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void onRestore(detail.id)}
+                  className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
+                >
+                  Restaurar
+                </button>
+              ) : detail.status === "active" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSuspendId(detail.id);
+                    setSuspendOption(7);
+                  }}
+                  className="tap-target rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800"
+                >
+                  Suspender cuenta
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void onReactivate(detail.id)}
+                  className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
+                >
+                  Reactivar
+                </button>
+              )}
+              {detail.status !== "deleted" && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteId(detail.id)}
+                  className="tap-target rounded-md border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50"
+                >
+                  Dar de baja
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {suspendId && (
           <SuspendModal
             option={suspendOption}
             setOption={setSuspendOption}
-            onConfirm={onSuspendConfirm}
+            saving={saving}
+            onConfirm={() => void onSuspendConfirm()}
             onClose={() => setSuspendId(null)}
           />
         )}
         {confirmDeleteId && (
           <DeleteModal
-            onConfirm={onDeleteConfirm}
+            saving={saving}
+            onConfirm={() => void onDeleteConfirm()}
             onClose={() => setConfirmDeleteId(null)}
           />
         )}
@@ -210,11 +367,12 @@ function AdminContent() {
   return (
     <PanelShell
       title="Talleres del SaaS"
-      subtitle="Cuentas registradas · vista previa hasta conectar la API"
+      subtitle="Cuentas registradas en la API"
       headerAction={
         <button
           type="button"
           onClick={() => {
+            setActionError(null);
             setCreatePlan("basico");
             setCreateOpen(true);
           }}
@@ -225,6 +383,11 @@ function AdminContent() {
       }
     >
       {flash && <Flash msg={flash} />}
+      {actionError && (
+        <p role="alert" className="mb-4 text-sm text-red-700">
+          {actionError}
+        </p>
+      )}
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         <Stat label="Cuentas totales" value={counts.total} />
@@ -232,12 +395,40 @@ function AdminContent() {
         <Stat label="Suspendidas" value={counts.suspended} tone="warn" />
       </div>
 
-      <div className="mb-5">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
-          Lista de talleres. Toca uno para ver el detalle, o suspende desde la
-          vista previa.
+          {loading
+            ? "Cargando talleres…"
+            : "Lista de talleres. Toca uno para ver el detalle."}
         </p>
+        <button
+          type="button"
+          onClick={() => setArchived((v) => !v)}
+          className={`tap-target rounded-md px-3 py-1.5 text-xs font-medium ${
+            archived
+              ? "bg-brand text-brand-ink"
+              : "border border-line text-ink hover:bg-chip"
+          }`}
+        >
+          {archived ? "Viendo dados de baja" : "Ver dados de baja"}
+        </button>
       </div>
+
+      {listError && (
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-red-200 bg-danger-soft px-3 py-3 text-sm text-red-800"
+        >
+          <p>{listError}</p>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="tap-target mt-2 rounded-md border border-red-300 bg-surface px-3 py-1.5 text-sm font-semibold"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
 
       <ul className="space-y-3">
         {accounts.map((account) => (
@@ -256,16 +447,24 @@ function AdminContent() {
                     {account.name}
                   </p>
                   <p className="mt-0.5 text-sm text-muted">
-                    {account.ownerName} · {account.email}
+                    {account.ownerEmail || "Sin email dueño"}
+                    {typeof account.ordersCount === "number"
+                      ? ` · ${account.ordersCount} órdenes`
+                      : ""}
                   </p>
                   <p className="mt-0.5 text-xs text-muted">
-                    Plan {planLabel(account.plan)} · WhatsApp {account.phone}
+                    Plan{" "}
+                    {planLabel(account.plan === "plus" ? "plus" : "basico")} ·
+                    WhatsApp {account.phone}
                     {account.status === "suspended"
                       ? account.suspendIndefinite
                         ? " · Suspendida (manual)"
                         : account.suspendedUntil
                           ? ` · Hasta ${account.suspendedUntil}`
                           : ""
+                      : ""}
+                    {!account.active && account.status === "active"
+                      ? " · Sin acceso hoy"
                       : ""}
                   </p>
                 </div>
@@ -281,7 +480,16 @@ function AdminContent() {
               >
                 Ver información
               </button>
-              {account.status === "active" ? (
+              {account.status === "deleted" ? (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void onRestore(account.id)}
+                  className="tap-target rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-chip disabled:opacity-60"
+                >
+                  Restaurar
+                </button>
+              ) : account.status === "active" ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -295,12 +503,9 @@ function AdminContent() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    reactivateWorkshopAccount(account.id);
-                    refresh();
-                    showFlash("Cuenta reactivada.");
-                  }}
-                  className="tap-target rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-chip"
+                  disabled={saving}
+                  onClick={() => void onReactivate(account.id)}
+                  className="tap-target rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-chip disabled:opacity-60"
                 >
                   Reactivar
                 </button>
@@ -308,21 +513,26 @@ function AdminContent() {
             </div>
           </li>
         ))}
-        {accounts.length === 0 && (
+        {!loading && !listError && accounts.length === 0 && (
           <li className="rounded-lg border border-dashed border-line px-4 py-10 text-center text-sm text-muted">
-            No hay cuentas todavía. Crea la primera.
+            {archived
+              ? "No hay talleres dados de baja."
+              : "No hay cuentas todavía. Crea la primera."}
           </li>
         )}
       </ul>
 
       {createOpen && (
-        <Modal title="Crear cuenta de taller" onClose={() => setCreateOpen(false)}>
+        <Modal
+          title="Crear cuenta de taller"
+          onClose={() => setCreateOpen(false)}
+        >
           <form className="mt-2 space-y-3" onSubmit={onCreate}>
-            <label className="block min-w-0" htmlFor="name">
+            <label className="block min-w-0" htmlFor="workshopName">
               <span className="text-sm font-medium">Nombre del taller</span>
               <input
-                id="name"
-                name="name"
+                id="workshopName"
+                name="workshopName"
                 required
                 minLength={2}
                 className={fieldClass}
@@ -335,6 +545,7 @@ function AdminContent() {
                 id="ownerName"
                 name="ownerName"
                 required
+                minLength={2}
                 className={fieldClass}
                 placeholder="Juan Pérez"
               />
@@ -351,14 +562,15 @@ function AdminContent() {
                   placeholder="juanito@taller.cl"
                 />
               </label>
-              <label className="block min-w-0" htmlFor="phone">
+              <label className="block min-w-0" htmlFor="workshopPhone">
                 <span className="text-sm font-medium">WhatsApp taller</span>
                 <input
-                  id="phone"
-                  name="phone"
+                  id="workshopPhone"
+                  name="workshopPhone"
                   type="tel"
                   inputMode="numeric"
                   required
+                  minLength={8}
                   className={fieldClass}
                   placeholder="56912345678"
                 />
@@ -378,9 +590,7 @@ function AdminContent() {
             </label>
 
             <fieldset className="rounded-lg border border-line p-3">
-              <legend className="px-1 text-sm font-medium text-ink">
-                Plan
-              </legend>
+              <legend className="px-1 text-sm font-medium text-ink">Plan</legend>
               <div className="mt-1 flex flex-wrap gap-2">
                 {(["basico", "plus"] as const).map((p) => (
                   <label
@@ -410,12 +620,19 @@ function AdminContent() {
               </ul>
             </fieldset>
 
+            {actionError && (
+              <p role="alert" className="text-sm text-red-700">
+                {actionError}
+              </p>
+            )}
+
             <div className="flex flex-col gap-2 pt-2 sm:flex-row-reverse">
               <button
                 type="submit"
-                className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold"
+                disabled={saving}
+                className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
               >
-                Crear cuenta
+                {saving ? "Creando…" : "Crear cuenta"}
               </button>
               <button
                 type="button"
@@ -433,13 +650,15 @@ function AdminContent() {
         <SuspendModal
           option={suspendOption}
           setOption={setSuspendOption}
-          onConfirm={onSuspendConfirm}
+          saving={saving}
+          onConfirm={() => void onSuspendConfirm()}
           onClose={() => setSuspendId(null)}
         />
       )}
       {confirmDeleteId && (
         <DeleteModal
-          onConfirm={onDeleteConfirm}
+          saving={saving}
+          onConfirm={() => void onDeleteConfirm()}
           onClose={() => setConfirmDeleteId(null)}
         />
       )}
@@ -472,11 +691,13 @@ function Info({ label, value }: { label: string; value: string }) {
 function SuspendModal({
   option,
   setOption,
+  saving,
   onConfirm,
   onClose,
 }: {
   option: SuspendOption;
   setOption: (o: SuspendOption) => void;
+  saving: boolean;
   onConfirm: () => void;
   onClose: () => void;
 }) {
@@ -517,8 +738,9 @@ function SuspendModal({
       <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
         <button
           type="button"
+          disabled={saving}
           onClick={onConfirm}
-          className="tap-target rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800"
+          className="tap-target rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-60"
         >
           Confirmar suspensión
         </button>
@@ -535,25 +757,27 @@ function SuspendModal({
 }
 
 function DeleteModal({
+  saving,
   onConfirm,
   onClose,
 }: {
+  saving: boolean;
   onConfirm: () => void;
   onClose: () => void;
 }) {
   return (
-    <Modal title="Eliminar cuenta" onClose={onClose}>
+    <Modal title="Dar de baja" onClose={onClose}>
       <p className="text-sm text-muted">
-        Esto quita el acceso del taller. En la API debería ser irreversible o
-        soft-delete; por ahora es solo la vista.
+        El taller queda fuera (soft-delete). Se puede restaurar después.
       </p>
       <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
         <button
           type="button"
+          disabled={saving}
           onClick={onConfirm}
-          className="tap-target rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800"
+          className="tap-target rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-60"
         >
-          Eliminar
+          Dar de baja
         </button>
         <button
           type="button"
@@ -608,6 +832,13 @@ function Stat({
 }
 
 function StatusPill({ status }: { status: WorkshopAccount["status"] }) {
+  if (status === "deleted") {
+    return (
+      <span className="rounded-full bg-stone-200 px-2.5 py-1 text-xs font-medium text-stone-700">
+        Baja
+      </span>
+    );
+  }
   if (status === "suspended") {
     return (
       <span className="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-900">
@@ -650,7 +881,7 @@ function Modal({
             Cerrar
           </button>
         </div>
-        <div className="mt-2">{children}</div>
+        {children}
       </div>
     </div>
   );

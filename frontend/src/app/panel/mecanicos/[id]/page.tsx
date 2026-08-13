@@ -1,14 +1,16 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
+import { OwnerGuard } from "@/components/owner-guard";
 import { PanelShell } from "@/components/panel-shell";
+import { errorMessage } from "@/lib/errors";
 import { fieldClass } from "@/lib/form-styles";
 import {
-  deleteMechanic,
-  getMechanic,
+  listMechanics,
+  setMechanicPassword,
   updateMechanic,
   type Mechanic,
 } from "@/lib/mechanics";
@@ -16,28 +18,58 @@ import {
 export default function MecanicoDetailPage() {
   return (
     <AuthGuard>
-      <MecanicoDetailContent />
+      <OwnerGuard>
+        <MecanicoDetailContent />
+      </OwnerGuard>
     </AuthGuard>
   );
 }
 
 function MecanicoDetailContent() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [toggleOpen, setToggleOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    setMechanic(getMechanic(params.id));
-    setEditing(false);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const list = await listMechanics();
+      setMechanic(list.find((m) => m.id === params.id) ?? null);
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(errorMessage(err, "No se pudo cargar"));
+      setMechanic(null);
+    } finally {
+      setLoading(false);
+      setEditing(false);
+    }
   }, [params.id]);
 
-  if (!mechanic) {
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (loading) {
     return (
       <PanelShell title="Mecánico">
-        <p className="text-sm text-muted">No se encontró este mecánico.</p>
+        <p className="text-sm text-muted">Cargando…</p>
+      </PanelShell>
+    );
+  }
+
+  if (loadError || !mechanic) {
+    return (
+      <PanelShell title="Mecánico">
+        <p className="text-sm text-muted">
+          {loadError || "No se encontró esta persona."}
+        </p>
         <Link
           href="/panel/mecanicos"
           className="tap-target mt-4 inline-flex text-sm text-brand"
@@ -48,32 +80,76 @@ function MecanicoDetailContent() {
     );
   }
 
-  function onSave(e: FormEvent<HTMLFormElement>) {
+  const isMechanic = mechanic.role === "mechanic";
+
+  async function onSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!mechanic) return;
+    setError(null);
+    setSaving(true);
     const form = new FormData(e.currentTarget);
-    const updated = updateMechanic(mechanic.id, {
-      name: String(form.get("name") || ""),
-      email: String(form.get("email") || ""),
-      phone: String(form.get("phone") || ""),
-      notes: String(form.get("notes") || ""),
-    });
-    if (updated) {
+    try {
+      const updated = await updateMechanic(mechanic.id, {
+        name: String(form.get("name") || ""),
+      });
       setMechanic(updated);
       setEditing(false);
       setFlash("Cambios guardados.");
       window.setTimeout(() => setFlash(null), 2800);
+    } catch (err) {
+      setError(errorMessage(err, "No se pudo guardar"));
+    } finally {
+      setSaving(false);
     }
   }
 
-  function onDelete() {
+  async function onToggleActive() {
+    if (!mechanic || !isMechanic) return;
+    setError(null);
+    setSaving(true);
+    try {
+      const updated = await updateMechanic(mechanic.id, {
+        active: !mechanic.active,
+      });
+      setMechanic(updated);
+      setToggleOpen(false);
+      setFlash(updated.active ? "Cuenta reactivada." : "Cuenta apagada.");
+      window.setTimeout(() => setFlash(null), 2800);
+    } catch (err) {
+      setError(errorMessage(err, "No se pudo cambiar el estado"));
+      setToggleOpen(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onPassword(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     if (!mechanic) return;
-    deleteMechanic(mechanic.id);
-    router.replace("/panel/mecanicos");
+    setError(null);
+    setSaving(true);
+    const form = new FormData(e.currentTarget);
+    try {
+      await setMechanicPassword(
+        mechanic.id,
+        String(form.get("password") || ""),
+      );
+      setPasswordOpen(false);
+      setFlash("Contraseña actualizada.");
+      window.setTimeout(() => setFlash(null), 2800);
+      e.currentTarget.reset();
+    } catch (err) {
+      setError(errorMessage(err, "No se pudo cambiar la contraseña"));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
-    <PanelShell title={mechanic.name} subtitle="Perfil del mecánico">
+    <PanelShell
+      title={mechanic.name}
+      subtitle={mechanic.role === "owner" ? "Dueño del taller" : "Mecánico"}
+    >
       <Link
         href="/panel/mecanicos"
         className="tap-target mb-4 inline-flex items-center text-sm text-muted hover:text-ink"
@@ -89,17 +165,38 @@ function MecanicoDetailContent() {
           {flash}
         </p>
       )}
+      {error && (
+        <p role="alert" className="mb-4 text-sm text-red-700">
+          {error}
+        </p>
+      )}
 
       <form
         className="rounded-lg border border-line bg-surface p-5"
         onSubmit={onSave}
       >
+        <div className="mb-4 flex flex-wrap gap-2">
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+              mechanic.active
+                ? "bg-emerald-100 text-emerald-900"
+                : "bg-stone-200 text-stone-700"
+            }`}
+          >
+            {mechanic.active ? "Activo" : "Apagado"}
+          </span>
+          <span className="rounded-full bg-chip px-2.5 py-1 text-xs font-medium text-muted">
+            {mechanic.role === "owner" ? "Dueño" : "Mecánico"}
+          </span>
+        </div>
+
         <label className="block" htmlFor="name">
           <span className="text-sm font-medium">Nombre</span>
           <input
             id="name"
             name="name"
             required
+            minLength={2}
             defaultValue={mechanic.name}
             disabled={!editing}
             key={`${mechanic.id}-name-${editing}`}
@@ -112,34 +209,9 @@ function MecanicoDetailContent() {
             id="email"
             name="email"
             type="email"
-            required
-            defaultValue={mechanic.email}
-            disabled={!editing}
-            key={`${mechanic.id}-email-${editing}`}
-            className={`${fieldClass} disabled:opacity-70`}
-          />
-        </label>
-        <label className="mt-3 block" htmlFor="phone">
-          <span className="text-sm font-medium">WhatsApp</span>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            inputMode="numeric"
-            defaultValue={mechanic.phone}
-            disabled={!editing}
-            key={`${mechanic.id}-phone-${editing}`}
-            className={`${fieldClass} disabled:opacity-70`}
-          />
-        </label>
-        <label className="mt-3 block" htmlFor="notes">
-          <span className="text-sm font-medium">Notas</span>
-          <input
-            id="notes"
-            name="notes"
-            defaultValue={mechanic.notes ?? ""}
-            disabled={!editing}
-            key={`${mechanic.id}-notes-${editing}`}
+            value={mechanic.email}
+            disabled
+            readOnly
             className={`${fieldClass} disabled:opacity-70`}
           />
         </label>
@@ -147,12 +219,22 @@ function MecanicoDetailContent() {
 
         <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-5">
           {editing ? (
-            <button
-              type="submit"
-              className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold"
-            >
-              Guardar cambios
-            </button>
+            <>
+              <button
+                type="submit"
+                disabled={saving}
+                className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
+              >
+                Guardar cambios
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="tap-target rounded-md border border-line px-4 py-2.5 text-sm font-semibold text-ink"
+              >
+                Cancelar
+              </button>
+            </>
           ) : (
             <button
               type="button"
@@ -162,59 +244,109 @@ function MecanicoDetailContent() {
               Editar
             </button>
           )}
-          {editing && (
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              className="tap-target rounded-md border border-line px-4 py-2.5 text-sm font-semibold text-ink"
-            >
-              Cancelar
-            </button>
-          )}
           <button
             type="button"
-            onClick={() => setDeleteOpen(true)}
-            className="tap-target rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800"
+            onClick={() => {
+              setError(null);
+              setPasswordOpen(true);
+            }}
+            className="tap-target rounded-md border border-line px-4 py-2.5 text-sm font-semibold text-ink"
           >
-            Eliminar
+            Cambiar contraseña
           </button>
+          {isMechanic && (
+            <button
+              type="button"
+              onClick={() => setToggleOpen(true)}
+              className={`tap-target rounded-md px-4 py-2.5 text-sm font-semibold text-white ${
+                mechanic.active
+                  ? "bg-red-700 hover:bg-red-800"
+                  : "bg-emerald-700 hover:bg-emerald-800"
+              }`}
+            >
+              {mechanic.active ? "Apagar cuenta" : "Reactivar cuenta"}
+            </button>
+          )}
         </div>
       </form>
 
-      {deleteOpen && (
+      {toggleOpen && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="delete-mec-title"
         >
           <div className="w-full max-w-md rounded-lg border border-line bg-surface p-5 shadow-xl">
-            <h2
-              id="delete-mec-title"
-              className="font-[family-name:var(--font-display)] text-lg font-bold text-ink"
-            >
-              ¿Eliminar mecánico?
+            <h2 className="font-[family-name:var(--font-display)] text-lg font-bold text-ink">
+              {mechanic.active ? "¿Apagar cuenta?" : "¿Reactivar cuenta?"}
             </h2>
             <p className="mt-2 text-sm text-muted">
-              Se quitará a “{mechanic.name}” del taller. Esta acción no se puede
-              deshacer en la vista previa.
+              {mechanic.active
+                ? `“${mechanic.name}” no podrá entrar. Su nombre sigue en el historial de las órdenes que movió.`
+                : `“${mechanic.name}” podrá volver a entrar al taller.`}
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
               <button
                 type="button"
-                onClick={onDelete}
-                className="tap-target rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800"
+                disabled={saving}
+                onClick={() => void onToggleActive()}
+                className={`tap-target rounded-md px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 ${
+                  mechanic.active ? "bg-red-700" : "bg-emerald-700"
+                }`}
               >
-                Eliminar
+                {mechanic.active ? "Apagar" : "Reactivar"}
               </button>
               <button
                 type="button"
-                onClick={() => setDeleteOpen(false)}
+                onClick={() => setToggleOpen(false)}
                 className="tap-target rounded-md border border-line px-4 py-2.5 text-sm font-semibold text-ink"
               >
                 Cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {passwordOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-md rounded-lg border border-line bg-surface p-5 shadow-xl">
+            <h2 className="font-[family-name:var(--font-display)] text-lg font-bold text-ink">
+              Nueva contraseña
+            </h2>
+            <form className="mt-4 space-y-3" onSubmit={onPassword}>
+              <label className="block" htmlFor="password">
+                <span className="text-sm font-medium">Contraseña</span>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  minLength={8}
+                  required
+                  className={fieldClass}
+                />
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row-reverse">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
+                >
+                  Guardar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPasswordOpen(false)}
+                  className="tap-target rounded-md border border-line px-4 py-2.5 text-sm font-semibold text-ink"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

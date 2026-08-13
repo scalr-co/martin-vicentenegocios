@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
-import { clearSession, getWorkshopName, isAdmin } from "@/lib/auth";
+import { clearSession, getWorkshopName, isAdmin, isOwner } from "@/lib/auth";
 
 type LeaveGuardValue = {
   setLeaveBlocked: (blocked: boolean) => void;
@@ -98,6 +98,7 @@ export function PanelShell({
   const router = useRouter();
   const workshop = useClientWorkshopName();
   const admin = useClientFlag(() => isAdmin());
+  const owner = useClientFlag(() => isOwner());
   const pathname = usePathname();
   const adminActive = pathname.startsWith("/panel/admin");
 
@@ -127,7 +128,15 @@ export function PanelShell({
     ? [{ href: "/panel/admin", label: "Admin", exact: false as const }]
     : [
         ...links,
-        { href: "/panel/mecanicos", label: "Mecánicos", exact: false as const },
+        ...(owner
+          ? [
+              {
+                href: "/panel/mecanicos",
+                label: "Mecánicos",
+                exact: false as const,
+              },
+            ]
+          : []),
       ];
 
   function confirmLeave() {
