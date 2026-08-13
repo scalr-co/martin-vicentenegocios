@@ -131,6 +131,81 @@ primera se deshace con `active: true` y la segunda con `POST /admin/workshops/:i
 Un taller suspendido deja fuera a su gente **en el siguiente request**, no cuando venza el
 token.
 
+### Quien ve que
+
+Tres roles, una sola aplicacion. El backend ya los separa; el frontend solo tiene que
+mostrar lo que corresponde.
+
+| | `owner` | `mechanic` | `platform_admin` |
+|---|---|---|---|
+| `/orders`, `/clients`, `/vehicles`, `/statuses` | si | si | vacio (su taller es el interno) |
+| `/users` (el equipo del taller) | si | **403** | 403 |
+| `/admin/*` (talleres y cuentas de Solve) | 403 | 403 | si |
+
+El rol viene en el login y en `GET /auth/me`, dentro de `user.role`. No hace falta
+adivinarlo por el correo.
+
+### Mirar un taller
+
+Cuando el taller llama con un problema, Solve puede mirar lo que tiene entre manos. Es
+**solo lectura**: por esta puerta no se mueve una orden ni se corrige una ficha. Para eso
+estan las acciones del panel, que dejan su rastro.
+
+```
+GET /admin/workshops/:id                    la ficha, con sus senales
+GET /admin/workshops/:id/orders             sus ordenes, con los mismos filtros del panel
+GET /admin/workshops/:id/orders/:ordenId    la orden con su bitacora y todos sus avisos
+```
+
+La ficha contesta "esta funcionando o esta atascado" sin entrar orden por orden:
+
+```jsonc
+{ "data": {
+  "id": "...", "name": "Taller San Cristobal", "phone": "56987654321",
+  "whatsappMode": "link", "active": true,
+  "createdAt": "2026-08-01T12:00:00Z", "deletedAt": null,
+  "stats": {
+    "ordersTotal": 57,        // todas, igual que el ordersCount de la lista
+    "ordersOpen": 4,          // lo que no esta entregado ni archivado
+    "lastActivityAt": "2026-08-12T14:03:00Z",
+    "noticesPending": 2,      // avisos que quedaron en link_ready y nunca se enviaron
+    "usersActive": 3
+  }
+}}
+```
+
+`noticesPending` es la senal mas util: un taller que mueve ordenes y deja los avisos sin
+enviar no esta usando el producto, esta peleando con el.
+
+El listado de ordenes acepta los mismos `?open=`, `?status=`, `?search=`, `?page=` y
+`?limit=` que `GET /orders`, y devuelve las ordenes con la misma forma. El detalle agrega
+dos listas que el panel del taller no muestra completas:
+
+```jsonc
+{ "data": {
+  "id": "...", "title": "Frenos", "status": "listo", "client": { }, "vehicle": { },
+  "events": [
+    { "id": "...", "type": "cambio_de_estado", "fromStatus": "recibido",
+      "toStatus": "en_reparacion", "userName": "Marcela",
+      "createdAt": "2026-08-12T13:40:00Z" }
+  ],
+  "notifications": [
+    { "id": "...", "toPhone": "56911111111", "message": "Hola Juan...",
+      "status": "link_ready", "createdAt": "...", "sentAt": null }
+  ]
+}}
+```
+
+`userName` queda en `null` si esa cuenta ya no existe: el evento sobrevive a la persona.
+
+Los talleres **dados de baja tambien se miran**: cuando uno se va, lo que interesa es
+entender por que. El taller interno de Solve no, igual que no sale en la lista.
+
+Abrir la ficha de un taller **queda anotado** en `admin_audit` con la accion
+`workshop_viewed` y el nombre de quien entro. Se anota una vez cada media hora por
+persona y taller: recargar la pagina no llena el registro de ruido. Los listados y el
+detalle no anotan nada, porque para llegar a ellos hay que pasar por la ficha.
+
 ## Correr en tu maquina
 
 Con Docker, que levanta la API y la base de datos juntas:

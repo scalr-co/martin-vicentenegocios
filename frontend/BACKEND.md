@@ -315,3 +315,103 @@ Cuando la API esté up: avisar URL base + cómo va el Bearer token.
 | register no público | Adoptado (alta interna) |
 | fotos en R2 + múltiples | Adoptado |
 | historial + paginación + open definido + phone normalizado | Adoptado |
+
+---
+
+## 11. Panel de Solve (admin de plataforma)
+
+Agregado el 12-08-2026. Todo lo de esta sección está construido, probado y en `/docs`.
+
+### Los tres roles
+
+`user.role` viene en la respuesta del login y en `GET /auth/me`. **No hace falta
+adivinarlo por el correo** — si el frontend todavía trata `demo@tallertrack.cl` como
+admin, eso se puede borrar.
+
+| | `owner` | `mechanic` | `platform_admin` |
+|---|---|---|---|
+| `/orders`, `/clients`, `/vehicles`, `/statuses` | ✅ | ✅ | lista vacía |
+| `/users` (equipo del taller) | ✅ | **403** | 403 |
+| `/admin/*` | 403 | 403 | ✅ |
+
+En pantallas: el mecánico ve Hoy, Clientes, Nueva orden y el detalle de la orden con
+mover estado y avisar. El dueño ve todo eso **más Equipo**. El admin no entra al panel del
+taller: entra al panel de Solve.
+
+### Administrar la cuenta de un taller
+
+```
+POST   /admin/workshops                     alta de taller + su dueño en un paso
+GET    /admin/workshops                     lista (?archived=true trae los dados de baja)
+PATCH  /admin/workshops/:id                 corregir nombre/teléfono, o suspender con active:false
+DELETE /admin/workshops/:id                 dar de baja (no borra nada)
+POST   /admin/workshops/:id/restore         devolverlo con todo adentro
+POST   /admin/workshops/:id/owner-password  clave nueva para el dueño que la perdió
+GET    /admin/workshops/:id/users           el equipo de ese taller
+POST   /admin/workshops/:id/users           crear una cuenta de respaldo ahí adentro
+GET    /admin/accounts                      las cuentas de Solve
+POST   /admin/accounts                      crear otra cuenta de Solve
+PATCH  /admin/accounts/:id                  renombrar o apagar una (nunca la propia)
+```
+
+`GET /admin/workshops` devuelve cada taller con `ownerEmail` y `ordersCount`.
+
+**Dos cosas que el panel del frontend promete y el backend no tiene:**
+
+- **No existe el plan `basico` / `plus`.** No hay campo `plan` en `workshops`. Si lo
+  quieren, se pide y se agrega; mientras tanto, cualquier límite de mecánicos que muestre
+  el panel es decorativo.
+- **La suspensión no tiene fecha de término.** Es un interruptor: `active: false` deja al
+  taller fuera hasta que alguien lo reactive con `active: true`. No hay `suspendedUntil`.
+
+### Mirar un taller (solo lectura)
+
+```
+GET /admin/workshops/:id                    la ficha, con sus señales
+GET /admin/workshops/:id/orders             sus órdenes, mismos filtros que /orders
+GET /admin/workshops/:id/orders/:ordenId    la orden con bitácora y todos sus avisos
+```
+
+Por esta puerta **no se escribe**: un PATCH o un DELETE responden 405. Para arreglarle
+algo a un taller están las acciones de arriba.
+
+La ficha:
+
+```jsonc
+{ "data": {
+  "id": "...", "name": "Taller San Cristóbal", "phone": "56987654321",
+  "whatsappMode": "link", "active": true,
+  "createdAt": "2026-08-01T12:00:00Z", "deletedAt": null,
+  "stats": {
+    "ordersTotal": 57,
+    "ordersOpen": 4,
+    "lastActivityAt": "2026-08-12T14:03:00Z",   // null si nunca hubo una orden
+    "noticesPending": 2,                         // avisos en link_ready que nunca se enviaron
+    "usersActive": 3
+  }
+}}
+```
+
+El detalle de una orden trae los campos de siempre más:
+
+```jsonc
+{
+  "events": [
+    { "id": "...", "type": "cambio_de_estado", "fromStatus": "recibido",
+      "toStatus": "en_reparacion", "userName": "Marcela",
+      "createdAt": "2026-08-12T13:40:00Z" }
+  ],
+  "notifications": [
+    { "id": "...", "toPhone": "56911111111", "message": "Hola Juan...",
+      "status": "link_ready", "createdAt": "...", "sentAt": null }
+  ]
+}
+```
+
+`userName` es `null` si esa cuenta ya no existe. `notifications` viene completo y en
+orden, no solo el último como en el panel del taller.
+
+Los talleres dados de baja se siguen mirando. El interno de Solve no: da 404.
+
+Abrir la ficha queda anotado en `admin_audit` (`workshop_viewed`) con quién entró. Es
+transparente para el frontend, pero conviene saberlo: mirar un taller deja rastro.
