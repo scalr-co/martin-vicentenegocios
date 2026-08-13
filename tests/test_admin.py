@@ -648,3 +648,34 @@ def test_el_panel_nunca_se_queda_sin_ninguna_cuenta_activa(cliente, token_admin,
     )
     assert respuesta.status_code == 409
     assert entrar(cliente, "vicente@solve.cl", clave=CLAVE_DEL_ADMIN)
+
+
+def test_suspender_el_taller_bota_al_mecanico_que_estaba_trabajando(cliente, token_admin):
+    """La prueba que junta todo: el mecanico esta con la sesion abierta, Solve suspende
+    su taller, y el mecanico se cae en el siguiente click sin esperar a que venza nada."""
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+    cliente.post(
+        f"/admin/workshops/{taller_id}/users",
+        json={"name": "Pedro", "email": "pedro@sancristobal.cl", "password": "clave-larga-1"},
+        headers=con_token(token_admin),
+    )
+    token_mecanico = entrar(cliente, "pedro@sancristobal.cl", clave="clave-larga-1")
+    assert cliente.get("/orders", headers=con_token(token_mecanico)).status_code == 200
+
+    cliente.patch(
+        f"/admin/workshops/{taller_id}",
+        json={"active": False},
+        headers=con_token(token_admin),
+    )
+
+    assert cliente.get("/orders", headers=con_token(token_mecanico)).status_code == 401
+
+    # Y al reactivar vuelve a trabajar con todo donde estaba.
+    cliente.patch(
+        f"/admin/workshops/{taller_id}",
+        json={"active": True},
+        headers=con_token(token_admin),
+    )
+    assert cliente.get(
+        "/orders", headers=con_token(entrar(cliente, "pedro@sancristobal.cl", clave="clave-larga-1"))
+    ).status_code == 200

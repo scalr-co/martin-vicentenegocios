@@ -13,13 +13,14 @@ subir fotos y desplegar.
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| F0 | Esqueleto, `/health`, `/docs`, CORS | ✅ (falta desplegar) |
+| F0 | Esqueleto, `/health`, `/docs`, CORS | ✅ |
 | F1 | workshops, users, login, roles | ✅ |
 | F2 | clients, vehicles, historial por patente | ✅ |
 | F3 | orders, `POST /orders/:id/status`, eventos y avisos | ✅ |
 | F4 | Fotos en Cloudflare R2 | ⬜ |
 | F5 | `GET /statuses`, filtros y paginacion | ✅ |
 | F6 | Envio automatico por WhatsApp API (modo `api`) | ⬜ |
+| F7 | Equipo del taller, suspension y baja de talleres | ✅ |
 
 Los estados de una orden, en orden: `recibido`, `en_diagnostico`, `esperando_aprobacion`,
 `en_reparacion`, `esperando_repuesto`, `listo`, `entregado`. `GET /orders?open=true` trae
@@ -79,8 +80,14 @@ etiqueta y si cierra la orden.
 
 ## Para Martin
 
-La lista de endpoints **siempre esta al dia en `/docs`**. Se genera sola desde el codigo, asi que
-no puede quedar desactualizada. Ahi puedes ver cada campo y probar las llamadas sin escribir nada.
+La lista de endpoints **siempre esta al dia en `/docs`**, corriendo el backend en tu maquina. Se
+genera sola desde el codigo, asi que no puede quedar desactualizada: ahi ves cada campo y pruebas
+las llamadas sin escribir nada.
+
+**En produccion `/docs` esta cerrada** (y `/openapi.json` tambien). Con ella abierta cualquiera
+lista las rutas del panel de administracion desde internet. Si no quieres levantar el backend,
+el archivo `openapi.json` del repo tiene el mismo contenido y se regenera con
+`python scripts/exportar_openapi.py`.
 
 Convenciones del contrato:
 
@@ -104,6 +111,25 @@ Convenciones del contrato:
 - Fechas: ISO 8601 en UTC. `estimatedAt` es fecha sin hora.
 - Paginacion: `?page=&limit=`, con tope de 100 por pagina.
 - Los cambios que rompan compatibilidad se avisan aca antes de subirlos.
+
+### Cuentas
+
+El dueno del taller administra a su equipo en `/users`: da de alta mecanicos, los apaga y
+los enciende, y les resetea la clave. Un `mechanic` recibe 403 en todo `/users`, y un
+dueno que pida por alguien de otro taller recibe 404.
+
+Apagar a alguien **no lo borra**: sigue saliendo en `GET /users` con `active: false`,
+porque su nombre cuelga del historial de las ordenes que movio. Cambiarle la clave le
+cierra la sesion que tuviera abierta.
+
+El panel de Solve suspende talleres con `PATCH /admin/workshops/:id` y `active: false`, y
+los da de baja con `DELETE /admin/workshops/:id`. Ninguna de las dos borra datos: la
+primera se deshace con `active: true` y la segunda con `POST /admin/workshops/:id/restore`.
+`GET /admin/workshops` muestra los suspendidos y esconde los dados de baja; con
+`?archived=true` trae solo estos ultimos.
+
+Un taller suspendido deja fuera a su gente **en el siguiente request**, no cuando venza el
+token.
 
 ## Correr en tu maquina
 

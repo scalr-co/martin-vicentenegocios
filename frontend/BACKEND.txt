@@ -115,6 +115,32 @@ FOTOS (varias, no una)
 - POST /orders/:id/photos  (multipart)
 - Ya no usar photoUrl singular
 
+EQUIPO DEL TALLER (solo el dueno)
+- GET /users                lista el equipo, incluidos los apagados
+- POST /users               crea un mecanico { name, email, password }
+                            el rol lo pone el backend: siempre mechanic
+- PATCH /users/:id          { name?, active? }
+- POST /users/:id/password  { password }  le cierra la sesion abierta
+
+PANEL DE SOLVE (solo platform_admin)
+- PATCH /admin/workshops/:id           { name?, phone?, active? }
+                                       active:false suspende el taller
+- DELETE /admin/workshops/:id          da de baja (204). No borra datos
+- POST /admin/workshops/:id/restore    revive un taller dado de baja
+- GET /admin/workshops?archived=true   solo los dados de baja
+- GET /admin/workshops/:id/users       el equipo de un taller
+- POST /admin/workshops/:id/users      alta de respaldo
+                                       { name, email, password, role? }
+- POST /admin/accounts                 otra cuenta de Solve (clave de 12+)
+- GET /admin/accounts                  las cuentas de Solve
+- PATCH /admin/accounts/:id            { name?, active? }
+
+Notas:
+- Apagar a alguien no lo borra: sigue en GET /users con active:false.
+- Suspender un taller deja fuera a su gente en el siguiente request, no al
+  vencer el token.
+- Un dueno que pida por alguien de otro taller recibe 404, no 403.
+
 ========================================
 HISTORIAL
 ========================================
