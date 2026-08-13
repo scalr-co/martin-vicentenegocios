@@ -104,6 +104,55 @@ export async function apiList<T>(
   return unwrapList<T>(data);
 }
 
+/** Descarga un archivo (CSV) con el mismo Bearer que apiFetch. */
+export async function apiDownload(path: string, fallbackName: string) {
+  const token = getToken();
+  const headers = new Headers();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, { headers });
+  } catch {
+    throw new NetworkError();
+  }
+
+  if (!res.ok) {
+    let json: ApiEnvelope<unknown> | null = null;
+    try {
+      json = (await res.json()) as ApiEnvelope<unknown>;
+    } catch {
+      json = null;
+    }
+    const message = json?.error?.message || `Error ${res.status}`;
+    const code = json?.error?.code || "ERROR";
+    if (res.status === 401) {
+      clearSession();
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/login")
+      ) {
+        window.location.href = "/login?razon=sesion";
+      }
+    }
+    throw new ApiError(message, code, res.status);
+  }
+
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const match = /filename\*?=(?:UTF-8'')?["']?([^"';]+)/i.exec(disposition);
+  const filename = match?.[1]
+    ? decodeURIComponent(match[1])
+    : fallbackName;
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export function extractToken(payload: unknown): string | null {
   if (!payload || typeof payload !== "object") return null;
   const obj = payload as Record<string, unknown>;
