@@ -2,12 +2,86 @@
 
 import Link from "next/link";
 import { BrandMark } from "@/components/ui";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { PLAN_BASICO_FEATURES, PLAN_PLUS_FEATURES } from "@/lib/plans";
+
+/**
+ * Acento para mecánicos en celular: arena/cemento.
+ * Contrasta en fondos oscuros (sol / taller), sin gritar como un naranja.
+ */
+const ACCENT = "#c9bfb0";
+const CTA = "#e7e5e4";
+const CTA_TEXT = "#1c1917";
+
+function PlanFeature({ label }: { label: string }) {
+  return (
+    <li className="flex items-center gap-3 px-5 py-3.5">
+      <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-stone-100">
+        {label}
+      </span>
+      <span
+        className="shrink-0"
+        style={{ color: ACCENT }}
+        aria-label="Incluido"
+        title="Incluido"
+      >
+        <TicketCheck />
+      </span>
+    </li>
+  );
+}
+
+function TicketCheck() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M5 12.5 9.5 17 19 7.5"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Baja suave hasta un ancla (más pausado que el smooth nativo). */
+function scrollToId(id: string, e?: React.MouseEvent) {
+  e?.preventDefault();
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+  if (reduceMotion) {
+    el.scrollIntoView();
+    history.replaceState(null, "", `#${id}`);
+    return;
+  }
+
+  const start = window.scrollY;
+  const end = el.getBoundingClientRect().top + window.scrollY;
+  const distance = end - start;
+  const duration = Math.min(1400, Math.max(700, Math.abs(distance) * 0.55));
+  let startTime: number | null = null;
+
+  function step(now: number) {
+    if (startTime === null) startTime = now;
+    const t = Math.min((now - startTime) / duration, 1);
+    // easeInOutCubic
+    const eased =
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    window.scrollTo(0, start + distance * eased);
+    if (t < 1) requestAnimationFrame(step);
+    else history.replaceState(null, "", `#${id}`);
+  }
+
+  requestAnimationFrame(step);
+}
 
 export default function HomePage() {
   return (
     <div className="flex min-h-dvh flex-col">
-      {/* Hero: el fondo oscuro/imagen llega hasta el borde superior (sin franja) */}
       <section
         className="relative isolate min-h-svh overflow-hidden"
         style={{ backgroundColor: "#1c1917" }}
@@ -22,17 +96,28 @@ export default function HomePage() {
         />
         <div
           aria-hidden
-          className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(232,93,4,0.28),transparent_55%)]"
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at top right, rgba(201,191,176,0.2), transparent 55%)",
+          }}
         />
 
         <header className="absolute inset-x-0 top-0 z-20">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8">
             <BrandMark light className="text-xl md:text-2xl" />
             <nav className="flex items-center gap-2 sm:gap-3">
-              <ThemeToggle lightHero />
+              <a
+                href="#precios"
+                onClick={(e) => scrollToId("precios", e)}
+                className="tap-target inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-white/80 transition hover:text-white"
+              >
+                Precios
+              </a>
               <Link
                 href="/login"
-                className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark"
+                className="tap-target inline-flex items-center rounded-md px-4 py-2 text-sm font-semibold transition hover:brightness-110"
+                style={{ backgroundColor: CTA, color: CTA_TEXT }}
               >
                 Ingresar
               </Link>
@@ -42,12 +127,17 @@ export default function HomePage() {
 
         <div className="relative z-10 mx-auto flex min-h-svh max-w-6xl flex-col justify-end px-5 pb-16 pt-28 md:justify-center md:px-8 md:pb-24">
           <div className="max-w-2xl">
-            <p className="animate-rise mb-4 font-[family-name:var(--font-display)] text-sm font-semibold uppercase tracking-[0.22em] text-brand">
+            <p
+              className="animate-rise mb-4 font-[family-name:var(--font-display)] text-sm font-semibold uppercase tracking-[0.22em]"
+              style={{ color: ACCENT }}
+            >
               Motor Ping
             </p>
             <h1 className="animate-rise-delay font-[family-name:var(--font-display)] text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl">
               El cliente sabe en qué va.
-              <span className="block text-white/85">Sin llamarte veinte veces.</span>
+              <span className="block text-white/85">
+                Sin llamarte veinte veces.
+              </span>
             </h1>
             <p className="animate-fade mt-5 max-w-lg text-base leading-relaxed text-white/75 md:text-lg">
               Órdenes de trabajo para talleres: estados claros, historial por
@@ -57,7 +147,8 @@ export default function HomePage() {
             <div className="animate-fade mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <Link
                 href="/login"
-                className="tap-target inline-flex items-center justify-center rounded-md bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
+                className="tap-target inline-flex items-center justify-center rounded-md px-6 py-3.5 text-sm font-semibold transition hover:brightness-110"
+                style={{ backgroundColor: CTA, color: CTA_TEXT }}
               >
                 Ingresar
               </Link>
@@ -72,12 +163,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-line bg-surface px-5 py-20 text-ink md:px-8">
+      <section className="border-t border-white/10 bg-[#1c1917] px-5 py-20 text-white md:px-8">
         <div className="mx-auto max-w-6xl">
           <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight md:text-4xl">
             Hecho para el caos real del taller
           </h2>
-          <p className="mt-3 max-w-xl text-muted">
+          <p className="mt-3 max-w-xl text-white/70">
             No es otra agenda. Es el seguimiento del auto mientras está en tu
             piso — incluyendo cuando está quieto esperando al cliente o a una
             pieza.
@@ -100,13 +191,16 @@ export default function HomePage() {
             ].map((item, i) => (
               <div
                 key={item.title}
-                className="border-t-2 border-brand pt-5"
-                style={{ animationDelay: `${i * 80}ms` }}
+                className="border-t-2 pt-5"
+                style={{
+                  borderColor: ACCENT,
+                  animationDelay: `${i * 80}ms`,
+                }}
               >
-                <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold">
+                <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold text-white">
                   {item.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">
+                <p className="mt-2 text-sm leading-relaxed text-white/65">
                   {item.text}
                 </p>
               </div>
@@ -115,7 +209,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-background px-5 py-16 text-ink md:px-8">
+      <section className="bg-[#141210] px-5 py-16 text-white md:px-8">
         <div className="mx-auto max-w-6xl">
           <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight md:text-3xl">
             Flujo del día
@@ -129,51 +223,159 @@ export default function HomePage() {
             ].map((step, index) => (
               <li
                 key={step}
-                className="rounded-lg border border-line bg-surface p-4"
+                className="rounded-lg border border-white/15 bg-[#292524] p-4"
               >
-                <p className="font-[family-name:var(--font-display)] text-sm font-bold text-brand">
+                <p
+                  className="font-[family-name:var(--font-display)] text-sm font-bold"
+                  style={{ color: ACCENT }}
+                >
                   {String(index + 1).padStart(2, "0")}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed">{step}</p>
+                <p className="mt-2 text-sm leading-relaxed text-white/85">
+                  {step}
+                </p>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      <section className="bg-steel px-5 py-20 text-white md:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-8 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-xl">
-            <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight md:text-4xl">
-              Setup desde $150.000
-              <span className="block text-brand">+ $29.990 al mes</span>
-            </h2>
-            <p className="mt-4 text-white/70">
-              Precio de lanzamiento para talleres en Chile. Te dejamos andando y
-              te acompañamos los primeros días.
-            </p>
+      <section
+        id="precios"
+        className="border-t border-white/10 bg-[#1c1917] px-5 py-20 md:px-8"
+      >
+        <div className="mx-auto max-w-6xl">
+          <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-white md:text-4xl">
+            Planes para tu taller
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70 md:text-base">
+            Nosotros te damos de alta el taller. Tú creas las cuentas de tus
+            mecánicos. Elige según cuántas personas usan el sistema.
+          </p>
+
+          <div className="mt-12 grid items-start gap-6 lg:grid-cols-2">
+            <article className="overflow-hidden rounded-xl border border-white/15 bg-[#292524]">
+              <div className="border-b border-white/10 px-6 py-5">
+                <p className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide text-white">
+                  Básico
+                </p>
+                <p className="mt-1 text-sm text-white/65">
+                  Ideal para talleres chicos con poco equipo
+                </p>
+                <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold text-white">
+                  $24.990
+                  <span className="text-base font-semibold text-white/65">
+                    {" "}
+                    / mes
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-white/55">
+                  + setup $120.000 (una vez)
+                </p>
+              </div>
+              <ul className="divide-y divide-white/10">
+                {PLAN_BASICO_FEATURES.map((item) => (
+                  <PlanFeature key={item} label={item} />
+                ))}
+              </ul>
+              <div className="px-6 pb-6 pt-2">
+                <a
+                  href="https://wa.me/56981875498?text=Hola%2C%20quiero%20el%20plan%20B%C3%A1sico%20de%20Motor%20Ping"
+                  className="tap-target inline-flex w-full items-center justify-center rounded-md border border-white/25 bg-transparent px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  Quiero el Básico
+                </a>
+              </div>
+            </article>
+
+            <article
+              className="overflow-hidden rounded-xl bg-[#292524]"
+              style={{
+                border: `1px solid ${ACCENT}66`,
+                boxShadow: `0 0 0 1px ${ACCENT}22`,
+              }}
+            >
+              <div
+                className="border-b px-6 py-5"
+                style={{
+                  backgroundColor: "#3f3a36",
+                  borderColor: `${ACCENT}55`,
+                }}
+              >
+                <p
+                  className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide"
+                  style={{ color: ACCENT }}
+                >
+                  Plus
+                </p>
+                <p className="mt-1 text-sm text-white/75">
+                  Todo el Básico, sin tope de mecánicos y con más potencia
+                </p>
+                <p className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold text-white">
+                  $44.990
+                  <span className="text-base font-semibold text-white/70">
+                    {" "}
+                    / mes
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-white/55">
+                  + setup $150.000 (una vez)
+                </p>
+              </div>
+              <ul className="divide-y divide-white/10">
+                {PLAN_PLUS_FEATURES.map((item) => (
+                  <PlanFeature key={item} label={item} />
+                ))}
+              </ul>
+              <div className="px-6 pb-6 pt-2">
+                <a
+                  href="https://wa.me/56981875498?text=Hola%2C%20quiero%20el%20plan%20Plus%20de%20Motor%20Ping"
+                  className="tap-target inline-flex w-full items-center justify-center rounded-md px-4 py-3 text-sm font-semibold transition hover:brightness-110"
+                  style={{ backgroundColor: ACCENT, color: CTA_TEXT }}
+                >
+                  Quiero el Plus
+                </a>
+              </div>
+            </article>
           </div>
-          <Link
-            href="/login"
-            className="inline-flex items-center justify-center rounded-md bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
-          >
-            Ingresar
-          </Link>
+
+          <p className="mt-8 text-center text-sm text-white/55">
+            Precios de lanzamiento en Chile · IVA no incluido · Se pueden ajustar
+            al cerrar contigo
+          </p>
         </div>
       </section>
 
-      <footer className="border-t border-line bg-background px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-ink md:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <footer className="border-t border-white/10 bg-[#141210] px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-white md:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <BrandMark />
-            <p className="mt-2 text-sm text-muted">
+            <BrandMark light />
+            <p className="mt-2 text-sm text-white/60">
               Chillán · Temuco · Hecho para talleres locales
             </p>
+            <nav className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              <Link
+                href="/privacidad"
+                className="text-white/70 underline-offset-2 hover:text-white hover:underline"
+              >
+                Política de privacidad
+              </Link>
+              <Link
+                href="/terminos"
+                className="text-white/70 underline-offset-2 hover:text-white hover:underline"
+              >
+                Términos de uso
+              </Link>
+            </nav>
           </div>
-          <p className="text-xs leading-relaxed text-muted sm:text-right">
+          <p className="text-xs leading-relaxed text-white/45 sm:text-right">
             © {new Date().getFullYear()} Motor Ping
             <br />
             Un producto de Martin Web Studio &amp; Solve
+            <br />
+            <span className="mt-1 inline-block text-white/35">
+              Privacidad alineada a la Ley 21.719 (Chile)
+            </span>
           </p>
         </div>
       </footer>

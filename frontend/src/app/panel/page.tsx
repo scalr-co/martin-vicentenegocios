@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PanelShell } from "@/components/panel-shell";
 import { StatusBadge } from "@/components/ui";
 import { apiList } from "@/lib/api";
+import { formatDateCl } from "@/lib/date";
+import { errorMessage } from "@/lib/errors";
 import {
   formatVehicleOrItem,
   statusLabel,
@@ -42,34 +44,37 @@ function PanelContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        setLoading(true);
-        const list = await apiList<ApiOrder>("/orders?open=true&limit=50");
-        if (!cancelled) {
-          setOrders(list.map(normalizeOrder));
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Error al cargar");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const list = await apiList<ApiOrder>("/orders?open=true&limit=50");
+      setOrders(list.map(normalizeOrder));
+      setError(null);
+    } catch (err) {
+      setError(errorMessage(err, "No se pudieron cargar las órdenes"));
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    function onOnline() {
+      void load();
+    }
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [load]);
 
   const waiting = orders.filter(
     (o) =>
       o.status === "esperando_aprobacion" || o.status === "esperando_repuesto",
   );
   const ready = orders.filter((o) => o.status === "listo");
+  const statsReady = !loading && !error;
 
   const visible = useMemo(() => {
     if (filter === "open") return orders;
@@ -82,24 +87,34 @@ function PanelContent() {
       title="Órdenes de hoy"
       subtitle="Trabajos abiertos del taller"
     >
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <Stat label="Abiertas" value={orders.length} />
+      <div className="mb-4 grid grid-cols-3 gap-2 sm:mb-6 sm:gap-3">
         <Stat
-          label="Esperando cliente/repuesto"
-          value={waiting.length}
-          tone="warn"
+          label="Abiertas"
+          value={statsReady ? orders.length : null}
+          compact
         />
-        <Stat label="Listos para retirar" value={ready.length} tone="ok" />
+        <Stat
+          label="Esperando"
+          value={statsReady ? waiting.length : null}
+          tone="warn"
+          compact
+        />
+        <Stat
+          label="Listos"
+          value={statsReady ? ready.length : null}
+          tone="ok"
+          compact
+        />
       </div>
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {FILTERS.map((f) => (
             <button
               key={f.id}
               type="button"
               onClick={() => setFilter(f.id)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              className={`tap-target rounded-full px-3 py-1.5 text-xs font-medium transition ${
                 filter === f.id
                   ? "bg-steel text-white"
                   : "bg-surface text-muted ring-1 ring-line hover:text-ink"
@@ -111,7 +126,7 @@ function PanelContent() {
         </div>
         <Link
           href="/panel/nueva-orden"
-          className="hidden rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark sm:inline-flex"
+          className="btn-brand hidden rounded-md px-4 py-2 text-sm font-semibold sm:inline-flex"
         >
           Nueva orden
         </Link>
@@ -119,21 +134,31 @@ function PanelContent() {
 
       {loading && <p className="text-sm text-muted">Cargando órdenes…</p>}
       {error && (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-          {error}
-        </p>
+        <div
+          role="alert"
+          className="rounded-md border border-red-200 bg-danger-soft px-3 py-3 text-sm text-red-800 dark:text-red-200"
+        >
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="tap-target mt-2 rounded-md border border-red-300 bg-surface px-3 py-1.5 text-sm font-semibold text-red-800 dark:text-red-200"
+          >
+            Reintentar
+          </button>
+        </div>
       )}
 
       {!loading && !error && (
-        <ul className="space-y-3 pb-20 sm:pb-0">
+        <ul className="space-y-3 pb-28 sm:pb-0">
           {visible.map((order) => (
             <li key={order.id}>
               <Link
                 href={`/panel/ordenes/${order.id}`}
-                className="card-lift block rounded-lg border border-line bg-surface p-4 hover:border-stone-300"
+                className="card-lift block min-w-0 rounded-lg border border-line bg-surface p-4 hover:border-stone-300"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1 overflow-hidden">
                     <p className="font-semibold text-ink">{order.title}</p>
                     <p className="mt-0.5 truncate text-sm text-muted">
                       {order.client?.name ?? "Cliente"} ·{" "}
@@ -144,7 +169,7 @@ function PanelContent() {
                 </div>
                 {order.estimatedAt && (
                   <p className="mt-3 text-xs text-muted">
-                    Estimado: {order.estimatedAt}
+                    Estimado: {formatDateCl(order.estimatedAt)}
                   </p>
                 )}
               </Link>
@@ -158,7 +183,7 @@ function PanelContent() {
               </p>
               <Link
                 href="/panel/nueva-orden"
-                className="mt-4 inline-flex rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+                className="btn-brand mt-4 inline-flex rounded-md px-4 py-2 text-sm font-semibold"
               >
                 Nueva orden
               </Link>
@@ -169,7 +194,7 @@ function PanelContent() {
 
       <Link
         href="/panel/nueva-orden"
-        className="fixed bottom-5 right-5 z-40 inline-flex items-center rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-900/20 hover:bg-brand-dark sm:hidden"
+        className="btn-brand fixed bottom-5 right-5 z-40 inline-flex items-center rounded-full px-5 py-3 text-sm font-semibold shadow-lg shadow-black/25 sm:hidden"
       >
         + Nueva
       </Link>
@@ -196,27 +221,45 @@ function Stat({
   label,
   value,
   tone = "neutral",
+  compact = false,
 }: {
   label: string;
-  value: number;
+  value: number | null;
   tone?: "neutral" | "warn" | "ok";
+  compact?: boolean;
 }) {
   const toneClass =
     tone === "warn"
-      ? "border-amber-300 bg-amber-50"
+      ? "border-[color:var(--warn-line)] bg-warn-soft"
       : tone === "ok"
-        ? "border-emerald-300 bg-emerald-50"
+        ? "border-[color:var(--ok-line)] bg-ok-soft"
         : "border-line bg-surface";
-  const labelClass = tone === "neutral" ? "text-muted" : "text-stone-600";
-  const valueClass = tone === "neutral" ? "text-ink" : "text-stone-900";
+  const labelClass =
+    tone === "warn"
+      ? "text-[color:var(--warn-ink)]"
+      : tone === "ok"
+        ? "text-[color:var(--ok-ink)]"
+        : "text-muted";
+  const valueClass =
+    tone === "warn"
+      ? "text-[color:var(--warn-ink)]"
+      : tone === "ok"
+        ? "text-[color:var(--ok-ink)]"
+        : "text-ink";
 
   return (
-    <div className={`rounded-lg border px-4 py-3 ${toneClass}`}>
-      <p className={`text-xs font-medium ${labelClass}`}>{label}</p>
+    <div
+      className={`rounded-lg border ${compact ? "px-2 py-2 sm:px-4 sm:py-3" : "px-4 py-3"} ${toneClass}`}
+    >
       <p
-        className={`mt-1 font-[family-name:var(--font-display)] text-2xl font-bold ${valueClass}`}
+        className={`font-medium ${labelClass} ${compact ? "text-[10px] leading-tight sm:text-xs" : "text-xs"}`}
       >
-        {value}
+        {label}
+      </p>
+      <p
+        className={`mt-0.5 font-[family-name:var(--font-display)] font-bold ${valueClass} ${compact ? "text-lg sm:text-2xl" : "text-2xl"}`}
+      >
+        {value === null ? "—" : value}
       </p>
     </div>
   );

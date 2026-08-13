@@ -1,30 +1,54 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f4f1ec;
   --foreground: #1c1917;
-  --brand: #e85d04;
-  --brand-dark: #c44d03;
+  /* Arena/cemento (familia de la landing). En claro: tono más oscuro para contraste con blanco. */
+  --brand: #6f675c;
+  --brand-dark: #5c554c;
+  --brand-ink: #ffffff;
   --ink: #1c1917;
   --muted: #57534e;
   --surface: #ffffff;
   --line: #e7e5e4;
   --steel: #292524;
   --hero-edge: #1c1917;
+  --chip: #f5f5f4;
+  --warn-soft: #fefce8;
+  --warn-line: #eab308;
+  --warn-ink: #854d0e;
+  --ok-soft: #ecfdf5;
+  --ok-line: #34d399;
+  --ok-ink: #065f46;
+  --danger-soft: #fef2f2;
+  --tone-ink: #1c1917;
   color-scheme: light;
 }
 
 html.dark {
   --background: #141210;
   --foreground: #f5f5f4;
-  --brand: #f97316;
-  --brand-dark: #ea580c;
+  /* Arena/cemento clara sobre fondos oscuros; texto de botón va oscuro */
+  --brand: #c9bfb0;
+  --brand-dark: #b8aea2;
+  --brand-ink: #1c1917;
   --ink: #f5f5f4;
   --muted: #a8a29e;
   --surface: #1c1917;
   --line: #3f3a36;
   --steel: #0c0a09;
   --hero-edge: #0c0a09;
+  --chip: #292524;
+  --warn-soft: #3f3a0a;
+  --warn-line: #eab308;
+  --warn-ink: #fde047;
+  --ok-soft: #064e3b;
+  --ok-line: #34d399;
+  --ok-ink: #a7f3d0;
+  --danger-soft: #450a0a;
+  --tone-ink: #fef3c7;
   color-scheme: dark;
 }
 
@@ -33,11 +57,16 @@ html.dark {
   --color-foreground: var(--foreground);
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
+  --color-brand-ink: var(--brand-ink);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-surface: var(--surface);
   --color-line: var(--line);
   --color-steel: var(--steel);
+  --color-chip: var(--chip);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok-soft: var(--ok-soft);
+  --color-danger-soft: var(--danger-soft);
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
 }
@@ -47,6 +76,7 @@ html {
   min-height: 100dvh;
   /* Coincide con el hero para que el overscroll del celular no muestre franja rara */
   background: #1c1917;
+  scroll-behavior: smooth;
 }
 
 html.dark {
@@ -126,6 +156,10 @@ select option {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   .animate-rise,
   .animate-rise-delay,
   .animate-fade {
@@ -135,6 +169,17 @@ select option {
 
 .tap-target {
   min-height: 44px;
+  min-width: 44px;
+}
+
+/* Botón primario de marca: tinta adaptada a claro/oscuro */
+.btn-brand {
+  background-color: var(--brand);
+  color: var(--brand-ink);
+}
+
+.btn-brand:hover {
+  background-color: var(--brand-dark);
 }
 
 .card-lift {

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Syne } from "next/font/google";
-import { ThemeScript } from "@/components/theme-toggle";
+import { SystemThemeSync, ThemeScript } from "@/components/theme-toggle";
 import "./globals.css";
 
 const body = DM_Sans({
@@ -20,7 +20,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1c1917",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f1ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#141210" },
+  ],
   viewportFit: "cover",
   width: "device-width",
   initialScale: 1,
@@ -36,7 +39,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <ThemeScript />
       </head>
-      <body className="flex min-h-dvh flex-col antialiased">{children}</body>
+      <body className="flex min-h-dvh flex-col antialiased">
+        <SystemThemeSync />
+        {children}
+      </body>
     </html>
   );
 }

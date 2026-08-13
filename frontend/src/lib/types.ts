@@ -1,6 +1,10 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ??
-  "https://martin-vicentenegocios-production.up.railway.app";
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+if (!rawApiUrl) {
+  throw new Error(
+    "Falta NEXT_PUBLIC_API_URL. Defínela en .env.local o en el panel de Vercel; sin ella el frontend no sabe a qué API hablar.",
+  );
+}
+export const API_URL = rawApiUrl;
 
 export type OrderStatus =
   | "recibido"
@@ -17,7 +21,7 @@ export type ApiClient = {
   name: string;
   phone: string;
   notes?: string | null;
-  /** Guardado sin puntos y con guion: "12345678-5". */
+  /** Si el backend lo agrega después; hoy puede ir en notes. */
   rut?: string | null;
 };
 
@@ -71,7 +75,7 @@ export const STATUS_COLORS: Record<string, string> = {
   recibido: "bg-stone-200 text-stone-800",
   en_diagnostico: "bg-amber-100 text-amber-900",
   esperando_aprobacion: "bg-yellow-100 text-yellow-900",
-  en_reparacion: "bg-orange-100 text-orange-900",
+  en_reparacion: "bg-stone-200 text-stone-800",
   esperando_repuesto: "bg-sky-100 text-sky-900",
   listo: "bg-emerald-100 text-emerald-900",
   entregado: "bg-stone-100 text-stone-500",

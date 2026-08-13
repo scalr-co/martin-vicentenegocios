@@ -1,16 +1,8 @@
 import { API_URL } from "@/lib/types";
 import { clearSession, getToken } from "@/lib/auth";
+import { ApiError, NetworkError } from "@/lib/errors";
 
-export class ApiError extends Error {
-  code: string;
-  status: number;
-
-  constructor(message: string, code = "ERROR", status = 400) {
-    super(message);
-    this.code = code;
-    this.status = status;
-  }
-}
+export { ApiError, NetworkError } from "@/lib/errors";
 
 type ApiEnvelope<T> = {
   data?: T;
@@ -43,10 +35,15 @@ export async function apiFetch<T>(
     if (token) finalHeaders.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...rest,
-    headers: finalHeaders,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...rest,
+      headers: finalHeaders,
+    });
+  } catch {
+    throw new NetworkError();
+  }
 
   let json: ApiEnvelope<T> | T | null = null;
   try {
@@ -57,25 +54,38 @@ export async function apiFetch<T>(
 
   if (!res.ok) {
     const envelope = json as ApiEnvelope<T> | null;
-    const message =
+    const detail =
+      json && typeof json === "object" && "detail" in json
+        ? (json as { detail: unknown }).detail
+        : undefined;
+
+    let message =
       envelope?.error?.message ||
-      (typeof json === "object" &&
-      json &&
-      "detail" in json &&
-      typeof (json as { detail: unknown }).detail === "string"
-        ? ((json as { detail: string }).detail as string)
-        : null) ||
+      (typeof detail === "string" ? detail : null) ||
       `Error ${res.status}`;
+
+    if (Array.isArray(detail) && detail.length > 0) {
+      const first = detail[0] as { msg?: string; loc?: unknown[] };
+      const loc = Array.isArray(first.loc) ? first.loc : [];
+      const field = String(loc[loc.length - 1] || "");
+      if (first.msg) {
+        message = field ? `${field}: ${first.msg}` : first.msg;
+      }
+    }
+
     const code = envelope?.error?.code || "ERROR";
 
     if (res.status === 401 && auth) {
       clearSession();
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-        window.location.href = "/login";
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/login")
+      ) {
+        window.location.href = "/login?razon=sesion";
       }
     }
 
-    throw new ApiError(message, code, res.status);
+    throw new ApiError(message, code, res.status, detail);
   }
 
   if (json && typeof json === "object" && "data" in (json as object)) {

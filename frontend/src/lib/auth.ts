@@ -2,10 +2,23 @@ const TOKEN_KEY = "motorping_token";
 const WORKSHOP_KEY = "motorping_workshop";
 const USER_KEY = "motorping_user";
 
+/**
+ * A2-05 (auditoría): el JWT vive en localStorage y cualquier script del origen
+ * puede leerlo (XSS → robo de sesión).
+ *
+ * Alternativa propuesta (requiere backend + acuerdo):
+ * - Cookie httpOnly + Secure + SameSite=Lax/Strict emitida por la API en login
+ * - Frontend deja de guardar el token; las llamadas van con credentials: "include"
+ * - CSRF token o SameSite estricto según el despliegue
+ * No se cambia aquí sin coordinar con el backend.
+ */
+
 export type SessionWorkshop = {
   id?: string;
   name?: string;
   phone?: string;
+  /** Plan del taller (basico | plus). Lo enviará la API. */
+  plan?: "basico" | "plus" | string;
 };
 
 export type SessionUser = {
@@ -72,14 +85,41 @@ function normalizeRole(role?: string | null) {
   return (role || "").trim().toLowerCase();
 }
 
+function normalizeEmail(email?: string | null) {
+  return (email || "").trim().toLowerCase();
+}
+
+/**
+ * Cuenta de admin de plataforma usada en demo / producción mientras
+ * el backend no marque siempre `platform_admin`.
+ */
+export const PLATFORM_ADMIN_EMAIL = "demo@tallertrack.cl";
+
+export function isPlatformAdminEmail(email?: string | null): boolean {
+  return normalizeEmail(email) === PLATFORM_ADMIN_EMAIL;
+}
+
 /** Admin de plataforma (Martín / Vicente). El backend envía `platform_admin`. */
 export function isAdmin(): boolean {
-  const role = normalizeRole(getUser()?.role);
-  return (
+  const user = getUser();
+  const role = normalizeRole(user?.role);
+  if (
     role === "platform_admin" ||
     role === "admin" ||
     role === "superadmin"
-  );
+  ) {
+    return true;
+  }
+  return isPlatformAdminEmail(user?.email);
+}
+
+/** Rol efectivo tras login: fuerza admin si el correo es el de plataforma. */
+export function resolveSessionRole(
+  role: string | undefined,
+  email: string | undefined,
+): string | undefined {
+  if (isPlatformAdminEmail(email)) return "platform_admin";
+  return role;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

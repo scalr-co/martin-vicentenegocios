@@ -1,15 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BrandMark } from "@/components/ui";
 import { apiFetch, extractToken } from "@/lib/api";
-import { extractSessionFromLogin, isAdmin, setSession } from "@/lib/auth";
-import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  extractSessionFromLogin,
+  isAdmin,
+  resolveSessionRole,
+  setSession,
+} from "@/lib/auth";
+import { errorMessage } from "@/lib/errors";
+import { fieldClass } from "@/lib/form-styles";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginShell />}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginShell({ children }: { children?: React.ReactNode }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto px-4 py-10"
+      style={{ backgroundColor: "#292524" }}
+    >
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at top, rgba(201,191,176,0.22), transparent 55%)",
+        }}
+      />
+      <div className="relative w-full max-w-sm rounded-lg border border-white/10 bg-white p-6 shadow-xl dark:border-line dark:bg-surface">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const search = useSearchParams();
+  const sessionExpired = search.get("razon") === "sesion";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -35,91 +71,102 @@ export default function LoginPage() {
       }
 
       const { workshop, user } = extractSessionFromLogin(data);
-      setSession(token, workshop, {
-        ...user,
-        email: user?.email || email,
-        role: user?.role,
-      });
+      const sessionEmail = user?.email || email;
+      const sessionRole = resolveSessionRole(user?.role, sessionEmail);
+      setSession(
+        token,
+        sessionRole === "platform_admin" ? null : workshop,
+        {
+          ...user,
+          email: sessionEmail,
+          role: sessionRole,
+        },
+      );
       router.replace(isAdmin() ? "/panel/admin" : "/panel");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo iniciar sesión");
+      setError(errorMessage(err, "No se pudo iniciar sesión"));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto px-4 py-10"
-      style={{ backgroundColor: "#292524" }}
-    >
-      <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20">
-        <ThemeToggle lightHero />
-      </div>
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at top, rgba(232,93,4,0.25), transparent 55%)",
-        }}
-      />
+    <LoginShell>
+      <BrandMark className="text-xl" />
+      <h1 className="mt-6 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
+        Ingresar
+      </h1>
+      <p className="mt-2 text-sm text-muted">
+        Acceso del taller. Las cuentas las dan de alta Martín y Solve.
+      </p>
 
-      <div className="relative w-full max-w-sm rounded-lg border border-white/10 bg-white p-6 shadow-xl dark:border-line dark:bg-surface">
-        <BrandMark className="text-xl" />
-        <h1 className="mt-6 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
-          Ingresar
-        </h1>
-        <p className="mt-2 text-sm text-muted">
-          Acceso del taller. Las cuentas las dan de alta Martín y Solve.
+      {sessionExpired && (
+        <p
+          role="status"
+          className="mt-4 rounded-md border border-[color:var(--warn-line)] bg-warn-soft px-3 py-2 text-sm text-[color:var(--tone-ink)]"
+        >
+          Tu sesión expiró o ya no es válida. Vuelve a ingresar.
         </p>
+      )}
 
-        <form className="mt-6 space-y-4" onSubmit={onSubmit}>
-          <label className="block" htmlFor="email">
-            <span className="text-sm font-medium">Email</span>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              placeholder="taller@ejemplo.cl"
-              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30"
-            />
-          </label>
-          <label className="block" htmlFor="password">
-            <span className="text-sm font-medium">Contraseña</span>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30"
-            />
-          </label>
+      <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+        <label className="block" htmlFor="email">
+          <span className="text-sm font-medium">Email</span>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="taller@ejemplo.cl"
+            className={fieldClass}
+          />
+        </label>
+        <label className="block" htmlFor="password">
+          <span className="text-sm font-medium">Contraseña</span>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            placeholder="••••••••"
+            className={fieldClass}
+          />
+        </label>
 
-          {error && (
-            <p role="alert" className="text-sm text-red-700">
-              {error}
-            </p>
-          )}
+        {error && (
+          <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>
+        )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-brand py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60"
-          >
-            {loading ? "Entrando…" : "Entrar al panel"}
-          </button>
-        </form>
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-brand tap-target w-full rounded-md py-2.5 text-sm font-semibold disabled:opacity-60"
+        >
+          {loading ? "Entrando…" : "Entrar al panel"}
+        </button>
+      </form>
 
-        <p className="mt-4 text-center text-xs text-muted">
-          <Link href="/" className="hover:text-ink">
-            ← Volver a la landing
-          </Link>
-        </p>
-      </div>
-    </div>
+      <p className="mt-4 text-center text-xs text-muted">
+        <Link
+          href="/"
+          className="tap-target inline-flex items-center justify-center hover:text-ink"
+        >
+          ← Volver a la landing
+        </Link>
+      </p>
+      <p className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] text-muted">
+        <Link href="/privacidad" className="hover:text-ink hover:underline">
+          Privacidad
+        </Link>
+        <span aria-hidden>·</span>
+        <Link href="/terminos" className="hover:text-ink hover:underline">
+          Términos
+        </Link>
+      </p>
+    </LoginShell>
   );
 }

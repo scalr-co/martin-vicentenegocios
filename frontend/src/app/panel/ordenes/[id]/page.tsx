@@ -4,9 +4,16 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
-import { PanelShell } from "@/components/panel-shell";
+import {
+  PanelShell,
+  useLeaveBlock,
+  useLeaveGuard,
+} from "@/components/panel-shell";
 import { StatusBadge } from "@/components/ui";
 import { apiFetch } from "@/lib/api";
+import { formatDateCl } from "@/lib/date";
+import { errorMessage } from "@/lib/errors";
+import { fieldClass } from "@/lib/form-styles";
 import {
   buildWhatsAppLink,
   extractNotificationDraft,
@@ -26,9 +33,6 @@ const ALL_STATUSES = [
   "entregado",
 ];
 
-const fieldClass =
-  "mt-1.5 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30";
-
 function normalizeOrder(data: ApiOrder): ApiOrder {
   const notice = data.latestNotification ?? data.notification ?? null;
   return {
@@ -44,24 +48,20 @@ function normalizeOrder(data: ApiOrder): ApiOrder {
 export default function OrdenDetailPage() {
   return (
     <AuthGuard>
-      <OrdenDetailContent />
+      <OrdenDetailLoader />
     </AuthGuard>
   );
 }
 
-function OrdenDetailContent() {
+function OrdenDetailLoader() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const [order, setOrder] = useState<ApiOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [flash, setFlash] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [draftMessage, setDraftMessage] = useState("");
   const [draftPhone, setDraftPhone] = useState("");
   const [notificationId, setNotificationId] = useState<string | null>(null);
   const [messageSent, setMessageSent] = useState(false);
-  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
   function applyDraftFrom(payload: unknown, fallbackPhone?: string) {
     const draft = extractNotificationDraft(payload);
@@ -74,24 +74,20 @@ function OrdenDetailContent() {
     }
   }
 
-  async function load() {
-    const { data } = await apiFetch<ApiOrder>(`/orders/${params.id}`);
-    const normalized = normalizeOrder(data);
-    setOrder(normalized);
-    applyDraftFrom(normalized, normalized.client?.phone);
-    return normalized;
-  }
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         setLoading(true);
-        await load();
-        if (!cancelled) setError(null);
+        const { data } = await apiFetch<ApiOrder>(`/orders/${params.id}`);
+        if (cancelled) return;
+        const normalized = normalizeOrder(data);
+        setOrder(normalized);
+        applyDraftFrom(normalized, normalized.client?.phone);
+        setError(null);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "No se encontró");
+          setError(errorMessage(err, "No se encontró la orden"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -100,75 +96,7 @@ function OrdenDetailContent() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
-
-  useEffect(() => {
-    if (!flash) return;
-    const t = setTimeout(() => setFlash(null), 3500);
-    return () => clearTimeout(t);
-  }, [flash]);
-
-  const hasUnsentWhatsApp = Boolean(draftMessage.trim()) && !messageSent;
-
-  const waLink =
-    draftPhone && draftMessage.trim()
-      ? buildWhatsAppLink(draftPhone, draftMessage.trim())
-      : null;
-
-  function requestLeavePanel(e?: React.MouseEvent) {
-    if (hasUnsentWhatsApp) {
-      e?.preventDefault();
-      setLeaveConfirmOpen(true);
-      return;
-    }
-    router.push("/panel");
-  }
-
-  async function changeStatus(next: string) {
-    if (!order) return;
-    setSaving(true);
-    try {
-      const { data } = await apiFetch<ApiOrder>(`/orders/${order.id}/status`, {
-        method: "POST",
-        body: JSON.stringify({ status: next }),
-      });
-      // Usar la notification de la respuesta; no hace falta otro GET.
-      const normalized = normalizeOrder({
-        ...order,
-        ...data,
-        status: (data.status as string) || next,
-      });
-      setOrder(normalized);
-      applyDraftFrom(data, order.client?.phone);
-      setMessageSent(false);
-      setFlash(
-        `Estado actualizado a “${statusLabel(next)}”. Revisa el aviso y mándalo por WhatsApp.`,
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cambiar");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function markSent() {
-    const id = notificationId;
-    const finalMessage = draftMessage.trim().slice(0, 1000);
-    if (!id || !finalMessage) return;
-
-    setMessageSent(true);
-    setLeaveConfirmOpen(false);
-    try {
-      await apiFetch(`/notifications/${id}/sent`, {
-        method: "POST",
-        body: JSON.stringify({ message: finalMessage }),
-      });
-      setFlash("Aviso marcado como enviado.");
-    } catch {
-      // No bloquea el WhatsApp; el link ya se abrió.
-    }
-  }
 
   if (loading) {
     return (
@@ -182,7 +110,10 @@ function OrdenDetailContent() {
     return (
       <PanelShell title="Orden">
         <p className="text-sm text-red-700">{error ?? "No encontrada"}</p>
-        <Link href="/panel" className="mt-4 inline-flex text-sm text-brand">
+        <Link
+          href="/panel"
+          className="tap-target mt-4 inline-flex items-center text-sm text-brand"
+        >
           ← Volver al panel
         </Link>
       </PanelShell>
@@ -194,11 +125,169 @@ function OrdenDetailContent() {
       title={order.title}
       subtitle="Estados del trabajo y aviso al cliente"
     >
+      <OrdenDetailBody
+        order={order}
+        setOrder={setOrder}
+        draftMessage={draftMessage}
+        setDraftMessage={setDraftMessage}
+        draftPhone={draftPhone}
+        notificationId={notificationId}
+        messageSent={messageSent}
+        setMessageSent={setMessageSent}
+        applyDraftFrom={applyDraftFrom}
+      />
+    </PanelShell>
+  );
+}
+
+function OrdenDetailBody({
+  order,
+  setOrder,
+  draftMessage,
+  setDraftMessage,
+  draftPhone,
+  notificationId,
+  messageSent,
+  setMessageSent,
+  applyDraftFrom,
+}: {
+  order: ApiOrder;
+  setOrder: (o: ApiOrder) => void;
+  draftMessage: string;
+  setDraftMessage: (v: string) => void;
+  draftPhone: string;
+  notificationId: string | null;
+  messageSent: boolean;
+  setMessageSent: (v: boolean) => void;
+  applyDraftFrom: (payload: unknown, fallbackPhone?: string) => void;
+}) {
+  const router = useRouter();
+  const leaveGuard = useLeaveGuard();
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    { type: "status"; status: string } | { type: "delete" } | null
+  >(null);
+  const [flash, setFlash] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [markingSent, setMarkingSent] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const hasUnsentWhatsApp = Boolean(draftMessage.trim()) && !messageSent;
+  useLeaveBlock(hasUnsentWhatsApp);
+
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(null), 3500);
+    return () => clearTimeout(t);
+  }, [flash]);
+
+  const waLink =
+    draftPhone && draftMessage.trim()
+      ? buildWhatsAppLink(draftPhone, draftMessage.trim())
+      : null;
+
+  function requestLeavePanel(e?: React.MouseEvent) {
+    if (hasUnsentWhatsApp) {
+      leaveGuard?.requestNavigate("/panel", e);
+      return;
+    }
+    router.push("/panel");
+  }
+
+  async function changeStatus(next: string) {
+    if (next === order.status) return;
+    setSaving(true);
+    setActionError(null);
+    setPendingAction({ type: "status", status: next });
+    try {
+      const { data } = await apiFetch<ApiOrder>(`/orders/${order.id}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status: next }),
+      });
+      const normalized = normalizeOrder({
+        ...order,
+        ...data,
+        status: (data.status as string) || next,
+      });
+      setOrder(normalized);
+      applyDraftFrom(data, order.client?.phone);
+      setMessageSent(false);
+      setPendingAction(null);
+      setFlash(
+        `Estado actualizado a “${statusLabel(next)}”. Revisa el aviso y mándalo por WhatsApp.`,
+      );
+    } catch (err) {
+      setActionError(errorMessage(err, "No se pudo cambiar el estado"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function retryAction() {
+    if (!pendingAction) return;
+    if (pendingAction.type === "status") {
+      void changeStatus(pendingAction.status);
+      return;
+    }
+    void deleteOrder();
+  }
+
+  async function markSent() {
+    const id = notificationId;
+    const finalMessage = draftMessage.trim().slice(0, 1000);
+    if (!id || !finalMessage) return;
+
+    setMarkingSent(true);
+    setSendError(null);
+    try {
+      await apiFetch(`/notifications/${id}/sent`, {
+        method: "POST",
+        body: JSON.stringify({ message: finalMessage }),
+      });
+      setMessageSent(true);
+      setFlash("Aviso marcado como enviado.");
+    } catch (err) {
+      setSendError(
+        errorMessage(
+          err,
+          "No se pudo registrar el aviso. El WhatsApp puede haberse abierto; vuelve a intentar cuando haya red.",
+        ),
+      );
+    } finally {
+      setMarkingSent(false);
+    }
+  }
+
+  async function deleteOrder() {
+    setDeleting(true);
+    setActionError(null);
+    setPendingAction({ type: "delete" });
+    try {
+      await apiFetch(`/orders/${order.id}`, { method: "DELETE" });
+      setPendingAction(null);
+      router.replace("/panel");
+    } catch (err) {
+      setDeleteConfirmOpen(false);
+      setActionError(
+        errorMessage(
+          err,
+          "No se pudo eliminar la orden. Si el backend aún no tiene DELETE, avísale a Claude.",
+        ),
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <>
       <div className="mb-4">
         <button
           type="button"
           onClick={(e) => requestLeavePanel(e)}
-          className="text-sm text-muted hover:text-ink"
+          className="tap-target inline-flex items-center text-sm text-muted hover:text-ink"
         >
           ← Volver al panel
         </button>
@@ -207,21 +296,45 @@ function OrdenDetailContent() {
       {flash && (
         <div
           role="status"
-          className="animate-rise mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+          className="animate-rise mb-4 rounded-md border border-[color:var(--ok-line)] bg-ok-soft px-4 py-3 text-sm text-[color:var(--tone-ink)]"
         >
           {flash}
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-lg border border-line bg-surface p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-sm text-muted">{order.vehicleOrItem}</p>
-              <p className="mt-1 font-medium text-ink">
+      {actionError && (
+        <div
+          role="alert"
+          className="mb-4 flex flex-col gap-3 rounded-md border border-red-200 bg-danger-soft px-4 py-3 text-sm text-red-900 dark:text-red-200 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p>{actionError}</p>
+          <button
+            type="button"
+            disabled={saving || deleting}
+            onClick={() => retryAction()}
+            className="tap-target shrink-0 rounded-md border border-red-300 bg-surface px-3 py-2 text-sm font-semibold disabled:opacity-60"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <div className="min-w-0 rounded-lg border border-line bg-surface p-5">
+          <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 overflow-hidden">
+              <p className="truncate text-sm text-muted">
+                {order.vehicleOrItem}
+              </p>
+              <p className="mt-1 truncate font-medium text-ink">
                 {order.client?.name ?? "Cliente"} ·{" "}
                 {order.client?.phone ?? "—"}
               </p>
+              {order.estimatedAt && (
+                <p className="mt-2 text-sm text-muted">
+                  Estimado: {formatDateCl(order.estimatedAt)}
+                </p>
+              )}
             </div>
             <StatusBadge status={order.status} />
           </div>
@@ -242,6 +355,7 @@ function OrdenDetailContent() {
               disabled={saving}
               onChange={(e) => changeStatus(e.target.value)}
               className={fieldClass}
+              aria-busy={saving}
             >
               {ALL_STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -249,10 +363,15 @@ function OrdenDetailContent() {
                 </option>
               ))}
             </select>
+            {saving && (
+              <p className="mt-1.5 text-sm font-medium text-muted">
+                Guardando…
+              </p>
+            )}
           </label>
         </div>
 
-        <div className="rounded-lg border border-line bg-surface p-5">
+        <div className="min-w-0 rounded-lg border border-line bg-surface p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">
             Aviso al cliente
           </p>
@@ -269,14 +388,23 @@ function OrdenDetailContent() {
                 onChange={(e) => setDraftMessage(e.target.value)}
                 rows={6}
                 maxLength={1000}
-                disabled={messageSent}
+                disabled={messageSent || markingSent}
                 className={`${fieldClass} min-h-[8.5rem] resize-y leading-relaxed disabled:opacity-70`}
               />
             </label>
           ) : (
-            <p className="mt-3 rounded-md border border-dashed border-line bg-stone-50 p-3 text-sm text-muted">
+            <p className="mt-3 rounded-md border border-dashed border-line bg-chip p-3 text-sm text-muted">
               Cambia el estado de la orden para que la API genere el borrador del
               aviso.
+            </p>
+          )}
+
+          {sendError && (
+            <p
+              role="alert"
+              className="mt-3 text-sm text-red-700 dark:text-red-300"
+            >
+              {sendError}
             </p>
           )}
 
@@ -288,12 +416,12 @@ function OrdenDetailContent() {
               onClick={() => {
                 void markSent();
               }}
-              className="tap-target mt-4 inline-flex w-full items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark active:scale-[0.99]"
+              className="btn-brand tap-target mt-4 inline-flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-semibold transition active:scale-[0.99]"
             >
-              Avisar por WhatsApp
+              {markingSent ? "Registrando aviso…" : "Avisar por WhatsApp"}
             </a>
           ) : messageSent ? (
-            <p className="mt-4 text-sm font-medium text-emerald-800">
+            <p className="mt-4 text-sm font-medium text-[color:var(--tone-ink)]">
               Aviso marcado como enviado.
             </p>
           ) : (
@@ -306,43 +434,60 @@ function OrdenDetailContent() {
         </div>
       </div>
 
-      {leaveConfirmOpen && (
+      <div className="mt-8 border-t border-line pt-6">
+        <p className="text-sm text-muted">
+          ¿Creaste esta orden por error o ya no corresponde?
+        </p>
+        <button
+          type="button"
+          onClick={() => setDeleteConfirmOpen(true)}
+          className="tap-target mt-3 inline-flex items-center justify-center rounded-md border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-danger-soft"
+        >
+          Eliminar orden
+        </button>
+      </div>
+
+      {deleteConfirmOpen && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="leave-confirm-title"
+          aria-labelledby="delete-confirm-title"
         >
           <div className="w-full max-w-md rounded-lg border border-line bg-surface p-5 shadow-xl">
             <h2
-              id="leave-confirm-title"
+              id="delete-confirm-title"
               className="font-[family-name:var(--font-display)] text-lg font-bold text-ink"
             >
-              ¿Volver al panel?
+              ¿Eliminar esta orden?
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              ¿Estás seguro que quieres volver al panel? Aún no has enviado el
-              mensaje por WhatsApp.
+              Se borrará “{order.title}”. Esta acción no se puede deshacer. El
+              cliente y el vehículo se mantienen.
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
               <button
                 type="button"
-                onClick={() => router.push("/panel")}
-                className="tap-target inline-flex items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+                disabled={deleting}
+                onClick={() => {
+                  void deleteOrder();
+                }}
+                className="tap-target inline-flex items-center justify-center rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-60"
               >
-                Sí, quiero volver al panel
+                {deleting ? "Eliminando…" : "Sí, eliminar orden"}
               </button>
               <button
                 type="button"
-                onClick={() => setLeaveConfirmOpen(false)}
-                className="tap-target inline-flex items-center justify-center rounded-md border border-line bg-white px-4 py-2.5 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+                disabled={deleting}
+                onClick={() => setDeleteConfirmOpen(false)}
+                className="tap-target inline-flex items-center justify-center rounded-md border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink hover:bg-chip"
               >
-                No, volver a estado
+                Cancelar
               </button>
             </div>
           </div>
         </div>
       )}
-    </PanelShell>
+    </>
   );
 }
