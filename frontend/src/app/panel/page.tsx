@@ -116,7 +116,7 @@ function PanelContent() {
               onClick={() => setFilter(f.id)}
               className={`tap-target rounded-full px-3 py-1.5 text-xs font-medium transition ${
                 filter === f.id
-                  ? "bg-steel text-white"
+                  ? "bg-brand text-brand-ink"
                   : "bg-surface text-muted ring-1 ring-line hover:text-ink"
               }`}
             >

@@ -213,7 +213,7 @@ function NuevaOrdenContent() {
               disabled={clients.length === 0}
               className={`tap-target rounded-full px-3 py-1.5 text-xs font-medium ${
                 mode === "existing"
-                  ? "bg-steel text-white"
+                  ? "bg-brand text-brand-ink"
                   : "bg-chip text-muted"
               }`}
             >
@@ -223,7 +223,7 @@ function NuevaOrdenContent() {
               type="button"
               onClick={() => setMode("new")}
               className={`tap-target rounded-full px-3 py-1.5 text-xs font-medium ${
-                mode === "new" ? "bg-steel text-white" : "bg-chip text-muted"
+                mode === "new" ? "bg-brand text-brand-ink" : "bg-chip text-muted"
               }`}
             >
               Cliente nuevo

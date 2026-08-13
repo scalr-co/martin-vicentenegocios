@@ -59,7 +59,7 @@ function NavLink({
       onClick={(e) => onNavigate(href, e)}
       className={`tap-target inline-flex items-center rounded-md px-3 py-1.5 text-sm transition ${
         active
-          ? "bg-steel text-white"
+          ? "bg-brand text-brand-ink"
           : "text-muted hover:bg-chip hover:text-ink"
       }`}
     >
@@ -147,6 +147,14 @@ export function PanelShell({
     <LeaveGuardContext.Provider value={leaveGuard}>
       <div className="flex min-h-dvh w-full min-w-0 flex-1 flex-col bg-background text-ink">
         <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur">
+          <div
+            className="h-0.5 w-full"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, var(--brand), transparent)",
+            }}
+            aria-hidden
+          />
           <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-3 px-4 py-2 sm:gap-4 sm:py-3">
             <div className="flex min-w-0 items-center gap-4 sm:gap-6">
               <Link

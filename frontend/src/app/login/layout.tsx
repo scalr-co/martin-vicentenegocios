@@ -7,7 +7,7 @@ export default function LoginLayout({
     <>
       <style>{`
         html, body {
-          background: #292524 !important;
+          background: #12100e !important;
           min-height: 100%;
           min-height: 100dvh;
         }

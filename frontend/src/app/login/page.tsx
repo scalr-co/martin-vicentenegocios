@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BrandMark } from "@/components/ui";
 import { apiFetch, extractToken } from "@/lib/api";
 import {
   extractSessionFromLogin,
@@ -32,10 +31,24 @@ function LoginShell({ children }: { children?: React.ReactNode }) {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at top, rgba(224,164,90,0.22), transparent 55%)",
+            "radial-gradient(ellipse at top, rgba(224,164,90,0.26), transparent 55%)",
         }}
       />
-      <div className="relative w-full max-w-sm rounded-lg border border-white/10 bg-white p-6 shadow-xl dark:border-line dark:bg-surface">
+      <div
+        className="relative w-full max-w-sm rounded-lg border bg-[#fffcf7] p-6 shadow-xl dark:bg-surface"
+        style={{
+          borderColor: "rgba(224,164,90,0.35)",
+          boxShadow:
+            "0 0 0 1px rgba(224,164,90,0.12), 0 22px 50px -24px rgba(224,164,90,0.45)",
+        }}
+      >
+        <div
+          className="absolute inset-x-0 top-0 h-1 rounded-t-lg"
+          style={{
+            background:
+              "linear-gradient(90deg, #e0a45a, #f0c48a, #e0a45a)",
+          }}
+        />
         {children}
       </div>
     </div>
@@ -92,8 +105,12 @@ function LoginForm() {
 
   return (
     <LoginShell>
-      <BrandMark className="text-xl" />
-      <h1 className="mt-6 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
+      <p
+        className="mt-1 font-[family-name:var(--font-display)] text-xs font-semibold uppercase tracking-[0.2em] text-brand"
+      >
+        Motor Ping
+      </p>
+      <h1 className="mt-3 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
         Ingresar
       </h1>
       <p className="mt-2 text-sm text-muted">
