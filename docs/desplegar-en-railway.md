@@ -66,14 +66,28 @@ Las migraciones corren solas al arrancar el contenedor, asi que las tablas ya es
 ## 5. Crear la cuenta de administracion
 
 Se hace **dentro del servidor**, no por HTTP. En Railway: el servicio de la API →
-**Deployments → el ultimo → Terminal** (o `railway run` desde el computador):
+**Deployments → el ultimo → Terminal**:
 
 ```bash
-python scripts/crear_admin.py \
-  --nombre "Vicente" \
-  --email vicente@solve.cl \
-  --password "una clave larga de verdad"
+python scripts/crear_admin.py --nombre "Vicente" --email vicente@solve.cl
 ```
+
+La clave **no se escribe en la linea**: el script la pide en pantalla, sin mostrarla y
+dos veces. Asi no queda en el historial del shell ni a la vista de quien liste los
+procesos. Tiene que tener 12 caracteres o mas.
+
+Si no hay terminal a mano, el mismo comando corre desde tu computador apuntando a la
+base de produccion. En Railway: el servicio **Postgres → Variables → `DATABASE_PUBLIC_URL`**
+(la publica, no la `.internal`, que solo se ve desde adentro):
+
+```bash
+DATABASE_URL="<la url publica de Postgres>" python scripts/crear_admin.py \
+  --nombre "Vicente" --email vicente@solve.cl
+```
+
+**La segunda cuenta no se crea asi.** Una vez que la primera puede entrar, las demas se
+crean desde el panel con `POST /admin/accounts`, que exige la sesion de un admin y deja
+anotado en `admin_audit` quien la creo.
 
 Con esa cuenta se entra por `/auth/login` y desde ahi se dan de alta los talleres, se
 corrigen y se le devuelve el acceso a un dueno que perdio su clave. Todo eso queda

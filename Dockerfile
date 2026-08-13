@@ -13,6 +13,11 @@ COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
 
+# La primera cuenta de administracion se crea desde la consola del servidor, asi que el
+# script tiene que estar DENTRO de la imagen. Sin esto, el unico camino documentado para
+# estrenar el panel no existe alla. No queda expuesto: nada de scripts/ se sirve por HTTP.
+COPY scripts ./scripts
+
 COPY docker/arrancar.sh ./docker/arrancar.sh
 RUN chmod +x ./docker/arrancar.sh
 

@@ -107,6 +107,57 @@ def test_el_correo_del_admin_tambien_se_normaliza(sesion):
     assert admin.name == "Vicente"
 
 
+class _SesionPrestada:
+    """Le pasa la sesion del test al script, que en la vida real abre la suya."""
+
+    def __init__(self, sesion):
+        self.sesion = sesion
+
+    def __call__(self):
+        return self
+
+    def __enter__(self):
+        return self.sesion
+
+    def __exit__(self, *_):
+        return False
+
+
+def test_la_consola_pide_la_clave_en_pantalla_si_no_viene_como_argumento(sesion, monkeypatch):
+    """Escribirla como argumento la deja en el historial del shell y en la lista de
+    procesos. Es la cuenta con mas poder del sistema: se teclea a ciegas."""
+    import scripts.crear_admin as consola
+
+    monkeypatch.setattr(consola, "FabricaDeSesiones", _SesionPrestada(sesion))
+    monkeypatch.setattr(consola.getpass, "getpass", lambda *_: CLAVE_DEL_ADMIN)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["crear_admin.py", "--nombre", "Vicente", "--email", "vicente@solve.cl"],
+    )
+
+    assert consola.main() == 0
+
+    creado = sesion.scalar(select(User).where(User.email == "vicente@solve.cl"))
+    assert creado is not None and creado.role == "platform_admin"
+
+
+def test_la_consola_no_crea_nada_si_las_dos_claves_no_calzan(sesion, monkeypatch):
+    """Se escribe sin verla: un dedazo dejaria la cuenta creada e inaccesible, y no hay
+    recuperacion de clave en ningun lado."""
+    import scripts.crear_admin as consola
+
+    tecleadas = iter([CLAVE_DEL_ADMIN, "otra-clave-larga-distinta"])
+    monkeypatch.setattr(consola, "FabricaDeSesiones", _SesionPrestada(sesion))
+    monkeypatch.setattr(consola.getpass, "getpass", lambda *_: next(tecleadas))
+    monkeypatch.setattr(
+        "sys.argv",
+        ["crear_admin.py", "--nombre", "Vicente", "--email", "vicente@solve.cl"],
+    )
+
+    assert consola.main() == 1
+    assert sesion.scalar(select(User).where(User.email == "vicente@solve.cl")) is None
+
+
 def test_sin_token_no_se_entra_al_panel(cliente):
     assert cliente.get("/admin/workshops").status_code == 401
 
