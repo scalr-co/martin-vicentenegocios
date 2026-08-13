@@ -2,7 +2,7 @@
 
 Cada test recibe una base de datos SQLite en memoria, recien creada y vacia. Es rapida
 y no necesita que haya un Postgres corriendo. Produccion usa Postgres; las tablas de
-TallerTrack no usan nada especifico de un motor, asi que la diferencia no nos afecta.
+Motor Ping no usan nada especifico de un motor, asi que la diferencia no nos afecta.
 """
 
 import pytest

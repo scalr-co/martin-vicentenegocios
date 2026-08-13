@@ -2,21 +2,21 @@ from app.config import Settings
 
 
 def test_un_solo_origen_se_lee_como_lista_de_uno():
-    config = Settings(frontend_origins="https://tallertrack.cl")
+    config = Settings(frontend_origins="https://motorping.cl")
 
-    assert config.origenes_permitidos == ["https://tallertrack.cl"]
+    assert config.origenes_permitidos == ["https://motorping.cl"]
 
 
 def test_varios_origenes_separados_por_coma_se_leen_por_separado():
-    config = Settings(frontend_origins="https://tallertrack.cl,http://localhost:3000")
+    config = Settings(frontend_origins="https://motorping.cl,http://localhost:3000")
 
-    assert config.origenes_permitidos == ["https://tallertrack.cl", "http://localhost:3000"]
+    assert config.origenes_permitidos == ["https://motorping.cl", "http://localhost:3000"]
 
 
 def test_los_espacios_alrededor_de_cada_origen_se_ignoran():
-    config = Settings(frontend_origins=" https://tallertrack.cl , http://localhost:3000 ")
+    config = Settings(frontend_origins=" https://motorping.cl , http://localhost:3000 ")
 
-    assert config.origenes_permitidos == ["https://tallertrack.cl", "http://localhost:3000"]
+    assert config.origenes_permitidos == ["https://motorping.cl", "http://localhost:3000"]
 
 
 def test_la_url_de_postgres_del_hosting_se_traduce_al_driver_instalado():
@@ -42,6 +42,6 @@ def test_una_url_que_ya_trae_su_driver_se_deja_como_esta():
 
 
 def test_la_url_de_sqlite_no_se_toca():
-    config = Settings(database_url="sqlite:///./tallertrack.db")
+    config = Settings(database_url="sqlite:///./motorping.db")
 
-    assert config.database_url == "sqlite:///./tallertrack.db"
+    assert config.database_url == "sqlite:///./motorping.db"

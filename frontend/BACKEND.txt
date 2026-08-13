@@ -1,4 +1,4 @@
-CONTRATO API — TallerTrack (v2)
+CONTRATO API — Motor Ping (v2)
 Para el backend (Claude + amigo)
 
 Teléfonos: siempre sin +, solo digitos (ej: 56912345678)

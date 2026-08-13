@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tallertrack"
+name = "motorping"
 version = "0.1.0"
-description = "Backend de TallerTrack - gestion de ordenes de trabajo para talleres mecanicos"
+description = "Backend de Motor Ping - gestion de ordenes de trabajo para talleres mecanicos"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi",

@@ -6,7 +6,7 @@ services:
     environment:
       # Contra el Postgres de al lado, no contra SQLite: asi lo que se prueba en local
       # es el mismo motor que corre en produccion.
-      DATABASE_URL: postgresql+psycopg://tallertrack:tallertrack@db:5432/tallertrack
+      DATABASE_URL: postgresql+psycopg://motorping:motorping@db:5432/motorping
       FRONTEND_ORIGINS: http://localhost:3000
       ADMIN_API_KEY: clave-de-desarrollo-para-dar-de-alta-talleres
     volumes:
@@ -21,16 +21,16 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: tallertrack
-      POSTGRES_PASSWORD: tallertrack
-      POSTGRES_DB: tallertrack
+      POSTGRES_USER: motorping
+      POSTGRES_PASSWORD: motorping
+      POSTGRES_DB: motorping
     ports:
       - "5432:5432"
     volumes:
       - datos_postgres:/var/lib/postgresql/data
     # La API arranca migrando: si Postgres todavia no acepta conexiones, se cae.
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tallertrack"]
+      test: ["CMD-SHELL", "pg_isready -U motorping"]
       interval: 2s
       timeout: 3s
       retries: 15
