@@ -1087,6 +1087,57 @@
         }
       }
     },
+    "/users/{usuario_id}": {
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Editar",
+        "description": "Cambia el nombre o enciende y apaga a una persona del taller.\n\nApagar no borra: la cuenta deja de entrar y el nombre sigue colgando de cada orden\nque esa persona movio. Por eso es un interruptor y no un DELETE.",
+        "operationId": "editar_users__usuario_id__patch",
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Usuario Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioEdicion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/workshops": {
       "post": {
         "tags": [
@@ -1736,6 +1787,37 @@
         "type": "object",
         "title": "TallerEdicion",
         "description": "Solo lo que se corrige a mano. El nombre sale en el WhatsApp que lee el cliente.\n\n`active` en falso suspende el taller: nadie de ahi entra, y sus datos quedan enteros."
+      },
+      "UsuarioEdicion": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          }
+        },
+        "type": "object",
+        "title": "UsuarioEdicion",
+        "description": "`active` en falso apaga a la persona sin borrarla: su nombre sigue colgando del\nhistorial de cada orden que movio."
       },
       "UsuarioEntrada": {
         "properties": {

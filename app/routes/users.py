@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
 from app.models import ROL_MECANICO, User
-from app.schemas.user import UsuarioEntrada, UsuarioSalida
+from app.schemas.user import UsuarioEdicion, UsuarioEntrada, UsuarioSalida
 from app.security.dependencias import solo_dueno
 from app.security.passwords import hashear
 from app.services.altas import correo_libre
@@ -80,3 +80,35 @@ def listar(
     ).all()
 
     return {"data": [_salida(usuario) for usuario in equipo]}
+
+
+@router.patch("/{usuario_id}")
+def editar(
+    usuario_id: str,
+    datos: UsuarioEdicion,
+    dueno: User = Depends(solo_dueno),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Cambia el nombre o enciende y apaga a una persona del taller.
+
+    Apagar no borra: la cuenta deja de entrar y el nombre sigue colgando de cada orden
+    que esa persona movio. Por eso es un interruptor y no un DELETE.
+    """
+    objetivo = _del_taller(sesion, dueno, usuario_id)
+    cambios = datos.model_dump(exclude_unset=True)
+
+    # El unico candado que hace falta. Quien pide esto es un dueno activo, asi que
+    # apagando a otro el taller nunca se queda sin ninguno; lo unico que si lo dejaria
+    # sin administracion es que se apagara a si mismo.
+    if cambios.get("active") is False and objetivo.id == dueno.id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No puedes desactivar tu propia cuenta",
+        )
+
+    for campo, valor in cambios.items():
+        if valor is not None:
+            setattr(objetivo, campo, valor)
+    sesion.commit()
+
+    return {"data": _salida(objetivo)}

@@ -84,3 +84,91 @@ def test_el_mecanico_no_administra_el_equipo(cliente, sesion, dueno, mecanico):
 
 def test_sin_sesion_no_se_entra(cliente, sesion, dueno):
     assert cliente.get("/users").status_code == 401
+
+
+def test_desactivar_a_un_mecanico_lo_deja_fuera_al_instante(cliente, sesion, dueno, mecanico):
+    token_dueno = entrar(cliente, dueno.email)
+    token_mecanico = entrar(cliente, mecanico.email)
+    assert cliente.get("/clients", headers=con_token(token_mecanico)).status_code == 200
+
+    apagado = cliente.patch(
+        f"/users/{mecanico.id}", json={"active": False}, headers=con_token(token_dueno)
+    )
+
+    assert apagado.status_code == 200
+    assert apagado.json()["data"]["active"] is False
+    # No hay que esperar a que venza su token: se cae en el siguiente request.
+    assert cliente.get("/clients", headers=con_token(token_mecanico)).status_code == 401
+
+
+def test_reactivar_a_un_mecanico_le_devuelve_el_acceso(cliente, sesion, dueno, mecanico):
+    token = entrar(cliente, dueno.email)
+    cliente.patch(f"/users/{mecanico.id}", json={"active": False}, headers=con_token(token))
+
+    encendido = cliente.patch(
+        f"/users/{mecanico.id}", json={"active": True}, headers=con_token(token)
+    )
+
+    assert encendido.status_code == 200
+    assert entrar(cliente, mecanico.email)
+
+
+def test_el_desactivado_sigue_saliendo_en_la_lista(cliente, sesion, dueno, mecanico):
+    token = entrar(cliente, dueno.email)
+    cliente.patch(f"/users/{mecanico.id}", json={"active": False}, headers=con_token(token))
+
+    lista = cliente.get("/users", headers=con_token(token)).json()["data"]
+
+    apagados = [u for u in lista if u["email"] == mecanico.email]
+    assert apagados and apagados[0]["active"] is False
+
+
+def test_nadie_se_desactiva_a_si_mismo(cliente, sesion, dueno):
+    """Es el candado que deja a la persona fuera de su propia casa."""
+    token = entrar(cliente, dueno.email)
+
+    respuesta = cliente.patch(
+        f"/users/{dueno.id}", json={"active": False}, headers=con_token(token)
+    )
+
+    assert respuesta.status_code == 409
+    assert cliente.get("/users", headers=con_token(token)).status_code == 200
+
+
+def test_el_taller_nunca_se_queda_sin_dueno_activo(cliente, sesion, dueno):
+    """La invariante que sostiene todo: siempre queda un dueno que pueda administrar.
+
+    No hace falta una guarda aparte que cuente los duenos. Quien hace la peticion ES un
+    dueno activo -`solo_dueno` lo exige y `usuario_actual` verifica que este activo-, asi
+    que apagando a OTRO nunca puede llegar a cero, y apagarse a si mismo esta prohibido.
+    Entre esas dos cosas el conjunto no se puede vaciar.
+    """
+    from tests.conftest import crear_usuario
+
+    socio = crear_usuario(sesion, dueno.workshop, email="socio@taller.cl", role="owner")
+    token = entrar(cliente, dueno.email)
+
+    apagado = cliente.patch(
+        f"/users/{socio.id}", json={"active": False}, headers=con_token(token)
+    )
+    assert apagado.status_code == 200
+
+    # Queda uno: el que lo apago. Y ese no se puede apagar a si mismo.
+    assert cliente.patch(
+        f"/users/{dueno.id}", json={"active": False}, headers=con_token(token)
+    ).status_code == 409
+
+    equipo = cliente.get("/users", headers=con_token(token)).json()["data"]
+    duenos_activos = [u for u in equipo if u["role"] == "owner" and u["active"]]
+    assert len(duenos_activos) == 1
+
+
+def test_el_dueno_no_toca_a_nadie_del_taller_vecino(cliente, sesion, dueno, dueno_vecino):
+    token = entrar(cliente, dueno.email)
+
+    respuesta = cliente.patch(
+        f"/users/{dueno_vecino.id}", json={"active": False}, headers=con_token(token)
+    )
+
+    assert respuesta.status_code == 404
+    assert respuesta.json()["error"]["code"] == "NOT_FOUND"
