@@ -73,7 +73,6 @@ function MecanicosContent() {
       setCreateOpen(false);
       setFlash("Mecánico creado.");
       window.setTimeout(() => setFlash(null), 2800);
-      e.currentTarget.reset();
     } catch (err) {
       setError(errorMessage(err, "No se pudo crear"));
     } finally {

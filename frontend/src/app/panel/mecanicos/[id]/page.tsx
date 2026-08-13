@@ -137,7 +137,6 @@ function MecanicoDetailContent() {
       setPasswordOpen(false);
       setFlash("Contraseña actualizada.");
       window.setTimeout(() => setFlash(null), 2800);
-      e.currentTarget.reset();
     } catch (err) {
       setError(errorMessage(err, "No se pudo cambiar la contraseña"));
     } finally {

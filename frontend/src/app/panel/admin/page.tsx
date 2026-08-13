@@ -122,7 +122,6 @@ function AdminContent() {
       setCreateOpen(false);
       setCreatePlan("basico");
       showFlash(`Cuenta creada: “${workshopName}” · Plan ${planLabel(plan)}`);
-      e.currentTarget.reset();
       await refresh();
     } catch (err) {
       setActionError(errorMessage(err, "No se pudo crear la cuenta"));
