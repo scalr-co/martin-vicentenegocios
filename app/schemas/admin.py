@@ -1,5 +1,6 @@
 from pydantic import EmailStr, Field
 
+from app.schemas.auth import Plan
 from app.schemas.base import Esquema, FechaUTC, Texto
 from app.services.altas import LARGO_MINIMO_DE_CLAVE_ADMIN
 
@@ -36,6 +37,7 @@ class TallerEdicion(Esquema):
     name: Texto | None = Field(default=None, min_length=2, max_length=120)
     phone: str | None = Field(default=None, min_length=8, max_length=20)
     active: bool | None = None
+    plan: Plan | None = None
 
 
 class ClaveNueva(Esquema):
@@ -85,5 +87,6 @@ class TallerDetallado(Esquema):
     phone: str
     whatsapp_mode: str
     active: bool
+    plan: str
     created_at: FechaUTC
     deleted_at: FechaUTC | None

@@ -9,6 +9,14 @@ from app.models.base import ahora, nuevo_id
 MODO_LINK = "link"
 MODO_API = "api"
 
+# Los dos planes que se venden en la landing. El basico trae hasta tres mecanicos; el
+# plus no tiene tope. El numero es el mismo de `frontend/src/lib/plans.ts`, pero el que
+# manda es este: un tope que solo vive en el navegador no es un tope.
+PLAN_BASICO = "basico"
+PLAN_PLUS = "plus"
+PLANES = (PLAN_BASICO, PLAN_PLUS)
+MAX_MECANICOS_BASICO = 3
+
 
 class Workshop(Base):
     """Un taller. Es la unidad de aislamiento: todo lo demas le pertenece a uno."""
@@ -24,6 +32,10 @@ class Workshop(Base):
     whatsapp_mode: Mapped[str] = mapped_column(String(10), default=MODO_LINK)
 
     timezone: Mapped[str] = mapped_column(String(60), default="America/Santiago")
+
+    # Que le da derecho a usar. Hoy decide cuantos mecanicos puede tener; manana, que
+    # mas ve. Los talleres que ya existian quedaron en basico, que es lo que son.
+    plan: Mapped[str] = mapped_column(String(10), default=PLAN_BASICO)
 
     # Permite suspender un taller sin borrarle los datos.
     active: Mapped[bool] = mapped_column(Boolean, default=True)

@@ -69,6 +69,7 @@ def crear_taller_con_dueno(
     taller = Workshop(
         name=datos.workshop_name,
         phone=datos.workshop_phone,
+        plan=datos.plan,
         created_by_user_id=creado_por.id if creado_por else None,
     )
     sesion.add(taller)

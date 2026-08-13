@@ -33,7 +33,15 @@ from app.models.order import (
 from app.models.order_event import TIPO_CAMBIO_DE_ESTADO, OrderEvent
 from app.models.user import ROL_ADMIN_PLATAFORMA, ROL_DUENO, ROL_MECANICO, User
 from app.models.vehicle import Vehicle
-from app.models.workshop import MODO_API, MODO_LINK, Workshop
+from app.models.workshop import (
+    MAX_MECANICOS_BASICO,
+    MODO_API,
+    MODO_LINK,
+    PLAN_BASICO,
+    PLAN_PLUS,
+    PLANES,
+    Workshop,
+)
 
 __all__ = [
     "ACCION_TALLER_CREADO",
@@ -53,6 +61,10 @@ __all__ = [
     "ROL_MECANICO",
     "MODO_API",
     "MODO_LINK",
+    "PLAN_BASICO",
+    "PLAN_PLUS",
+    "PLANES",
+    "MAX_MECANICOS_BASICO",
     "ESTADOS",
     "ESTADO_INICIAL",
     "ESTADO_CERRADO",

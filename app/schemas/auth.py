@@ -1,7 +1,22 @@
-from pydantic import EmailStr, Field, field_validator
+from typing import Annotated
 
+from pydantic import AfterValidator, EmailStr, Field, field_validator
+
+from app.models.workshop import PLAN_BASICO, PLANES
 from app.schemas.base import Esquema, Texto
 from app.services.normalizacion import DatoInvalido, normalizar_telefono
+
+
+def _plan_que_se_vende(valor: str) -> str:
+    """Solo los planes de la landing. Uno inventado no lo entiende ni la facturacion."""
+    if valor not in PLANES:
+        raise ValueError(f"'{valor}' no es un plan. Son: {', '.join(PLANES)}")
+    return valor
+
+
+# Se escribe una sola vez y se usa en las dos puertas por las que llega un plan: el alta
+# del taller y la edicion desde el panel.
+Plan = Annotated[str, AfterValidator(_plan_que_se_vende)]
 
 
 class LoginEntrada(Esquema):
@@ -17,6 +32,9 @@ class AltaTallerEntrada(Esquema):
     owner_name: Texto = Field(min_length=2, max_length=120)
     email: EmailStr
     password: str = Field(min_length=8)
+
+    # El plan mas chico es el default: nadie recibe plus sin que alguien lo decida.
+    plan: Plan = PLAN_BASICO
 
     @field_validator("workshop_phone")
     @classmethod
@@ -38,6 +56,7 @@ class WorkshopSalida(Esquema):
     phone: str
     whatsapp_mode: str
     active: bool
+    plan: str
 
 
 class UserSalida(Esquema):
