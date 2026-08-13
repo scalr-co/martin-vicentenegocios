@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
 from app.models import ROL_ADMIN_PLATAFORMA, ROL_DUENO, User
+from app.models.base import ahora
 from app.security.tokens import TokenInvalido, leer_token
 
 PREFIJO = "Bearer "
@@ -35,7 +36,7 @@ def usuario_actual(
         raise _no_autenticado() from None
 
     usuario = sesion.get(User, datos.user_id)
-    if usuario is None or not usuario.active or not usuario.workshop.active:
+    if usuario is None or not usuario.active or not usuario.workshop.puede_entrar(ahora()):
         raise _no_autenticado()
 
     # La sesion se puede cerrar: si la version subio despues de emitir este token

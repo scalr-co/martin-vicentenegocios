@@ -287,6 +287,9 @@ def restaurar(
     if taller.deleted_at is not None or not taller.active:
         taller.deleted_at = None
         taller.active = True
+        # Tambien se borra la fecha de termino: si quedara escrita, el taller volveria
+        # con una suspension agendada que ya nadie recuerda.
+        taller.suspended_until = None
         _anotar(sesion, admin, ACCION_TALLER_RESTAURADO, taller_id=taller.id)
         sesion.commit()
 

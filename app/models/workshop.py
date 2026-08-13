@@ -1,10 +1,25 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
 from app.models.base import ahora, nuevo_id
+
+ESTADO_ACTIVO = "active"
+ESTADO_SUSPENDIDO = "suspended"
+ESTADO_DADO_DE_BAJA = "deleted"
+
+
+def _con_huso(fecha: datetime) -> datetime:
+    """La misma fecha, siempre comparable.
+
+    SQLite devuelve las fechas sin huso aunque la columna sea DateTime(timezone=True).
+    Comparada a secas contra un datetime con huso, Python levanta TypeError y la puerta
+    de entrada responde 500 a todo el taller. Lo que viene sin huso se lee como UTC, que
+    es como se guardo.
+    """
+    return fecha.replace(tzinfo=UTC) if fecha.tzinfo is None else fecha
 
 MODO_LINK = "link"
 MODO_API = "api"
@@ -40,6 +55,14 @@ class Workshop(Base):
     # Permite suspender un taller sin borrarle los datos.
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    # Hasta cuando dura la suspension. Nulo con `active` en falso significa "hasta que
+    # alguien lo reactive"; con fecha, el taller vuelve solo cuando esa fecha se cumple.
+    # Se guarda la fecha y no un contador de dias porque lo que se acuerda con el taller
+    # es un dia: "vuelves el 1 de septiembre".
+    suspended_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
+
     # El taller interno de Solve, donde viven las cuentas de administracion. No es un
     # taller mecanico: no aparece en la lista del panel.
     internal: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -61,3 +84,28 @@ class Workshop(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora)
+
+    def puede_entrar(self, momento: datetime) -> bool:
+        """Si la gente de este taller puede trabajar en este instante.
+
+        Es la unica definicion de "esta activo" que hay en el sistema: la usa la puerta
+        de entrada y la usa lo que muestra el panel. Escrita dos veces, un dia una diria
+        que el taller entra y la otra lo mostraria suspendido.
+
+        El orden importa: `dar_de_baja` tambien deja `active` en falso, asi que si la
+        fecha se mirara primero, un taller que ya se fue volveria a entrar solo porque
+        arrastraba una suspension vencida.
+        """
+        if self.deleted_at is not None:
+            return False
+        if self.active:
+            return True
+        if self.suspended_until is None:
+            return False
+        return momento >= _con_huso(self.suspended_until)
+
+    def estado(self, momento: datetime) -> str:
+        """Las tres situaciones posibles, con los nombres que usa el panel."""
+        if self.deleted_at is not None:
+            return ESTADO_DADO_DE_BAJA
+        return ESTADO_ACTIVO if self.puede_entrar(momento) else ESTADO_SUSPENDIDO
