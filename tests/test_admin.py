@@ -5,8 +5,10 @@ los miran y le devuelven el acceso a un dueno que perdio su clave.
 
 Dos reglas que sostienen todo lo de aca:
 - El admin entra con su propia cuenta, no con una clave compartida. Asi se sabe quien hizo que.
-- Ser admin de la plataforma NO da acceso a los datos de ningun taller: las ordenes, los
-  clientes y los vehiculos siguen filtrando por el taller del token, sin excepciones.
+- Los endpoints del taller filtran por el taller del token, sin excepciones. Pedir
+  `/orders` con una sesion de plataforma sigue devolviendo vacio. Solve mira un taller
+  por su propia puerta -`/admin/workshops/:id/orders`, de solo lectura y anotada-, que se
+  prueba en `tests/test_admin_soporte.py`.
 """
 
 import pytest
@@ -275,7 +277,11 @@ def test_la_clave_nueva_reemplaza_a_la_vieja(cliente, token_admin):
 
 
 def test_ser_admin_de_la_plataforma_no_da_acceso_a_las_ordenes(cliente, token_admin):
-    """La regla que sostiene todo: los datos siguen filtrando por el taller del token."""
+    """La regla que sostiene todo: los datos siguen filtrando por el taller del token.
+
+    Que Solve pueda mirar un taller desde el panel no abre esta puerta: son dos caminos
+    distintos, y por este el admin sigue viendo solo lo suyo, que es nada.
+    """
     alta_de_taller(cliente, token_admin)
     token_dueno = entrar(cliente, "marcela@sancristobal.cl", clave="una-clave-larga-de-verdad")
     cliente_id = crear_cliente_api(cliente, token_dueno)

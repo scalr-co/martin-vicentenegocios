@@ -125,14 +125,21 @@ def _cliente_y_vehiculo(
     return cliente, vehiculo
 
 
-def _filtrar(consulta, usuario: User, abiertas: bool, search: str | None, estado: str | None):
+def filtrar_ordenes(
+    consulta, workshop_id: str, abiertas: bool, search: str | None, estado: str | None
+):
     """Los mismos filtros para la lista y para el total.
 
     Si el total se contara sin filtrar, el paginador del frontend ofreceria paginas que
     estan vacias.
+
+    Recibe el `workshop_id` suelto y no el usuario porque el panel de Solve la reusa para
+    mirar un taller que no es el suyo. Quien decide de que taller se trata es cada ruta:
+    aca es el del token, y en `/admin/workshops/:id/orders` es el de la URL, detras del
+    rol de plataforma.
     """
     consulta = consulta.where(
-        Order.workshop_id == usuario.workshop_id,
+        Order.workshop_id == workshop_id,
         Order.deleted_at.is_(None),
     )
 
@@ -172,10 +179,16 @@ def listar(
         )
 
     total = sesion.scalar(
-        _filtrar(select(func.count()).select_from(Order), usuario, abiertas, search, estado)
+        filtrar_ordenes(
+            select(func.count()).select_from(Order),
+            usuario.workshop_id,
+            abiertas,
+            search,
+            estado,
+        )
     )
     encontradas = sesion.scalars(
-        _filtrar(select(Order), usuario, abiertas, search, estado)
+        filtrar_ordenes(select(Order), usuario.workshop_id, abiertas, search, estado)
         .order_by(Order.created_at.desc())
         .offset((page - 1) * limit)
         .limit(limit)

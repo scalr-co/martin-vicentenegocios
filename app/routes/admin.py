@@ -1,7 +1,11 @@
 """El panel de Solve: dar de alta talleres, mirarlos, corregirlos y suspenderlos.
 
-Nada de aca toca los datos de un taller. Un admin de plataforma no ve ordenes, clientes
-ni vehiculos: esos endpoints siguen filtrando por el taller del token, sin excepcion.
+Nada de aca toca los datos de un taller: este archivo administra la cuenta, no el trabajo.
+`/orders`, `/clients` y `/vehicles` siguen filtrando por el taller del token, sin
+excepcion, y un admin que los pida recibe la lista vacia de su propio taller interno.
+
+Para mirar lo que un taller tiene entre manos -cuando llaman con un problema- existe
+`app/routes/admin_soporte.py`, que es otra puerta: solo lectura y anotada.
 
 La PRIMERA cuenta de administracion se crea con `scripts/crear_admin.py`, en la consola
 del servidor. Las siguientes se crean aca, pero con la sesion de un admin que ya entro:
@@ -69,10 +73,14 @@ def _anotar(
     )
 
 
-def _taller_o_404(
+def taller_del_panel(
     sesion: Session, taller_id: str, incluir_dados_de_baja: bool = False
 ) -> Workshop:
     """El taller del panel. Nunca el interno de Solve: ese no se administra desde aca.
+
+    Sin guion bajo porque la vista de soporte (`app/routes/admin_soporte.py`) entra por
+    la misma puerta: si mirar un taller usara otra busqueda, el taller interno de Solve
+    terminaria siendo visible por un lado y no por el otro.
 
     Por defecto ignora los dados de baja, para que una peticion vieja no reviva sin
     querer un taller que ya se fue. Solo `restore` pide verlos.
@@ -161,7 +169,7 @@ def editar_taller(
     admin: User = Depends(solo_admin_plataforma),
     sesion: Session = Depends(obtener_sesion),
 ):
-    taller = _taller_o_404(sesion, taller_id)
+    taller = taller_del_panel(sesion, taller_id)
 
     cambios = {
         campo: valor
@@ -209,7 +217,7 @@ def cambiar_clave_del_dueno(
     Es la accion mas delicada del panel: deja a una persona fuera de su propio sistema
     sin avisarle. Por eso queda anotada en `admin_audit` con nombre y apellido.
     """
-    taller = _taller_o_404(sesion, taller_id)
+    taller = taller_del_panel(sesion, taller_id)
 
     dueno = sesion.scalar(
         select(User)
@@ -249,7 +257,7 @@ def dar_de_baja(
     meses, `restore` le devuelve todo donde lo dejo. Es la misma decision que con los
     clientes y las ordenes, y por la misma razon.
     """
-    taller = _taller_o_404(sesion, taller_id, incluir_dados_de_baja=True)
+    taller = taller_del_panel(sesion, taller_id, incluir_dados_de_baja=True)
 
     # Repetirlo no mueve la fecha original: es la respuesta a "cuando se fue".
     if taller.deleted_at is None:
@@ -272,7 +280,7 @@ def restaurar(
     Pedir lo que ya se cumple no es un error: sobre un taller vigente lo deja activo y
     responde igual, para que el panel pueda reintentar sin miedo.
     """
-    taller = _taller_o_404(sesion, taller_id, incluir_dados_de_baja=True)
+    taller = taller_del_panel(sesion, taller_id, incluir_dados_de_baja=True)
 
     if taller.deleted_at is not None or not taller.active:
         taller.deleted_at = None
@@ -286,7 +294,7 @@ def restaurar(
 @router.get("/workshops/{taller_id}/users", dependencies=[Depends(solo_admin_plataforma)])
 def equipo_del_taller(taller_id: str, sesion: Session = Depends(obtener_sesion)):
     """Ver quien trabaja en un taller. Es lo que se mira antes de ayudar por telefono."""
-    taller = _taller_o_404(sesion, taller_id, incluir_dados_de_baja=True)
+    taller = taller_del_panel(sesion, taller_id, incluir_dados_de_baja=True)
 
     equipo = sesion.scalars(
         select(User).where(User.workshop_id == taller.id).order_by(User.created_at)
@@ -312,7 +320,7 @@ def crear_usuario_de_respaldo(
     Existe para el dueno que se perdio o que perdio a su unico dueno activo. Como es
     entrar en la casa de otro, queda anotada en `admin_audit` con nombre y apellido.
     """
-    taller = _taller_o_404(sesion, taller_id)
+    taller = taller_del_panel(sesion, taller_id)
 
     usuario = User(
         workshop_id=taller.id,

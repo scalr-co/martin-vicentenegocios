@@ -5,6 +5,7 @@ from app import config
 from app.errores import registrar_manejadores
 from app.routes import (
     admin,
+    admin_soporte,
     auth,
     clients,
     notifications,
@@ -53,6 +54,7 @@ def crear_app() -> FastAPI:
     aplicacion.include_router(statuses.router)
     aplicacion.include_router(users.router)
     aplicacion.include_router(admin.router)
+    aplicacion.include_router(admin_soporte.router)
 
     @aplicacion.get("/health")
     def health():

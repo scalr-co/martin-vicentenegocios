@@ -1350,6 +1350,45 @@
             }
           }
         }
+      },
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Ficha Del Taller",
+        "description": "El taller y como le esta yendo, en una sola respuesta.\n\nSe abre antes de revisar orden por orden. Los dados de baja tambien se abren: cuando\nun taller se va, lo que uno quiere es entender por que.\n\nEs la unica ruta de este archivo que escribe, y lo que escribe es su propio rastro:\npara mirar cualquier cosa de un taller hay que pasar por aca primero, asi que con\nesta linea alcanza para saber quien entro.",
+        "operationId": "ficha_del_taller_admin_workshops__taller_id__get",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/admin/workshops/{taller_id}/owner-password": {
@@ -1621,6 +1660,164 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops/{taller_id}/orders": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Ordenes Del Taller",
+        "description": "Las ordenes del taller, con los mismos filtros que ve el taller en su panel.\n\nMismos filtros a proposito: cuando el dueno dice \"no me aparece la orden de la\ncamioneta\", hay que poder mirar exactamente lo que el esta mirando.",
+        "operationId": "ordenes_del_taller_admin_workshops__taller_id__orders_get",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          },
+          {
+            "name": "open",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Open"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops/{taller_id}/orders/{orden_id}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Detalle De La Orden",
+        "description": "La orden con su bitacora y todos sus avisos.\n\nEs la pantalla del post-mortem: quien la movio, cuando, y si el WhatsApp de cada\ncambio llego a salir o quedo esperando que alguien apretara enviar. El panel del\ntaller muestra solo el ultimo aviso -es lo que necesita para abrir wa.me-, y con eso\nno se puede contestar \"a mi cliente nunca le avisaron\".",
+        "operationId": "detalle_de_la_orden_admin_workshops__taller_id__orders__orden_id__get",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          },
+          {
+            "name": "orden_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Orden Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",

@@ -17,6 +17,10 @@ ACCION_TALLER_REACTIVADO = "workshop_reactivated"
 ACCION_TALLER_DADO_DE_BAJA = "workshop_archived"
 ACCION_TALLER_RESTAURADO = "workshop_restored"
 
+# Entrar a mirar lo que tiene adentro un taller: sus ordenes, sus clientes, sus avisos.
+# No cambia nada, y aun asi se anota: leer los datos de otro tambien es entrar en su casa.
+ACCION_TALLER_MIRADO = "workshop_viewed"
+
 # Entrar a crear una cuenta dentro del taller de otro, y tocar las llaves del panel.
 ACCION_USUARIO_CREADO = "user_created"
 ACCION_CUENTA_ADMIN_CREADA = "admin_created"
