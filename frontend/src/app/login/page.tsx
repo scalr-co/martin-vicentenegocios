@@ -26,13 +26,13 @@ function LoginShell({ children }: { children?: React.ReactNode }) {
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto px-4 py-10"
-      style={{ backgroundColor: "#292524" }}
+      style={{ backgroundColor: "#12100e" }}
     >
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at top, rgba(201,191,176,0.22), transparent 55%)",
+            "radial-gradient(ellipse at top, rgba(224,164,90,0.22), transparent 55%)",
         }}
       />
       <div className="relative w-full max-w-sm rounded-lg border border-white/10 bg-white p-6 shadow-xl dark:border-line dark:bg-surface">

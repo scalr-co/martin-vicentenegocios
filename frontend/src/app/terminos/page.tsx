@@ -22,7 +22,7 @@ export default function TerminosPage() {
           El tratamiento de datos personales se detalla en la{" "}
           <Link
             href="/privacidad"
-            className="underline decoration-[#c9bfb0]/60 underline-offset-2 hover:text-white"
+            className="underline decoration-[#e0a45a]/60 underline-offset-2 hover:text-white"
           >
             Política de privacidad
           </Link>

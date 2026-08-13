@@ -27,7 +27,7 @@ export function LegalShell({
       <main className="mx-auto max-w-3xl px-5 py-10 md:px-8 md:py-14">
         <p
           className="text-xs font-semibold uppercase tracking-[0.18em]"
-          style={{ color: "#c9bfb0" }}
+          style={{ color: "#e0a45a" }}
         >
           Motor Ping
         </p>
@@ -67,7 +67,7 @@ export function LegalH2({ children }: { children: React.ReactNode }) {
 
 export function LegalList({ items }: { items: string[] }) {
   return (
-    <ul className="mt-3 list-disc space-y-2 pl-5 marker:text-[#c9bfb0]">
+    <ul className="mt-3 list-disc space-y-2 pl-5 marker:text-[#e0a45a]">
       {items.map((item) => (
         <li key={item}>{item}</li>
       ))}
