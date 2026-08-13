@@ -11,7 +11,7 @@ ESTADO_SUSPENDIDO = "suspended"
 ESTADO_DADO_DE_BAJA = "deleted"
 
 
-def _con_huso(fecha: datetime) -> datetime:
+def con_huso(fecha: datetime) -> datetime:
     """La misma fecha, siempre comparable.
 
     SQLite devuelve las fechas sin huso aunque la columna sea DateTime(timezone=True).
@@ -102,7 +102,7 @@ class Workshop(Base):
             return True
         if self.suspended_until is None:
             return False
-        return momento >= _con_huso(self.suspended_until)
+        return momento >= con_huso(self.suspended_until)
 
     def estado(self, momento: datetime) -> str:
         """Las tres situaciones posibles, con los nombres que usa el panel."""

@@ -2,8 +2,9 @@ from typing import Annotated
 
 from pydantic import AfterValidator, EmailStr, Field, field_validator
 
-from app.models.workshop import PLAN_BASICO, PLANES
-from app.schemas.base import Esquema, Texto
+from app.models.base import ahora
+from app.models.workshop import ESTADO_SUSPENDIDO, PLAN_BASICO, PLANES, Workshop
+from app.schemas.base import Esquema, FechaUTC, Texto
 from app.services.normalizacion import DatoInvalido, normalizar_telefono
 
 
@@ -50,13 +51,55 @@ class AltaTallerEntrada(Esquema):
             raise ValueError(str(error)) from None
 
 
+def campos_de_estado(taller: Workshop) -> dict:
+    """Como esta el taller ahora mismo, calculado en un solo lugar.
+
+    Los cuatro campos son la misma respuesta contada de cuatro formas, porque el panel
+    lee unas y el taller lee otras. Se arman aca y no en cada ruta para que no puedan
+    contradecirse.
+    """
+    momento = ahora()
+    estado = taller.estado(momento)
+    return {
+        "active": taller.puede_entrar(momento),
+        "status": estado,
+        "suspended_until": taller.suspended_until,
+        "suspend_indefinite": estado == ESTADO_SUSPENDIDO and taller.suspended_until is None,
+    }
+
+
 class WorkshopSalida(Esquema):
+    """El taller como lo lee cualquiera que tenga sesion.
+
+    `active` responde "puede entrar hoy" y no "que dice la columna": desde que la
+    suspension puede tener fecha de termino, las dos cosas dejaron de ser lo mismo, y la
+    que le sirve a quien lee es la primera. Un campo, un significado.
+    """
+
     id: str
     name: str
     phone: str
     whatsapp_mode: str
-    active: bool
     plan: str
+    active: bool
+    status: str
+    suspended_until: FechaUTC | None
+    suspend_indefinite: bool
+
+    @classmethod
+    def desde(cls, taller: Workshop, **extra) -> "WorkshopSalida":
+        """Se arma a mano y no con `model_validate` porque cuatro de sus campos no son
+        columnas: se calculan mirando la hora. `extra` es para los esquemas que agregan
+        campos encima de este."""
+        return cls(
+            id=taller.id,
+            name=taller.name,
+            phone=taller.phone,
+            whatsapp_mode=taller.whatsapp_mode,
+            plan=taller.plan,
+            **campos_de_estado(taller),
+            **extra,
+        )
 
 
 class UserSalida(Esquema):

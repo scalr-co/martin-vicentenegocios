@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
 from app.models import User
+from app.models.base import ahora
 from app.schemas.auth import (
     AltaTallerEntrada,
     LoginEntrada,
@@ -57,7 +58,9 @@ def login(
     if usuario is None or not verificar(datos.password, usuario.password_hash):
         registrar_fallo(datos.email, direccion)
         raise _credenciales_invalidas()
-    if not usuario.active or not usuario.workshop.active:
+    # La misma regla que la puerta de cada pedido: un taller suspendido con fecha vuelve
+    # a entrar solo cuando esa fecha se cumple, y aca tambien.
+    if not usuario.active or not usuario.workshop.puede_entrar(ahora()):
         registrar_fallo(datos.email, direccion)
         raise _credenciales_invalidas()
 
@@ -71,7 +74,7 @@ def login(
     )
     salida = LoginSalida(
         token=token,
-        workshop=WorkshopSalida.model_validate(usuario.workshop),
+        workshop=WorkshopSalida.desde(usuario.workshop),
         user=UserSalida.model_validate(usuario),
     )
     return {"data": salida.model_dump(by_alias=True)}
@@ -97,7 +100,7 @@ def register(
             role=dueno.role,
             token_version=dueno.token_version,
         ),
-        workshop=WorkshopSalida.model_validate(taller),
+        workshop=WorkshopSalida.desde(taller),
         user=UserSalida.model_validate(dueno),
     )
     return {"data": salida.model_dump(by_alias=True)}
@@ -125,7 +128,7 @@ def cerrar_todas_las_sesiones(
 @router.get("/me")
 def me(usuario: User = Depends(usuario_actual)):
     salida = SesionSalida(
-        workshop=WorkshopSalida.model_validate(usuario.workshop),
+        workshop=WorkshopSalida.desde(usuario.workshop),
         user=UserSalida.model_validate(usuario),
     )
     return {"data": salida.model_dump(by_alias=True)}

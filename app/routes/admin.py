@@ -109,7 +109,7 @@ def crear_taller(
 
     return {
         "data": {
-            "workshop": WorkshopSalida.model_validate(taller).model_dump(by_alias=True),
+            "workshop": WorkshopSalida.desde(taller).model_dump(by_alias=True),
             "owner": UserSalida.model_validate(dueno).model_dump(by_alias=True),
         }
     }
@@ -155,7 +155,7 @@ def listar_talleres(
     return {
         "data": [
             {
-                **WorkshopSalida.model_validate(taller).model_dump(by_alias=True),
+                **WorkshopSalida.desde(taller).model_dump(by_alias=True),
                 "ownerEmail": correo,
                 "ordersCount": total,
             }
@@ -173,11 +173,12 @@ def editar_taller(
 ):
     taller = taller_del_panel(sesion, taller_id)
 
-    cambios = {
-        campo: valor
-        for campo, valor in datos.model_dump(exclude_unset=True).items()
-        if valor is not None
-    }
+    pedido = datos.model_dump(exclude_unset=True)
+    # La fecha de termino no es un campo suelto que se copie encima: viaja pegada al
+    # interruptor, y el esquema ya se encargo de que no llegue sola.
+    hasta = pedido.pop("suspended_until", None)
+
+    cambios = {campo: valor for campo, valor in pedido.items() if valor is not None}
     for campo, valor in cambios.items():
         setattr(taller, campo, valor)
 
@@ -185,11 +186,17 @@ def editar_taller(
     # Merece su propia linea en el registro, que es lo que se lee cuando alguien
     # pregunta por que no puede trabajar.
     if "active" in cambios:
+        suspendiendo = not cambios["active"]
+        # Reactivar borra la fecha, y suspender sin fecha vuelve a dejarla indefinida:
+        # una fecha vieja arrastrada reactivaria el taller sola en el momento menos
+        # pensado.
+        taller.suspended_until = hasta if suspendiendo else None
         _anotar(
             sesion,
             admin,
-            ACCION_TALLER_SUSPENDIDO if not cambios["active"] else ACCION_TALLER_REACTIVADO,
+            ACCION_TALLER_SUSPENDIDO if suspendiendo else ACCION_TALLER_REACTIVADO,
             taller_id=taller.id,
+            detalle=f"hasta {hasta:%Y-%m-%d}" if hasta else None,
         )
 
     otros = sorted(campo for campo in cambios if campo != "active")
@@ -203,7 +210,7 @@ def editar_taller(
         )
     sesion.commit()
 
-    return {"data": WorkshopSalida.model_validate(taller).model_dump(by_alias=True)}
+    return {"data": WorkshopSalida.desde(taller).model_dump(by_alias=True)}
 
 
 @router.post("/workshops/{taller_id}/owner-password")
@@ -293,7 +300,7 @@ def restaurar(
         _anotar(sesion, admin, ACCION_TALLER_RESTAURADO, taller_id=taller.id)
         sesion.commit()
 
-    return {"data": WorkshopSalida.model_validate(taller).model_dump(by_alias=True)}
+    return {"data": WorkshopSalida.desde(taller).model_dump(by_alias=True)}
 
 
 @router.get("/workshops/{taller_id}/users", dependencies=[Depends(solo_admin_plataforma)])

@@ -1,6 +1,10 @@
-from pydantic import EmailStr, Field
+from datetime import datetime
 
-from app.schemas.auth import Plan
+from pydantic import EmailStr, Field, model_validator
+
+from app.models.base import ahora
+from app.models.workshop import Workshop, con_huso
+from app.schemas.auth import Plan, WorkshopSalida
 from app.schemas.base import Esquema, FechaUTC, Texto
 from app.services.altas import LARGO_MINIMO_DE_CLAVE_ADMIN
 
@@ -32,12 +36,37 @@ class TallerEdicion(Esquema):
     """Solo lo que se corrige a mano. El nombre sale en el WhatsApp que lee el cliente.
 
     `active` en falso suspende el taller: nadie de ahi entra, y sus datos quedan enteros.
+    Con `suspended_until` al lado, la suspension se termina sola ese dia.
     """
 
     name: Texto | None = Field(default=None, min_length=2, max_length=120)
     phone: str | None = Field(default=None, min_length=8, max_length=20)
     active: bool | None = None
     plan: Plan | None = None
+    suspended_until: datetime | None = None
+
+    @model_validator(mode="after")
+    def _la_fecha_va_pegada_a_la_suspension(self) -> "TallerEdicion":
+        """Una sola forma de pedirlo, para que no existan estados a medias.
+
+        Una fecha sola no dice que se esta pidiendo, y una fecha junto a `active: true`
+        se contradice. Mejor rechazarlas que inventar cual de las dos gana.
+        """
+        if self.suspended_until is None:
+            return self
+
+        if self.active is not False:
+            raise ValueError(
+                "La fecha de termino solo se puede poner al suspender, con active en falso"
+            )
+
+        self.suspended_until = con_huso(self.suspended_until)
+        if self.suspended_until <= ahora():
+            raise ValueError(
+                "La fecha de termino tiene que estar en el futuro: suspender hasta ayer "
+                "es no suspender"
+            )
+        return self
 
 
 class ClaveNueva(Esquema):
@@ -75,18 +104,21 @@ class SenalesDelTaller(Esquema):
     users_active: int
 
 
-class TallerDetallado(Esquema):
+class TallerDetallado(WorkshopSalida):
     """El taller como lo ve el panel al abrir su ficha.
 
     Trae mas que `WorkshopSalida`: cuando entro y cuando se fue, que es lo que se mira al
     revisar un taller que dejo de estar. Las senales van aparte, en `stats`.
     """
 
-    id: str
-    name: str
-    phone: str
-    whatsapp_mode: str
-    active: bool
-    plan: str
     created_at: FechaUTC
     deleted_at: FechaUTC | None
+
+    @classmethod
+    def desde(cls, taller: Workshop, **extra) -> "TallerDetallado":
+        return super().desde(
+            taller,
+            created_at=taller.created_at,
+            deleted_at=taller.deleted_at,
+            **extra,
+        )

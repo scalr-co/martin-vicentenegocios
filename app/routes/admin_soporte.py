@@ -140,7 +140,7 @@ def ficha_del_taller(
     taller = taller_del_panel(sesion, taller_id, incluir_dados_de_baja=True)
     _anotar_la_visita(sesion, admin, taller)
 
-    ficha = TallerDetallado.model_validate(taller).model_dump(by_alias=True, mode="json")
+    ficha = TallerDetallado.desde(taller).model_dump(by_alias=True, mode="json")
     ficha["stats"] = _senales(sesion, taller).model_dump(by_alias=True, mode="json")
 
     return {"data": ficha}
