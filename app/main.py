@@ -3,7 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import config
 from app.errores import registrar_manejadores
-from app.routes import admin, auth, clients, notifications, orders, statuses, vehicles
+from app.routes import (
+    admin,
+    auth,
+    clients,
+    notifications,
+    orders,
+    statuses,
+    users,
+    vehicles,
+)
 
 
 def crear_app() -> FastAPI:
@@ -42,6 +51,7 @@ def crear_app() -> FastAPI:
     aplicacion.include_router(orders.router)
     aplicacion.include_router(notifications.router)
     aplicacion.include_router(statuses.router)
+    aplicacion.include_router(users.router)
     aplicacion.include_router(admin.router)
 
     @aplicacion.get("/health")

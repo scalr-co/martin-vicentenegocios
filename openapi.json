@@ -1029,14 +1029,14 @@
         }
       }
     },
-    "/admin/workshops": {
+    "/users": {
       "get": {
         "tags": [
-          "admin"
+          "users"
         ],
-        "summary": "Listar Talleres",
-        "description": "La lista sirve para una sola pregunta: quien esta usando esto de verdad.\n\nPor eso trae el conteo de ordenes y no solo los datos de contacto. Se arma con dos\nsubconsultas correlacionadas y no con joins: un taller con dos duenos duplicaria filas.",
-        "operationId": "listar_talleres_admin_workshops_get",
+        "summary": "Listar",
+        "description": "Todo el equipo, incluidos los desactivados.\n\nLos apagados se muestran apagados en vez de esconderse: son justo los que se van a\nreactivar, y su nombre sigue apareciendo en el historial de las ordenes que movieron.",
+        "operationId": "listar_users_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1050,15 +1050,16 @@
       },
       "post": {
         "tags": [
-          "admin"
+          "users"
         ],
-        "summary": "Crear Taller",
-        "operationId": "crear_taller_admin_workshops_post",
+        "summary": "Crear",
+        "description": "Da de alta a un mecanico del taller.\n\nEl rol lo pone esta linea y no el cuerpo del pedido: si se pudiera elegir, cualquier\ndueno se clonaria y la guarda del ultimo dueno activo no protegeria nada.",
+        "operationId": "crear_users_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AltaTallerEntrada"
+                "$ref": "#/components/schemas/UsuarioEntrada"
               }
             }
           },
@@ -1066,6 +1067,85 @@
         },
         "responses": {
           "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Crear Taller",
+        "operationId": "crear_taller_admin_workshops_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AltaTallerEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Listar Talleres",
+        "description": "La lista sirve para una sola pregunta: quien esta usando esto de verdad.\n\nPor eso trae el conteo de ordenes y no solo los datos de contacto. Se arma con dos\nsubconsultas correlacionadas y no con joins: un taller con dos duenos duplicaria filas.",
+        "operationId": "listar_talleres_admin_workshops_get",
+        "parameters": [
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Archived"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -1134,6 +1214,40 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Dar De Baja",
+        "description": "El taller se fue. Sale de la lista y nadie de ahi entra, pero no se borra nada.\n\nSus ordenes, sus clientes y su historial por patente quedan enteros: si vuelve en dos\nmeses, `restore` le devuelve todo donde lo dejo. Es la misma decision que con los\nclientes y las ordenes, y por la misma razon.",
+        "operationId": "dar_de_baja_admin_workshops__taller_id__delete",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/admin/workshops/{taller_id}/owner-password": {
@@ -1165,6 +1279,47 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops/{taller_id}/restore": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Restaurar",
+        "description": "Devuelve a la vida un taller dado de baja, con todo lo suyo adentro.\n\nPedir lo que ya se cumple no es un error: sobre un taller vigente lo deja activo y\nresponde igual, para que el panel pueda reintentar sin miedo.",
+        "operationId": "restaurar_admin_workshops__taller_id__restore_post",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1565,11 +1720,51 @@
               }
             ],
             "title": "Phone"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
           }
         },
         "type": "object",
         "title": "TallerEdicion",
-        "description": "Solo lo que se corrige a mano. El nombre sale en el WhatsApp que lee el cliente."
+        "description": "Solo lo que se corrige a mano. El nombre sale en el WhatsApp que lee el cliente.\n\n`active` en falso suspende el taller: nadie de ahi entra, y sus datos quedan enteros."
+      },
+      "UsuarioEntrada": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "UsuarioEntrada",
+        "description": "Alta de una persona del taller. El rol no viaja en el cuerpo: lo pone la ruta."
       },
       "ValidationError": {
         "properties": {
