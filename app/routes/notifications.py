@@ -11,13 +11,14 @@ from sqlalchemy.orm import Session
 from app.db import obtener_sesion
 from app.models import AVISO_ENVIADO, Notification, User
 from app.models.base import ahora
+from app.schemas.base import Respuesta
 from app.schemas.order import AvisoEnviado, AvisoSalida
 from app.security.dependencias import usuario_actual
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
-@router.post("/{aviso_id}/sent")
+@router.post("/{aviso_id}/sent", response_model=Respuesta[AvisoSalida])
 def marcar_como_enviado(
     aviso_id: str,
     datos: AvisoEnviado | None = None,

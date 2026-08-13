@@ -3,13 +3,15 @@
 from fastapi import APIRouter, Depends
 
 from app.models import ESTADO_CERRADO, ESTADOS, User
+from app.schemas.base import Respuesta
+from app.schemas.order import EstadoDeOrdenSalida
 from app.security.dependencias import usuario_actual
 from app.services.presentacion import ETIQUETAS_DE_ESTADO
 
 router = APIRouter(prefix="/statuses", tags=["statuses"])
 
 
-@router.get("")
+@router.get("", response_model=Respuesta[list[EstadoDeOrdenSalida]])
 def listar(usuario: User = Depends(usuario_actual)):
     return {
         "data": [

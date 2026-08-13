@@ -13,6 +13,7 @@ from app.schemas.auth import (
     UserSalida,
     WorkshopSalida,
 )
+from app.schemas.base import Respuesta
 from app.security.admin import exigir_clave_de_administracion
 from app.security.dependencias import usuario_actual
 from app.security.intentos import demasiados_intentos, olvidar, registrar_fallo
@@ -41,7 +42,7 @@ def _demasiados_intentos() -> HTTPException:
     )
 
 
-@router.post("/login")
+@router.post("/login", response_model=Respuesta[LoginSalida])
 def login(
     datos: LoginEntrada,
     peticion: Request,
@@ -83,6 +84,7 @@ def login(
 @router.post(
     "/register",
     status_code=status.HTTP_201_CREATED,
+    response_model=Respuesta[LoginSalida],
     dependencies=[Depends(exigir_clave_de_administracion)],
 )
 def register(
@@ -125,7 +127,7 @@ def cerrar_todas_las_sesiones(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/me")
+@router.get("/me", response_model=Respuesta[SesionSalida])
 def me(usuario: User = Depends(usuario_actual)):
     salida = SesionSalida(
         workshop=WorkshopSalida.desde(usuario.workshop),

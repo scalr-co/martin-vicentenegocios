@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
 from app.models import Client, Order, User, Vehicle
+from app.schemas.base import Respuesta, RespuestaPaginada
 from app.schemas.order import OrdenSalida
 from app.schemas.vehicle import VehiculoEdicion, VehiculoEntrada, VehiculoSalida
 from app.security.dependencias import usuario_actual
@@ -76,7 +77,7 @@ def _patente_repetida() -> HTTPException:
     )
 
 
-@router.get("")
+@router.get("", response_model=RespuestaPaginada[VehiculoSalida])
 def listar(
     client_id: str | None = Query(default=None, alias="clientId"),
     plate: str | None = Query(default=None),
@@ -123,7 +124,9 @@ def listar(
     }
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", status_code=status.HTTP_201_CREATED, response_model=Respuesta[VehiculoSalida]
+)
 def crear(
     datos: VehiculoEntrada,
     usuario: User = Depends(usuario_actual),
@@ -147,7 +150,7 @@ def crear(
     return {"data": _salida(vehiculo)}
 
 
-@router.get("/{vehiculo_id}")
+@router.get("/{vehiculo_id}", response_model=Respuesta[VehiculoSalida])
 def obtener(
     vehiculo_id: str,
     usuario: User = Depends(usuario_actual),
@@ -156,7 +159,9 @@ def obtener(
     return {"data": _salida(_del_taller(sesion, usuario, vehiculo_id))}
 
 
-@router.get("/{vehiculo_id}/history")
+@router.get(
+    "/{vehiculo_id}/history", response_model=RespuestaPaginada[OrdenSalida]
+)
 def historial(
     vehiculo_id: str,
     page: int = Query(default=1, ge=1, le=TOPE_DE_PAGINAS),
@@ -193,7 +198,7 @@ def historial(
     }
 
 
-@router.patch("/{vehiculo_id}")
+@router.patch("/{vehiculo_id}", response_model=Respuesta[VehiculoSalida])
 def editar(
     vehiculo_id: str,
     datos: VehiculoEdicion,

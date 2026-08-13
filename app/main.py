@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import config
 from app.errores import registrar_manejadores
+from app.schemas.base import Respuesta, Salud
 from app.routes import (
     admin,
     admin_soporte,
@@ -56,7 +57,7 @@ def crear_app() -> FastAPI:
     aplicacion.include_router(admin.router)
     aplicacion.include_router(admin_soporte.router)
 
-    @aplicacion.get("/health")
+    @aplicacion.get("/health", response_model=Respuesta[Salud])
     def health():
         return {"data": {"status": "ok"}}
 

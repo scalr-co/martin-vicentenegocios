@@ -131,3 +131,32 @@ class AvisoSalida(Esquema):
     status: str
     created_at: FechaUTC
     sent_at: FechaUTC | None = None
+
+
+class OrdenConUltimoAviso(OrdenSalida):
+    """La orden abierta en su ficha.
+
+    Trae el ultimo aviso porque sin el, el mecanico que recarga la pagina pierde el texto
+    que tenia que mandar y el id para marcarlo como enviado.
+    """
+
+    latest_notification: AvisoSalida | None = None
+
+
+class CambioDeEstadoSalida(Esquema):
+    """Lo que deja un cambio de estado: la orden movida y el aviso listo para enviar.
+
+    `notification` va en null cuando el estado no le escribe nada al cliente -o cuando el
+    estado pedido era el que ya tenia-.
+    """
+
+    order: OrdenSalida
+    notification: AvisoSalida | None = None
+
+
+class EstadoDeOrdenSalida(Esquema):
+    """Un estado del tablero, con el nombre que se muestra en pantalla."""
+
+    key: str
+    label: str
+    is_open: bool

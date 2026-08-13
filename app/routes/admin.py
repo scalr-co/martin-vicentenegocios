@@ -42,10 +42,13 @@ from app.schemas.admin import (
     ClaveNueva,
     CuentaAdminEdicion,
     CuentaAdminEntrada,
+    TallerConDueno,
     TallerEdicion,
+    TallerEnLista,
     UsuarioAdminSalida,
 )
 from app.schemas.auth import AltaTallerEntrada, UserSalida, WorkshopSalida
+from app.schemas.base import Respuesta
 from app.schemas.user import UsuarioDeRespaldoEntrada, UsuarioSalida
 from app.security.dependencias import solo_admin_plataforma
 from app.security.passwords import hashear
@@ -97,7 +100,11 @@ def taller_del_panel(
     return taller
 
 
-@router.post("/workshops", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/workshops",
+    status_code=status.HTTP_201_CREATED,
+    response_model=Respuesta[TallerConDueno],
+)
 def crear_taller(
     datos: AltaTallerEntrada,
     admin: User = Depends(solo_admin_plataforma),
@@ -115,7 +122,11 @@ def crear_taller(
     }
 
 
-@router.get("/workshops", dependencies=[Depends(solo_admin_plataforma)])
+@router.get(
+    "/workshops",
+    dependencies=[Depends(solo_admin_plataforma)],
+    response_model=Respuesta[list[TallerEnLista]],
+)
 def listar_talleres(
     archived: bool = Query(default=False),
     sesion: Session = Depends(obtener_sesion),
@@ -164,7 +175,7 @@ def listar_talleres(
     }
 
 
-@router.patch("/workshops/{taller_id}")
+@router.patch("/workshops/{taller_id}", response_model=Respuesta[WorkshopSalida])
 def editar_taller(
     taller_id: str,
     datos: TallerEdicion,
@@ -213,7 +224,10 @@ def editar_taller(
     return {"data": WorkshopSalida.desde(taller).model_dump(by_alias=True)}
 
 
-@router.post("/workshops/{taller_id}/owner-password")
+@router.post(
+    "/workshops/{taller_id}/owner-password",
+    response_model=Respuesta[UsuarioAdminSalida],
+)
 def cambiar_clave_del_dueno(
     taller_id: str,
     datos: ClaveNueva,
@@ -278,7 +292,9 @@ def dar_de_baja(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/workshops/{taller_id}/restore")
+@router.post(
+    "/workshops/{taller_id}/restore", response_model=Respuesta[WorkshopSalida]
+)
 def restaurar(
     taller_id: str,
     admin: User = Depends(solo_admin_plataforma),
@@ -303,7 +319,11 @@ def restaurar(
     return {"data": WorkshopSalida.desde(taller).model_dump(by_alias=True)}
 
 
-@router.get("/workshops/{taller_id}/users", dependencies=[Depends(solo_admin_plataforma)])
+@router.get(
+    "/workshops/{taller_id}/users",
+    dependencies=[Depends(solo_admin_plataforma)],
+    response_model=Respuesta[list[UsuarioSalida]],
+)
 def equipo_del_taller(taller_id: str, sesion: Session = Depends(obtener_sesion)):
     """Ver quien trabaja en un taller. Es lo que se mira antes de ayudar por telefono."""
     taller = taller_del_panel(sesion, taller_id, incluir_dados_de_baja=True)
@@ -320,7 +340,11 @@ def equipo_del_taller(taller_id: str, sesion: Session = Depends(obtener_sesion))
     }
 
 
-@router.post("/workshops/{taller_id}/users", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/workshops/{taller_id}/users",
+    status_code=status.HTTP_201_CREATED,
+    response_model=Respuesta[UsuarioSalida],
+)
 def crear_usuario_de_respaldo(
     taller_id: str,
     datos: UsuarioDeRespaldoEntrada,
@@ -363,7 +387,11 @@ def crear_usuario_de_respaldo(
     return {"data": UsuarioSalida.model_validate(usuario).model_dump(by_alias=True)}
 
 
-@router.post("/accounts", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/accounts",
+    status_code=status.HTTP_201_CREATED,
+    response_model=Respuesta[UsuarioAdminSalida],
+)
 def crear_cuenta_de_admin(
     datos: CuentaAdminEntrada,
     admin: User = Depends(solo_admin_plataforma),
@@ -387,7 +415,11 @@ def crear_cuenta_de_admin(
     return {"data": UsuarioAdminSalida.model_validate(nuevo).model_dump(by_alias=True)}
 
 
-@router.get("/accounts", dependencies=[Depends(solo_admin_plataforma)])
+@router.get(
+    "/accounts",
+    dependencies=[Depends(solo_admin_plataforma)],
+    response_model=Respuesta[list[UsuarioAdminSalida]],
+)
 def listar_cuentas_de_admin(sesion: Session = Depends(obtener_sesion)):
     """Quien tiene las llaves del panel. Se mira antes de crear otra o apagar una."""
     cuentas = sesion.scalars(
@@ -404,7 +436,7 @@ def listar_cuentas_de_admin(sesion: Session = Depends(obtener_sesion)):
     }
 
 
-@router.patch("/accounts/{cuenta_id}")
+@router.patch("/accounts/{cuenta_id}", response_model=Respuesta[UsuarioAdminSalida])
 def editar_cuenta_de_admin(
     cuenta_id: str,
     datos: CuentaAdminEdicion,

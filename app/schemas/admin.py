@@ -4,8 +4,9 @@ from pydantic import EmailStr, Field, model_validator
 
 from app.models.base import ahora
 from app.models.workshop import Workshop, con_huso
-from app.schemas.auth import Plan, WorkshopSalida
+from app.schemas.auth import Plan, UserSalida, WorkshopSalida
 from app.schemas.base import Esquema, FechaUTC, Texto
+from app.schemas.order import AvisoSalida, OrdenSalida
 from app.services.altas import LARGO_MINIMO_DE_CLAVE_ADMIN
 
 LARGO_MINIMO_DE_CLAVE = 8
@@ -104,6 +105,24 @@ class SenalesDelTaller(Esquema):
     users_active: int
 
 
+class TallerConDueno(Esquema):
+    """Lo que deja un alta: el taller y la cuenta con la que se entra a el."""
+
+    workshop: WorkshopSalida
+    owner: UserSalida
+
+
+class TallerEnLista(WorkshopSalida):
+    """El taller en la lista del panel.
+
+    Trae el correo del dueno y cuantas ordenes lleva porque la lista existe para una sola
+    pregunta: quien esta usando esto de verdad.
+    """
+
+    owner_email: str | None = None
+    orders_count: int = 0
+
+
 class TallerDetallado(WorkshopSalida):
     """El taller como lo ve el panel al abrir su ficha.
 
@@ -122,3 +141,20 @@ class TallerDetallado(WorkshopSalida):
             deleted_at=taller.deleted_at,
             **extra,
         )
+
+
+class FichaDeTaller(TallerDetallado):
+    """La ficha completa: el taller y como le esta yendo, en una sola respuesta."""
+
+    stats: SenalesDelTaller
+
+
+class OrdenDeSoporte(OrdenSalida):
+    """La orden como la mira Solve: con quien la movio y si el WhatsApp llego a salir.
+
+    El panel del taller muestra solo el ultimo aviso -es lo que necesita para abrir
+    wa.me-, y con eso no se puede contestar "a mi cliente nunca le avisaron".
+    """
+
+    events: list[EventoSalida]
+    notifications: list[AvisoSalida]

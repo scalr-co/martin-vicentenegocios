@@ -35,8 +35,15 @@ from app.models import (
 from app.models.base import ahora
 from app.routes.admin import taller_del_panel
 from app.routes.orders import TOPE_DE_PAGINAS, TOPE_POR_PAGINA, filtrar_ordenes, salida_de_orden
-from app.schemas.admin import EventoSalida, SenalesDelTaller, TallerDetallado
-from app.schemas.order import AvisoSalida
+from app.schemas.admin import (
+    EventoSalida,
+    FichaDeTaller,
+    OrdenDeSoporte,
+    SenalesDelTaller,
+    TallerDetallado,
+)
+from app.schemas.base import Respuesta, RespuestaPaginada
+from app.schemas.order import AvisoSalida, OrdenSalida
 from app.security.dependencias import solo_admin_plataforma
 
 router = APIRouter(
@@ -122,7 +129,7 @@ def _senales(sesion: Session, taller: Workshop) -> SenalesDelTaller:
     )
 
 
-@router.get("/workshops/{taller_id}")
+@router.get("/workshops/{taller_id}", response_model=Respuesta[FichaDeTaller])
 def ficha_del_taller(
     taller_id: str,
     admin: User = Depends(solo_admin_plataforma),
@@ -146,7 +153,9 @@ def ficha_del_taller(
     return {"data": ficha}
 
 
-@router.get("/workshops/{taller_id}/orders")
+@router.get(
+    "/workshops/{taller_id}/orders", response_model=RespuestaPaginada[OrdenSalida]
+)
 def ordenes_del_taller(
     taller_id: str,
     abiertas: bool = Query(default=False, alias="open"),
@@ -187,7 +196,9 @@ def ordenes_del_taller(
     }
 
 
-@router.get("/workshops/{taller_id}/orders/{orden_id}")
+@router.get(
+    "/workshops/{taller_id}/orders/{orden_id}", response_model=Respuesta[OrdenDeSoporte]
+)
 def detalle_de_la_orden(
     taller_id: str,
     orden_id: str,

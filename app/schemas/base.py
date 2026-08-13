@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Generic, TypeVar
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, PlainSerializer
 from pydantic.alias_generators import to_camel
@@ -50,3 +50,39 @@ class Esquema(BaseModel):
         populate_by_name=True,
         from_attributes=True,
     )
+
+
+T = TypeVar("T")
+
+
+class Paginacion(Esquema):
+    """En que pagina va y cuantas cosas hay en total, para que el frontend arme el pie."""
+
+    page: int
+    limit: int
+    total: int
+
+
+class Respuesta(Esquema, Generic[T]):
+    """El sobre en el que viaja todo lo que responde la API.
+
+    Siempre `{"data": ...}`, aunque adentro vaya una sola cosa. Es el contrato que se
+    acordo con el frontend: un solo camino para leer la respuesta, y espacio para agregar
+    algo al lado -como `meta`- sin romper a nadie. Los errores viajan en su propio sobre,
+    `{"error": {...}}`, que arma `app/errores.py`.
+    """
+
+    data: T
+
+
+class RespuestaPaginada(Esquema, Generic[T]):
+    """Una lista que no cabe entera. `meta` dice de que pagina es lo que viene."""
+
+    data: list[T]
+    meta: Paginacion
+
+
+class Salud(Esquema):
+    """Lo que responde /health: alcanza para que Railway sepa que la app esta viva."""
+
+    status: str

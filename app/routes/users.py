@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.db import obtener_sesion
 from app.models import ROL_MECANICO, User
 from app.schemas.admin import ClaveNueva
+from app.schemas.base import Respuesta
 from app.schemas.user import UsuarioEdicion, UsuarioEntrada, UsuarioSalida
 from app.security.dependencias import solo_dueno
 from app.security.passwords import hashear
@@ -41,7 +42,9 @@ def _del_taller(sesion: Session, dueno: User, usuario_id: str) -> User:
     return usuario
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", status_code=status.HTTP_201_CREATED, response_model=Respuesta[UsuarioSalida]
+)
 def crear(
     datos: UsuarioEntrada,
     dueno: User = Depends(solo_dueno),
@@ -67,7 +70,7 @@ def crear(
     return {"data": _salida(usuario)}
 
 
-@router.get("")
+@router.get("", response_model=Respuesta[list[UsuarioSalida]])
 def listar(
     dueno: User = Depends(solo_dueno),
     sesion: Session = Depends(obtener_sesion),
@@ -86,7 +89,7 @@ def listar(
     return {"data": [_salida(usuario) for usuario in equipo]}
 
 
-@router.patch("/{usuario_id}")
+@router.patch("/{usuario_id}", response_model=Respuesta[UsuarioSalida])
 def editar(
     usuario_id: str,
     datos: UsuarioEdicion,
@@ -128,7 +131,7 @@ def editar(
     return {"data": _salida(objetivo)}
 
 
-@router.post("/{usuario_id}/password")
+@router.post("/{usuario_id}/password", response_model=Respuesta[UsuarioSalida])
 def cambiar_clave(
     usuario_id: str,
     datos: ClaveNueva,

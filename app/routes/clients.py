@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.db import obtener_sesion
 from app.models import ESTADO_CERRADO, Client, Order, User
 from app.models.base import ahora
+from app.schemas.base import Respuesta, RespuestaPaginada
 from app.schemas.client import ClienteEdicion, ClienteEntrada, ClienteSalida
 from app.security.dependencias import usuario_actual
 
@@ -88,7 +89,7 @@ def _ordenes_abiertas(sesion: Session, cliente_id: str) -> int:
     )
 
 
-@router.get("")
+@router.get("", response_model=RespuestaPaginada[ClienteSalida])
 def listar(
     page: int = Query(default=1, ge=1, le=TOPE_DE_PAGINAS),
     limit: int = Query(default=20, ge=1, le=TOPE_POR_PAGINA),
@@ -123,7 +124,9 @@ def listar(
     }
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", status_code=status.HTTP_201_CREATED, response_model=Respuesta[ClienteSalida]
+)
 def crear(
     datos: ClienteEntrada,
     usuario: User = Depends(usuario_actual),
@@ -160,7 +163,7 @@ def crear(
     return {"data": _salida(cliente)}
 
 
-@router.get("/{cliente_id}")
+@router.get("/{cliente_id}", response_model=Respuesta[ClienteSalida])
 def obtener(
     cliente_id: str,
     usuario: User = Depends(usuario_actual),
@@ -169,7 +172,7 @@ def obtener(
     return {"data": _salida(_del_taller(sesion, usuario, cliente_id))}
 
 
-@router.patch("/{cliente_id}")
+@router.patch("/{cliente_id}", response_model=Respuesta[ClienteSalida])
 def editar(
     cliente_id: str,
     datos: ClienteEdicion,

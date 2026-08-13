@@ -28,7 +28,16 @@ from app.models import (
     es_retroceso,
 )
 from app.models.base import ahora
-from app.schemas.order import AvisoSalida, CambioDeEstado, OrdenEdicion, OrdenEntrada, OrdenSalida
+from app.schemas.base import Respuesta, RespuestaPaginada
+from app.schemas.order import (
+    AvisoSalida,
+    CambioDeEstado,
+    CambioDeEstadoSalida,
+    OrdenConUltimoAviso,
+    OrdenEdicion,
+    OrdenEntrada,
+    OrdenSalida,
+)
 from app.security.dependencias import usuario_actual
 from app.services.mensajes import mensaje_para
 
@@ -162,7 +171,7 @@ def filtrar_ordenes(
     return consulta
 
 
-@router.get("")
+@router.get("", response_model=RespuestaPaginada[OrdenSalida])
 def listar(
     abiertas: bool = Query(default=False, alias="open"),
     search: str | None = Query(default=None, max_length=120),
@@ -200,7 +209,9 @@ def listar(
     }
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", status_code=status.HTTP_201_CREATED, response_model=Respuesta[OrdenSalida]
+)
 def crear(
     datos: OrdenEntrada,
     usuario: User = Depends(usuario_actual),
@@ -241,7 +252,7 @@ def crear(
     return {"data": salida_de_orden(orden)}
 
 
-@router.get("/{orden_id}")
+@router.get("/{orden_id}", response_model=Respuesta[OrdenConUltimoAviso])
 def obtener(
     orden_id: str,
     usuario: User = Depends(usuario_actual),
@@ -253,7 +264,7 @@ def obtener(
     return {"data": salida}
 
 
-@router.patch("/{orden_id}")
+@router.patch("/{orden_id}", response_model=Respuesta[OrdenSalida])
 def editar(
     orden_id: str,
     datos: OrdenEdicion,
@@ -286,7 +297,7 @@ def archivar(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/{orden_id}/status")
+@router.post("/{orden_id}/status", response_model=Respuesta[CambioDeEstadoSalida])
 def mover_de_estado(
     orden_id: str,
     datos: CambioDeEstado,
