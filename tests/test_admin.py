@@ -259,3 +259,88 @@ def test_no_se_puede_repetir_el_correo_aunque_cambie_la_capitalizacion(cliente, 
 
     assert repetido.status_code == 409
     assert repetido.json()["error"]["code"] == "CONFLICT"
+
+
+CLAVE_DE_MARCELA = "una-clave-larga-de-verdad"
+
+
+def test_suspender_un_taller_deja_a_su_gente_fuera(cliente, token_admin):
+    """El taller que dejo de pagar no entra. Sus datos no se tocan."""
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+    token_dueno = entrar(cliente, "marcela@sancristobal.cl", clave=CLAVE_DE_MARCELA)
+    assert cliente.get("/clients", headers=con_token(token_dueno)).status_code == 200
+
+    suspension = cliente.patch(
+        f"/admin/workshops/{taller_id}",
+        json={"active": False},
+        headers=con_token(token_admin),
+    )
+
+    assert suspension.status_code == 200
+    assert suspension.json()["data"]["active"] is False
+    # El token que ya tenia en la mano deja de servir en el siguiente request.
+    assert cliente.get("/clients", headers=con_token(token_dueno)).status_code == 401
+    # Y tampoco puede volver a entrar.
+    assert cliente.post(
+        "/auth/login",
+        json={"email": "marcela@sancristobal.cl", "password": CLAVE_DE_MARCELA},
+    ).status_code == 401
+
+
+def test_reactivar_devuelve_el_acceso_con_todo_adentro(cliente, token_admin):
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+    cliente.patch(
+        f"/admin/workshops/{taller_id}",
+        json={"active": False},
+        headers=con_token(token_admin),
+    )
+
+    reactivado = cliente.patch(
+        f"/admin/workshops/{taller_id}",
+        json={"active": True},
+        headers=con_token(token_admin),
+    )
+
+    assert reactivado.status_code == 200
+    assert reactivado.json()["data"]["active"] is True
+    assert entrar(cliente, "marcela@sancristobal.cl", clave=CLAVE_DE_MARCELA)
+
+
+def test_la_suspension_queda_anotada_con_su_autor(cliente, token_admin, sesion):
+    """Dejar a un taller entero sin trabajar merece su propia linea en el registro."""
+    from app.models import AdminAudit
+
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+    cliente.patch(
+        f"/admin/workshops/{taller_id}",
+        json={"active": False},
+        headers=con_token(token_admin),
+    )
+
+    anotado = sesion.scalar(
+        select(AdminAudit).where(AdminAudit.action == "workshop_suspended")
+    )
+    admin = sesion.scalar(select(User).where(User.email == "vicente@solve.cl"))
+    assert anotado is not None
+    assert anotado.workshop_id == taller_id
+    assert anotado.actor_user_id == admin.id
+
+
+def test_suspender_no_se_confunde_con_una_edicion_cualquiera(cliente, token_admin, sesion):
+    """Cambiar el nombre y suspender son dos hechos distintos: se anotan distinto."""
+    from app.models import AdminAudit
+
+    taller_id = alta_de_taller(cliente, token_admin).json()["data"]["workshop"]["id"]
+    cliente.patch(
+        f"/admin/workshops/{taller_id}",
+        json={"name": "Taller San Cristobal Ltda", "active": False},
+        headers=con_token(token_admin),
+    )
+
+    acciones = set(
+        sesion.scalars(
+            select(AdminAudit.action).where(AdminAudit.workshop_id == taller_id)
+        ).all()
+    )
+    assert "workshop_suspended" in acciones
+    assert "workshop_updated" in acciones

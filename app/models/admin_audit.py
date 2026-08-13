@@ -10,6 +10,18 @@ ACCION_TALLER_CREADO = "workshop_created"
 ACCION_TALLER_EDITADO = "workshop_updated"
 ACCION_CLAVE_DEL_DUENO_CAMBIADA = "owner_password_reset"
 
+# Cortarle el acceso a un taller entero no es "una edicion mas": deja a varias personas
+# sin poder trabajar. Por eso tiene accion propia y no viaja dentro de workshop_updated.
+ACCION_TALLER_SUSPENDIDO = "workshop_suspended"
+ACCION_TALLER_REACTIVADO = "workshop_reactivated"
+ACCION_TALLER_DADO_DE_BAJA = "workshop_archived"
+ACCION_TALLER_RESTAURADO = "workshop_restored"
+
+# Entrar a crear una cuenta dentro del taller de otro, y tocar las llaves del panel.
+ACCION_USUARIO_CREADO = "user_created"
+ACCION_CUENTA_ADMIN_CREADA = "admin_created"
+ACCION_CUENTA_ADMIN_EDITADA = "admin_updated"
+
 
 class AdminAudit(Base):
     """Lo que hizo la administracion de la plataforma, y quien lo hizo.

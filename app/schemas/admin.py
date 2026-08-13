@@ -1,6 +1,6 @@
 from pydantic import EmailStr, Field
 
-from app.schemas.base import Esquema
+from app.schemas.base import Esquema, Texto
 
 LARGO_MINIMO_DE_CLAVE = 8
 
@@ -21,10 +21,14 @@ class UsuarioAdminSalida(Esquema):
 
 
 class TallerEdicion(Esquema):
-    """Solo lo que se corrige a mano. El nombre sale en el WhatsApp que lee el cliente."""
+    """Solo lo que se corrige a mano. El nombre sale en el WhatsApp que lee el cliente.
 
-    name: str | None = Field(default=None, min_length=2, max_length=120)
+    `active` en falso suspende el taller: nadie de ahi entra, y sus datos quedan enteros.
+    """
+
+    name: Texto | None = Field(default=None, min_length=2, max_length=120)
     phone: str | None = Field(default=None, min_length=8, max_length=20)
+    active: bool | None = None
 
 
 class ClaveNueva(Esquema):

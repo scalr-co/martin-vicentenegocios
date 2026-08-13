@@ -19,6 +19,8 @@ from app.models import (
     ACCION_CLAVE_DEL_DUENO_CAMBIADA,
     ACCION_TALLER_CREADO,
     ACCION_TALLER_EDITADO,
+    ACCION_TALLER_REACTIVADO,
+    ACCION_TALLER_SUSPENDIDO,
     ROL_DUENO,
     AdminAudit,
     Order,
@@ -136,13 +138,26 @@ def editar_taller(
     for campo, valor in cambios.items():
         setattr(taller, campo, valor)
 
-    _anotar(
-        sesion,
-        admin,
-        ACCION_TALLER_EDITADO,
-        taller_id=taller.id,
-        detalle=", ".join(sorted(cambios)) or None,
-    )
+    # La suspension no es "una edicion mas": deja a un taller entero sin poder entrar.
+    # Merece su propia linea en el registro, que es lo que se lee cuando alguien
+    # pregunta por que no puede trabajar.
+    if "active" in cambios:
+        _anotar(
+            sesion,
+            admin,
+            ACCION_TALLER_SUSPENDIDO if not cambios["active"] else ACCION_TALLER_REACTIVADO,
+            taller_id=taller.id,
+        )
+
+    otros = sorted(campo for campo in cambios if campo != "active")
+    if otros:
+        _anotar(
+            sesion,
+            admin,
+            ACCION_TALLER_EDITADO,
+            taller_id=taller.id,
+            detalle=", ".join(otros),
+        )
     sesion.commit()
 
     return {"data": WorkshopSalida.model_validate(taller).model_dump(by_alias=True)}
