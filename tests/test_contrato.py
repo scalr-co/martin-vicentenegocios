@@ -14,28 +14,50 @@ sin declarar que devuelve, o cambia el contrato y no regenera el archivo.
 import json
 from pathlib import Path
 
-from fastapi.routing import APIRoute
-
 from app.main import crear_app
 
 RAIZ = Path(__file__).resolve().parent.parent
 
-SIN_CUERPO = 204
+SIN_CUERPO = "204"
+
+
+def rutas_calladas(esquema: dict) -> list[str]:
+    """Las respuestas exitosas que no dicen que devuelven.
+
+    Se pregunta sobre el esquema y no sobre `app.routes` a proposito. La primera version
+    de este guardian recorria las rutas del objeto y **no comprobaba nada**: desde FastAPI
+    0.141 `include_router` ya no copia las rutas a la aplicacion, las envuelve en un
+    `_IncludedRouter`, asi que el recorrido solo veia `/health` y pasaba siempre. El
+    esquema, en cambio, es exactamente lo que lee quien escribe el frontend.
+    """
+    return [
+        f"{metodo.upper()} {ruta} -> {codigo}"
+        for ruta, operaciones in esquema["paths"].items()
+        for metodo, operacion in operaciones.items()
+        for codigo, respuesta in operacion.get("responses", {}).items()
+        if codigo.startswith("2") and codigo != SIN_CUERPO and "content" not in respuesta
+    ]
 
 
 def test_toda_ruta_declara_lo_que_devuelve():
     """Salvo las que no devuelven nada: un 204 no tiene cuerpo que describir."""
-    aplicacion = crear_app()
+    assert rutas_calladas(crear_app().openapi()) == []
 
-    calladas = [
-        f"{sorted(ruta.methods)[0]} {ruta.path}"
-        for ruta in aplicacion.routes
-        if isinstance(ruta, APIRoute)
-        and ruta.response_model is None
-        and ruta.status_code != SIN_CUERPO
-    ]
 
-    assert calladas == []
+def test_el_guardian_sabe_fallar():
+    """Un guardian que no puede fallar es peor que no tener guardian: da confianza sin
+    darla. Fue exactamente lo que paso con la version anterior de este archivo."""
+    esquema_con_una_muda = {
+        "paths": {
+            "/muda": {"get": {"responses": {"200": {"description": "no dice que devuelve"}}}},
+            "/sin-cuerpo": {"delete": {"responses": {"204": {"description": "vacio"}}}},
+            "/buena": {
+                "get": {"responses": {"200": {"content": {"application/json": {}}}}}
+            },
+        }
+    }
+
+    assert rutas_calladas(esquema_con_una_muda) == ["GET /muda -> 200"]
 
 
 def test_el_openapi_del_repo_esta_al_dia():

@@ -9,8 +9,10 @@ from app.routes import (
     admin_soporte,
     auth,
     clients,
+    exports,
     notifications,
     orders,
+    reports,
     statuses,
     users,
     vehicles,
@@ -53,6 +55,8 @@ def crear_app() -> FastAPI:
     aplicacion.include_router(orders.router)
     aplicacion.include_router(notifications.router)
     aplicacion.include_router(statuses.router)
+    aplicacion.include_router(reports.router)
+    aplicacion.include_router(exports.router)
     aplicacion.include_router(users.router)
     aplicacion.include_router(admin.router)
     aplicacion.include_router(admin_soporte.router)

@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
-from app.models import ROL_ADMIN_PLATAFORMA, ROL_DUENO, User
+from app.models import PLAN_PLUS, ROL_ADMIN_PLATAFORMA, ROL_DUENO, User
 from app.models.base import ahora
 from app.security.tokens import TokenInvalido, leer_token
 
@@ -53,6 +53,21 @@ def solo_dueno(usuario: User = Depends(usuario_actual)) -> User:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Esta accion es solo para el dueno del taller",
+        )
+    return usuario
+
+
+def solo_plan_plus(usuario: User = Depends(usuario_actual)) -> User:
+    """Para las ventajas que se cobran aparte.
+
+    Esconder el boton en la pantalla no alcanza: sin esta linea, cualquiera con una sesion
+    pide la URL a mano y se lleva gratis lo que el taller de al lado esta pagando. Es el
+    mismo criterio del tope de mecanicos.
+    """
+    if usuario.workshop.plan != PLAN_PLUS:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Esta funcion viene en el plan Plus",
         )
     return usuario
 

@@ -406,6 +406,38 @@ Mientras dura, la gente de ese taller recibe 401 en el login y en cada pedido. C
 fecha vuelve a entrar sin que nadie toque nada — **y con el mismo token de antes**: la
 suspensión corta el paso, no cierra sesiones.
 
+### Lo que trae el plan Plus (13-08-2026)
+
+Tres rutas, todas con **403 si el taller no es `plus`**. Esconder el botón con
+`isPlusPlan()` no basta: sin el 403, cualquiera con sesión pide la URL a mano y se lleva
+gratis lo que el taller de al lado paga.
+
+```
+GET /reports/weekly     el resumen de los últimos 7 días
+GET /exports/clients    la libreta de clientes, en CSV
+GET /exports/history    todo lo que pasó por el taller, en CSV
+```
+
+**`/reports/weekly`** devuelve exactamente el tipo `WeeklyReport` que ya está escrito en
+`src/lib/plus-reports.ts`. Cómo se cuenta cada número:
+
+| Campo | Qué cuenta |
+|---|---|
+| `ordersOpen` | todo lo que no está `entregado` |
+| `ordersWaiting` | `esperando_aprobacion` + `esperando_repuesto` — el taller detenido esperando a alguien |
+| `ordersReady` | `listo`: terminado, esperando que el cliente lo venga a buscar |
+| `ordersCreated` | órdenes abiertas en los últimos 7 días |
+| `ordersDelivered` | entregadas en los últimos 7 días (se cuenta por el **evento** de entrega, no por `updated_at`: corregirle el título a una orden vieja no la vuelve a entregar) |
+| `byStatus` | desglose de **las abiertas**, no de todas: responde "qué tengo hoy", no "qué hice alguna vez" |
+| `openOrders` | las abiertas, **de la más vieja a la más nueva** — la que lleva más tiempo adentro es la que hay que mirar primero |
+
+`from` y `to` son la ventana, en ISO con Z.
+
+**Los CSV** salen con `Content-Disposition` (nombre de archivo incluido), separador **`;`** y
+BOM al principio. No es capricho: con comas, Excel en configuración regional chilena mete
+todo en una sola columna, y sin BOM los acentos y las eñes salen rotos. `apiDownload` ya
+lee el nombre del header.
+
 ### Mirar un taller (solo lectura)
 
 ```

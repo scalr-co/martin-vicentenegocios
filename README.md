@@ -22,6 +22,7 @@ subir fotos y desplegar.
 | F6 | Envio automatico por WhatsApp API (modo `api`) | ⬜ |
 | F7 | Equipo del taller, suspension y baja de talleres | ✅ |
 | F8 | Planes con tope de mecanicos, suspension con fecha, contrato de salida | ✅ |
+| F9 | Ventajas del plan Plus: resumen semanal y exportar a CSV | ✅ |
 
 Los estados de una orden, en orden: `recibido`, `en_diagnostico`, `esperando_aprobacion`,
 `en_reparacion`, `esperando_repuesto`, `listo`, `entregado`. `GET /orders?open=true` trae
