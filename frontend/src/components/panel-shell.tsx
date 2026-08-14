@@ -12,6 +12,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { clearSession, getWorkshopName, isAdmin, isOwner } from "@/lib/auth";
+import { loadStatuses } from "@/lib/statuses";
 
 type LeaveGuardValue = {
   setLeaveBlocked: (blocked: boolean) => void;
@@ -35,6 +36,7 @@ export function useLeaveBlock(blocked: boolean) {
 
 const links = [
   { href: "/panel", label: "Hoy", exact: true },
+  { href: "/panel/historial", label: "Historial", exact: false },
   { href: "/panel/clientes", label: "Clientes", exact: false },
   { href: "/panel/nueva-orden", label: "Nueva orden", exact: false },
 ];
@@ -106,6 +108,12 @@ export function PanelShell({
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    void loadStatuses().catch(() => {
+      /* etiquetas de respaldo en statuses.ts */
+    });
+  }, []);
 
   const requestNavigate = useCallback(
     (href: string, e?: React.MouseEvent) => {

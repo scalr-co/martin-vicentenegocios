@@ -1,7 +1,12 @@
+"use client";
+
 import Link from "next/link";
-import { STATUS_COLORS, statusLabel } from "@/lib/types";
+import { useSyncExternalStore } from "react";
+import { getStatuses, statusLabel, subscribeStatuses } from "@/lib/statuses";
+import { STATUS_COLORS } from "@/lib/types";
 
 export function StatusBadge({ status }: { status: string }) {
+  useSyncExternalStore(subscribeStatuses, getStatuses, getStatuses);
   const color = STATUS_COLORS[status] ?? "bg-stone-200 text-stone-800";
   return (
     <span

@@ -354,6 +354,9 @@ function NuevaOrdenContent() {
               className={fieldClass}
               placeholder="Qué reporta el cliente..."
             />
+            <span className="mt-1 block text-xs text-muted">
+              Solo texto. No se adjuntan fotos.
+            </span>
           </label>
 
           <label className="block min-w-0 overflow-hidden" htmlFor="estimatedAt">

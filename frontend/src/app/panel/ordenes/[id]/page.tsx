@@ -10,28 +10,20 @@ import {
   useLeaveGuard,
 } from "@/components/panel-shell";
 import { StatusBadge } from "@/components/ui";
+import { VehicleHistoryList } from "@/components/vehicle-history-list";
 import { apiFetch } from "@/lib/api";
 import { formatDateCl } from "@/lib/date";
 import { errorMessage } from "@/lib/errors";
 import { fieldClass } from "@/lib/form-styles";
+import { getStatuses, loadStatuses, statusLabel, type OrderStatusInfo } from "@/lib/statuses";
 import {
   buildWhatsAppLink,
   extractNotificationDraft,
   formatVehicleOrItem,
   isNotificationSent,
-  statusLabel,
   type ApiOrder,
 } from "@/lib/types";
-
-const ALL_STATUSES = [
-  "recibido",
-  "en_diagnostico",
-  "esperando_aprobacion",
-  "en_reparacion",
-  "esperando_repuesto",
-  "listo",
-  "entregado",
-];
+import { getVehicleHistory } from "@/lib/vehicles";
 
 function normalizeOrder(data: ApiOrder): ApiOrder {
   const notice = data.latestNotification ?? data.notification ?? null;
@@ -173,6 +165,15 @@ function OrdenDetailBody({
   const [sendError, setSendError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [statuses, setStatuses] = useState<OrderStatusInfo[]>(() =>
+    getStatuses(),
+  );
+  const [historyOrders, setHistoryOrders] = useState<ApiOrder[]>([]);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const vehicleId = order.vehicle?.id || order.vehicleId;
+  const plate = order.vehicle?.plate;
 
   const hasUnsentWhatsApp = Boolean(draftMessage.trim()) && !messageSent;
   useLeaveBlock(hasUnsentWhatsApp);
@@ -183,10 +184,49 @@ function OrdenDetailBody({
     return () => clearTimeout(t);
   }, [flash]);
 
+  useEffect(() => {
+    void loadStatuses()
+      .then(setStatuses)
+      .catch(() => setStatuses(getStatuses()));
+  }, []);
+
+  useEffect(() => {
+    if (!vehicleId) return;
+    let cancelled = false;
+    setHistoryLoading(true);
+    (async () => {
+      try {
+        const { data } = await getVehicleHistory(vehicleId, 1, 20);
+        if (cancelled) return;
+        setHistoryOrders(Array.isArray(data) ? data : []);
+        setHistoryError(null);
+      } catch (err) {
+        if (!cancelled) {
+          setHistoryError(
+            errorMessage(err, "No se pudo cargar el historial del auto"),
+          );
+        }
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vehicleId]);
+
   const waLink =
     draftPhone && draftMessage.trim()
       ? buildWhatsAppLink(draftPhone, draftMessage.trim())
       : null;
+
+  const statusOptions = statuses.some((s) => s.key === order.status)
+    ? statuses
+    : [
+        { key: order.status, label: statusLabel(order.status), isOpen: true },
+        ...statuses,
+      ];
+  const previousOrders = historyOrders.filter((o) => o.id !== order.id);
 
   function requestLeavePanel(e?: React.MouseEvent) {
     if (hasUnsentWhatsApp) {
@@ -357,9 +397,9 @@ function OrdenDetailBody({
               className={fieldClass}
               aria-busy={saving}
             >
-              {ALL_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {statusLabel(s)}
+              {statusOptions.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
                 </option>
               ))}
             </select>
@@ -433,6 +473,47 @@ function OrdenDetailBody({
           )}
         </div>
       </div>
+
+      {vehicleId && (
+        <section className="mt-6 min-w-0 rounded-lg border border-line bg-surface p-5">
+          <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                Historial del auto
+              </p>
+              <h2 className="mt-1 font-[family-name:var(--font-display)] text-lg font-bold text-ink">
+                Todo lo que se le ha hecho a este auto
+              </h2>
+            </div>
+            {plate && (
+              <Link
+                href={`/panel/historial?plate=${encodeURIComponent(plate)}`}
+                className="tap-target text-sm font-semibold text-brand hover:underline"
+              >
+                Ver historial completo
+              </Link>
+            )}
+          </div>
+          {historyLoading && (
+            <p className="mt-4 text-sm text-muted">Cargando historial…</p>
+          )}
+          {historyError && (
+            <p role="alert" className="mt-4 text-sm text-red-700">
+              {historyError}
+            </p>
+          )}
+          {!historyLoading && !historyError && previousOrders.length === 0 && (
+            <p className="mt-4 text-sm text-muted">
+              Es la primera orden de este auto en el taller.
+            </p>
+          )}
+          {!historyLoading && !historyError && previousOrders.length > 0 && (
+            <div className="mt-4">
+              <VehicleHistoryList orders={previousOrders} />
+            </div>
+          )}
+        </section>
+      )}
 
       <div className="mt-8 border-t border-line pt-6">
         <p className="text-sm text-muted">

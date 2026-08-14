@@ -37,26 +37,6 @@ export type WorkOrder = {
   client: Pick<Client, "id" | "name" | "phone">;
 };
 
-export const STATUS_LABELS: Record<OrderStatus, string> = {
-  recibido: "Recibido",
-  en_diagnostico: "En diagnóstico",
-  esperando_aprobacion: "Esperando aprobación",
-  en_reparacion: "En reparación",
-  esperando_repuesto: "Esperando repuesto",
-  listo: "Listo",
-  entregado: "Entregado",
-};
-
-export const STATUS_COLORS: Record<OrderStatus, string> = {
-  recibido: "bg-stone-200 text-stone-800",
-  en_diagnostico: "bg-amber-100 text-amber-900",
-  esperando_aprobacion: "bg-yellow-100 text-yellow-900",
-  en_reparacion: "bg-stone-200 text-stone-800",
-  esperando_repuesto: "bg-sky-100 text-sky-900",
-  listo: "bg-emerald-100 text-emerald-900",
-  entregado: "bg-stone-100 text-stone-500",
-};
-
 export function formatVehicleOrItem(v: Pick<Vehicle, "plate" | "brand" | "model">) {
   const name = [v.brand, v.model].filter(Boolean).join(" ");
   return name ? `${name} · Patente ${v.plate}` : `Patente ${v.plate}`;

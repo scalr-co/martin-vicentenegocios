@@ -234,7 +234,7 @@ export default function HomePage() {
           </h2>
           <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              "Entras el trabajo con patente y foto",
+              "Entras el trabajo con patente y una descripción",
               "Marcas el estado real (también si espera)",
               "Aviso listo para WhatsApp al cliente",
               "Entregas con historial guardado",

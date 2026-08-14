@@ -1,19 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PanelShell } from "@/components/panel-shell";
 import { PlusActions } from "@/components/plus-actions";
+import { PlateHistorySearch } from "@/components/plate-history-search";
 import { StatusBadge } from "@/components/ui";
 import { apiList } from "@/lib/api";
 import { formatDateCl } from "@/lib/date";
 import { errorMessage } from "@/lib/errors";
-import {
-  formatVehicleOrItem,
-  statusLabel,
-  type ApiOrder,
-} from "@/lib/types";
+import { getStatuses, subscribeStatuses } from "@/lib/statuses";
+import { formatVehicleOrItem, type ApiOrder } from "@/lib/types";
 
 const FILTERS: { id: "open" | "critical" | string; label: string }[] = [
   { id: "open", label: "Abiertas" },
@@ -44,6 +42,11 @@ function PanelContent() {
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const statuses = useSyncExternalStore(
+    subscribeStatuses,
+    getStatuses,
+    getStatuses,
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -109,6 +112,8 @@ function PanelContent() {
       </div>
 
       <PlusActions />
+
+      <PlateHistorySearch compact />
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
@@ -203,18 +208,7 @@ function PanelContent() {
       </Link>
 
       <p className="mt-6 text-xs text-muted">
-        Estados:{" "}
-        {[
-          "recibido",
-          "en_diagnostico",
-          "esperando_aprobacion",
-          "en_reparacion",
-          "esperando_repuesto",
-          "listo",
-          "entregado",
-        ]
-          .map(statusLabel)
-          .join(" · ")}
+        Estados: {statuses.map((s) => s.label).join(" · ")}
       </p>
     </PanelShell>
   );

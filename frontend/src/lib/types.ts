@@ -61,16 +61,6 @@ export type ApiOrder = {
   latestNotification?: ApiNotification | null;
 };
 
-export const STATUS_LABELS: Record<string, string> = {
-  recibido: "Recibido",
-  en_diagnostico: "En diagnóstico",
-  esperando_aprobacion: "Esperando aprobación",
-  en_reparacion: "En reparación",
-  esperando_repuesto: "Esperando repuesto",
-  listo: "Listo",
-  entregado: "Entregado",
-};
-
 export const STATUS_COLORS: Record<string, string> = {
   recibido: "bg-stone-200 text-stone-800",
   en_diagnostico: "bg-amber-100 text-amber-900",
@@ -80,10 +70,6 @@ export const STATUS_COLORS: Record<string, string> = {
   listo: "bg-emerald-100 text-emerald-900",
   entregado: "bg-stone-100 text-stone-500",
 };
-
-export function statusLabel(status: string) {
-  return STATUS_LABELS[status] ?? status;
-}
 
 export function formatVehicleOrItem(v?: ApiVehicle | null, fallback = "") {
   if (!v) return fallback;

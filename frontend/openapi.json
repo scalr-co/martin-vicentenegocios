@@ -1,0 +1,3952 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Motor Ping API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login",
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_LoginSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Register",
+        "description": "La puerta de emergencia. El dia a dia va por el panel de admin, con cuenta propia.",
+        "operationId": "register_auth_register_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AltaTallerEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_LoginSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout-all": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Cerrar Todas Las Sesiones",
+        "description": "Deja fuera a todos los tokens ya emitidos de esta persona.\n\nEs lo que se hace cuando a alguien le roban el celular con la sesion abierta. No\ndesactiva la cuenta: puede volver a entrar con su clave enseguida.\n\nUn JWT no se puede borrar del aparato donde quedo, asi que lo que se mueve es la\nversion de sesion: el token viejo trae la anterior y deja de calzar.",
+        "operationId": "cerrar_todas_las_sesiones_auth_logout_all_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Me",
+        "operationId": "me_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_SesionSalida_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clients": {
+      "get": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Listar",
+        "operationId": "listar_clients_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaPaginada_ClienteSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Crear",
+        "description": "Dar de alta al cliente. Si su ficha estaba archivada, la revive en vez de duplicarla.\n\nRevivir no es un atajo: el telefono es unico dentro del taller, asi que sin esto\narchivar dejaria ese numero inservible para siempre. Y es lo que el taller espera del\ncliente que vuelve -llega con el historial de su auto, no de cero-.",
+        "operationId": "crear_clients_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClienteEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_ClienteSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clients/{cliente_id}": {
+      "get": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Obtener",
+        "operationId": "obtener_clients__cliente_id__get",
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cliente Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_ClienteSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Editar",
+        "operationId": "editar_clients__cliente_id__patch",
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cliente Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClienteEdicion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_ClienteSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Archivar",
+        "description": "Saca la ficha de circulacion sin borrar nada de lo que se le hizo a sus autos.\n\nCon una orden abierta no se deja: el auto esta en el taller ahora mismo, y archivar\nal dueno lo dejaria fuera de la lista con el trabajo a medias. Primero se cierra o se\narchiva la orden.",
+        "operationId": "archivar_clients__cliente_id__delete",
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cliente Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehicles": {
+      "get": {
+        "tags": [
+          "vehicles"
+        ],
+        "summary": "Listar",
+        "description": "Buscar por `plate` es como se llega a un auto que ya estuvo aca.\n\nLa patente es el unico dato que el mecanico tiene en la mano cuando el auto entra\npor la puerta, y un auto que vuelve es el caso normal de un taller, no la excepcion.\n\nLos autos de un cliente archivado no salen. Si salieran, buscar la patente llevaria a\nuna ficha que el taller ya no ve y armar la orden fallaria sin explicar por que. Por\nid si se pueden seguir pidiendo: es como los muestra una orden vieja.",
+        "operationId": "listar_vehicles_get",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Clientid"
+            }
+          },
+          {
+            "name": "plate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Plate"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaPaginada_VehiculoSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "vehicles"
+        ],
+        "summary": "Crear",
+        "operationId": "crear_vehicles_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehiculoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_VehiculoSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehicles/{vehiculo_id}": {
+      "get": {
+        "tags": [
+          "vehicles"
+        ],
+        "summary": "Obtener",
+        "operationId": "obtener_vehicles__vehiculo_id__get",
+        "parameters": [
+          {
+            "name": "vehiculo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vehiculo Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_VehiculoSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "vehicles"
+        ],
+        "summary": "Editar",
+        "operationId": "editar_vehicles__vehiculo_id__patch",
+        "parameters": [
+          {
+            "name": "vehiculo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vehiculo Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehiculoEdicion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_VehiculoSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehicles/{vehiculo_id}/history": {
+      "get": {
+        "tags": [
+          "vehicles"
+        ],
+        "summary": "Historial",
+        "description": "Todo lo que se le ha hecho a este auto, de lo mas nuevo a lo mas viejo.\n\nEs la pregunta de siempre cuando el auto vuelve: que le hicimos la vez pasada.",
+        "operationId": "historial_vehicles__vehiculo_id__history_get",
+        "parameters": [
+          {
+            "name": "vehiculo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vehiculo Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaPaginada_OrdenSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders": {
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Listar",
+        "operationId": "listar_orders_get",
+        "parameters": [
+          {
+            "name": "open",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Open"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaPaginada_OrdenSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Crear",
+        "operationId": "crear_orders_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrdenEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_OrdenSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{orden_id}": {
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Obtener",
+        "operationId": "obtener_orders__orden_id__get",
+        "parameters": [
+          {
+            "name": "orden_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Orden Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_OrdenConUltimoAviso_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Editar",
+        "operationId": "editar_orders__orden_id__patch",
+        "parameters": [
+          {
+            "name": "orden_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Orden Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrdenEdicion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_OrdenSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Archivar",
+        "description": "Saca la orden del tablero. Es para la que se creo mal, no para la que se termino.\n\nLa que se termino se cierra moviendola a entregado, que es lo que le avisa al cliente.",
+        "operationId": "archivar_orders__orden_id__delete",
+        "parameters": [
+          {
+            "name": "orden_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Orden Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{orden_id}/status": {
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Mover De Estado",
+        "operationId": "mover_de_estado_orders__orden_id__status_post",
+        "parameters": [
+          {
+            "name": "orden_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Orden Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioDeEstado"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_CambioDeEstadoSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{aviso_id}/sent": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Marcar Como Enviado",
+        "operationId": "marcar_como_enviado_notifications__aviso_id__sent_post",
+        "parameters": [
+          {
+            "name": "aviso_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Aviso Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AvisoEnviado"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Datos"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_AvisoSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statuses": {
+      "get": {
+        "tags": [
+          "statuses"
+        ],
+        "summary": "Listar",
+        "operationId": "listar_statuses_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_list_EstadoDeOrdenSalida__"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Listar",
+        "description": "Todo el equipo, incluidos los desactivados.\n\nLos apagados se muestran apagados en vez de esconderse: son justo los que se van a\nreactivar, y su nombre sigue apareciendo en el historial de las ordenes que movieron.",
+        "operationId": "listar_users_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_list_UsuarioSalida__"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Crear",
+        "description": "Da de alta a un mecanico del taller.\n\nEl rol lo pone esta linea y no el cuerpo del pedido: si se pudiera elegir, cualquier\ndueno se clonaria y la guarda del ultimo dueno activo no protegeria nada.",
+        "operationId": "crear_users_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_UsuarioSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{usuario_id}": {
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Editar",
+        "description": "Cambia el nombre o enciende y apaga a una persona del taller.\n\nApagar no borra: la cuenta deja de entrar y el nombre sigue colgando de cada orden\nque esa persona movio. Por eso es un interruptor y no un DELETE.",
+        "operationId": "editar_users__usuario_id__patch",
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Usuario Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioEdicion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_UsuarioSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{usuario_id}/password": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Cambiar Clave",
+        "description": "Para el mecanico que perdio su clave. La escribe el dueno y se la pasa.\n\nSube la version de sesion: cambiar la clave tiene que cortar lo que ya estaba\nabierto, o quien tuviera el token de antes seguiria adentro con una clave muerta.",
+        "operationId": "cambiar_clave_users__usuario_id__password_post",
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Usuario Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaveNueva"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_UsuarioSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Crear Taller",
+        "operationId": "crear_taller_admin_workshops_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AltaTallerEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_TallerConDueno_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Listar Talleres",
+        "description": "La lista sirve para una sola pregunta: quien esta usando esto de verdad.\n\nPor eso trae el conteo de ordenes y no solo los datos de contacto. Se arma con dos\nsubconsultas correlacionadas y no con joins: un taller con dos duenos duplicaria filas.",
+        "operationId": "listar_talleres_admin_workshops_get",
+        "parameters": [
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Archived"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_list_TallerEnLista__"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops/{taller_id}": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Editar Taller",
+        "operationId": "editar_taller_admin_workshops__taller_id__patch",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TallerEdicion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_WorkshopSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Dar De Baja",
+        "description": "El taller se fue. Sale de la lista y nadie de ahi entra, pero no se borra nada.\n\nSus ordenes, sus clientes y su historial por patente quedan enteros: si vuelve en dos\nmeses, `restore` le devuelve todo donde lo dejo. Es la misma decision que con los\nclientes y las ordenes, y por la misma razon.",
+        "operationId": "dar_de_baja_admin_workshops__taller_id__delete",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Ficha Del Taller",
+        "description": "El taller y como le esta yendo, en una sola respuesta.\n\nSe abre antes de revisar orden por orden. Los dados de baja tambien se abren: cuando\nun taller se va, lo que uno quiere es entender por que.\n\nEs la unica ruta de este archivo que escribe, y lo que escribe es su propio rastro:\npara mirar cualquier cosa de un taller hay que pasar por aca primero, asi que con\nesta linea alcanza para saber quien entro.",
+        "operationId": "ficha_del_taller_admin_workshops__taller_id__get",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_FichaDeTaller_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops/{taller_id}/owner-password": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Cambiar Clave Del Dueno",
+        "description": "Para el dueno que perdio su clave. Sin esto, la unica salida es crearle otra\ncuenta -y ahi pierde sus ordenes, sus clientes y su historial por patente.\n\nEs la accion mas delicada del panel: deja a una persona fuera de su propio sistema\nsin avisarle. Por eso queda anotada en `admin_audit` con nombre y apellido.",
+        "operationId": "cambiar_clave_del_dueno_admin_workshops__taller_id__owner_password_post",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaveNueva"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_UsuarioAdminSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops/{taller_id}/restore": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Restaurar",
+        "description": "Devuelve a la vida un taller dado de baja, con todo lo suyo adentro.\n\nPedir lo que ya se cumple no es un error: sobre un taller vigente lo deja activo y\nresponde igual, para que el panel pueda reintentar sin miedo.",
+        "operationId": "restaurar_admin_workshops__taller_id__restore_post",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_WorkshopSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops/{taller_id}/users": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Equipo Del Taller",
+        "description": "Ver quien trabaja en un taller. Es lo que se mira antes de ayudar por telefono.",
+        "operationId": "equipo_del_taller_admin_workshops__taller_id__users_get",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_list_UsuarioSalida__"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Crear Usuario De Respaldo",
+        "description": "La puerta de respaldo: crear una cuenta dentro de un taller que no es de Solve.\n\nExiste para el dueno que se perdio o que perdio a su unico dueno activo. Como es\nentrar en la casa de otro, queda anotada en `admin_audit` con nombre y apellido.",
+        "operationId": "crear_usuario_de_respaldo_admin_workshops__taller_id__users_post",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioDeRespaldoEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_UsuarioSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/accounts": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Listar Cuentas De Admin",
+        "description": "Quien tiene las llaves del panel. Se mira antes de crear otra o apagar una.",
+        "operationId": "listar_cuentas_de_admin_admin_accounts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_list_UsuarioAdminSalida__"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Crear Cuenta De Admin",
+        "description": "La segunda cuenta de Solve y las que sigan.\n\nNo resucita la ruta que se borro: aquella pedia una llave que viajaba por internet y\ncreaba la cuenta mas poderosa del sistema sin dejar rastro de quien lo hizo. Esta\nexige una sesion de administrador, asi que hay una persona identificable detras y\nqueda anotada. La primera cuenta sigue naciendo en la consola del servidor.\n\n`crear_admin` levanta sus fallas como HTTPException, asi que aca no se traduce nada.",
+        "operationId": "crear_cuenta_de_admin_admin_accounts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaAdminEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_UsuarioAdminSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/accounts/{cuenta_id}": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Editar Cuenta De Admin",
+        "description": "Apagar o renombrar una cuenta de Solve.\n\nNunca la ultima activa, y nunca la propia: quedarse sin ninguna cuenta de plataforma\ndeja el panel cerrado para todos, y la unica salida seria volver a la consola del\nservidor.",
+        "operationId": "editar_cuenta_de_admin_admin_accounts__cuenta_id__patch",
+        "parameters": [
+          {
+            "name": "cuenta_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cuenta Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaAdminEdicion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_UsuarioAdminSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops/{taller_id}/orders": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Ordenes Del Taller",
+        "description": "Las ordenes del taller, con los mismos filtros que ve el taller en su panel.\n\nMismos filtros a proposito: cuando el dueno dice \"no me aparece la orden de la\ncamioneta\", hay que poder mirar exactamente lo que el esta mirando.",
+        "operationId": "ordenes_del_taller_admin_workshops__taller_id__orders_get",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          },
+          {
+            "name": "open",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Open"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaPaginada_OrdenSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workshops/{taller_id}/orders/{orden_id}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Detalle De La Orden",
+        "description": "La orden con su bitacora y todos sus avisos.\n\nEs la pantalla del post-mortem: quien la movio, cuando, y si el WhatsApp de cada\ncambio llego a salir o quedo esperando que alguien apretara enviar. El panel del\ntaller muestra solo el ultimo aviso -es lo que necesita para abrir wa.me-, y con eso\nno se puede contestar \"a mi cliente nunca le avisaron\".",
+        "operationId": "detalle_de_la_orden_admin_workshops__taller_id__orders__orden_id__get",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taller Id"
+            }
+          },
+          {
+            "name": "orden_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Orden Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_OrdenDeSoporte_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_Salud_"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AltaTallerEntrada": {
+        "properties": {
+          "workshopName": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Workshopname"
+          },
+          "workshopPhone": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 8,
+            "title": "Workshopphone"
+          },
+          "ownerName": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Ownername"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "title": "Password"
+          },
+          "plan": {
+            "type": "string",
+            "title": "Plan",
+            "default": "basico"
+          }
+        },
+        "type": "object",
+        "required": [
+          "workshopName",
+          "workshopPhone",
+          "ownerName",
+          "email",
+          "password"
+        ],
+        "title": "AltaTallerEntrada",
+        "description": "Crea el taller y su usuario dueno de una sola vez."
+      },
+      "AvisoEnviado": {
+        "properties": {
+          "message": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "title": "AvisoEnviado",
+        "description": "Lo que el mecanico mando de verdad, si cambio el borrador antes de enviarlo.\n\nViene vacio cuando mando el borrador tal cual: ese es el caso normal."
+      },
+      "AvisoSalida": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "toPhone": {
+            "type": "string",
+            "title": "Tophone"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          },
+          "sentAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "toPhone",
+          "message",
+          "status",
+          "createdAt"
+        ],
+        "title": "AvisoSalida",
+        "description": "Lo que el frontend necesita para abrir wa.me sin pedir nada mas."
+      },
+      "CambioDeEstado": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "CambioDeEstado"
+      },
+      "CambioDeEstadoSalida": {
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/OrdenSalida"
+          },
+          "notification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AvisoSalida"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "order"
+        ],
+        "title": "CambioDeEstadoSalida",
+        "description": "Lo que deja un cambio de estado: la orden movida y el aviso listo para enviar.\n\n`notification` va en null cuando el estado no le escribe nada al cliente -o cuando el\nestado pedido era el que ya tenia-."
+      },
+      "ClaveNueva": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "title": "ClaveNueva"
+      },
+      "ClienteEdicion": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "rut": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rut"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "ClienteEdicion",
+        "description": "Todo opcional: llega solo lo que el mecanico cambio en la ficha."
+      },
+      "ClienteEntrada": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "rut": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rut"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "phone"
+        ],
+        "title": "ClienteEntrada"
+      },
+      "ClienteResumen": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "phone"
+        ],
+        "title": "ClienteResumen"
+      },
+      "ClienteSalida": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "rut": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rut"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "rut",
+          "notes",
+          "createdAt"
+        ],
+        "title": "ClienteSalida"
+      },
+      "CuentaAdminEdicion": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          }
+        },
+        "type": "object",
+        "title": "CuentaAdminEdicion"
+      },
+      "CuentaAdminEntrada": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 12,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "CuentaAdminEntrada",
+        "description": "Una cuenta de Solve. No pertenece a ningun taller de verdad."
+      },
+      "EstadoDeOrdenSalida": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "isOpen": {
+            "type": "boolean",
+            "title": "Isopen"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "isOpen"
+        ],
+        "title": "EstadoDeOrdenSalida",
+        "description": "Un estado del tablero, con el nombre que se muestra en pantalla."
+      },
+      "EventoSalida": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "fromStatus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fromstatus"
+          },
+          "toStatus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tostatus"
+          },
+          "userName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "fromStatus",
+          "toStatus",
+          "userName",
+          "createdAt"
+        ],
+        "title": "EventoSalida",
+        "description": "Una linea de la bitacora de la orden, como se lee desde el panel de Solve.\n\nVa el nombre de la persona y no su id: quien mira desde afuera no tiene forma de\nsaber a quien corresponde un uuid del taller de otro. Queda en null si la cuenta se\nborro, porque el evento sobrevive a la persona."
+      },
+      "FichaDeTaller": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "whatsappMode": {
+            "type": "string",
+            "title": "Whatsappmode"
+          },
+          "plan": {
+            "type": "string",
+            "title": "Plan"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "suspendedUntil": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suspendeduntil"
+          },
+          "suspendIndefinite": {
+            "type": "boolean",
+            "title": "Suspendindefinite"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          },
+          "deletedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deletedat"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/SenalesDelTaller"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "whatsappMode",
+          "plan",
+          "active",
+          "status",
+          "suspendedUntil",
+          "suspendIndefinite",
+          "createdAt",
+          "deletedAt",
+          "stats"
+        ],
+        "title": "FichaDeTaller",
+        "description": "La ficha completa: el taller y como le esta yendo, en una sola respuesta."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LoginEntrada": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginEntrada"
+      },
+      "LoginSalida": {
+        "properties": {
+          "workshop": {
+            "$ref": "#/components/schemas/WorkshopSalida"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSalida"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "workshop",
+          "user",
+          "token"
+        ],
+        "title": "LoginSalida"
+      },
+      "OrdenConUltimoAviso": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "estimatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedat"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "title": "Updatedat"
+          },
+          "client": {
+            "$ref": "#/components/schemas/ClienteResumen"
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/VehiculoResumen"
+          },
+          "latestNotification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AvisoSalida"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vehicleOrItem": {
+            "type": "string",
+            "title": "Vehicleoritem",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "status",
+          "estimatedAt",
+          "createdAt",
+          "updatedAt",
+          "client",
+          "vehicle",
+          "vehicleOrItem"
+        ],
+        "title": "OrdenConUltimoAviso",
+        "description": "La orden abierta en su ficha.\n\nTrae el ultimo aviso porque sin el, el mecanico que recarga la pagina pierde el texto\nque tenia que mandar y el id para marcarlo como enviado."
+      },
+      "OrdenDeSoporte": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "estimatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedat"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "title": "Updatedat"
+          },
+          "client": {
+            "$ref": "#/components/schemas/ClienteResumen"
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/VehiculoResumen"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/EventoSalida"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "notifications": {
+            "items": {
+              "$ref": "#/components/schemas/AvisoSalida"
+            },
+            "type": "array",
+            "title": "Notifications"
+          },
+          "vehicleOrItem": {
+            "type": "string",
+            "title": "Vehicleoritem",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "status",
+          "estimatedAt",
+          "createdAt",
+          "updatedAt",
+          "client",
+          "vehicle",
+          "events",
+          "notifications",
+          "vehicleOrItem"
+        ],
+        "title": "OrdenDeSoporte",
+        "description": "La orden como la mira Solve: con quien la movio y si el WhatsApp llego a salir.\n\nEl panel del taller muestra solo el ultimo aviso -es lo que necesita para abrir\nwa.me-, y con eso no se puede contestar \"a mi cliente nunca le avisaron\"."
+      },
+      "OrdenEdicion": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "estimatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedat"
+          }
+        },
+        "type": "object",
+        "title": "OrdenEdicion",
+        "description": "Sin `status` a proposito: el estado se mueve por su propio endpoint.\n\nCambiar de estado le escribe al cliente. Si se pudiera hacer desde aca, corregir una\npalabra del titulo podria terminar mandando un WhatsApp sin que nadie lo pidiera."
+      },
+      "OrdenEntrada": {
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "title": "Clientid"
+          },
+          "vehicleId": {
+            "type": "string",
+            "title": "Vehicleid"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 2,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "estimatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedat"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clientId",
+          "vehicleId",
+          "title"
+        ],
+        "title": "OrdenEntrada"
+      },
+      "OrdenSalida": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "estimatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedat"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "title": "Updatedat"
+          },
+          "client": {
+            "$ref": "#/components/schemas/ClienteResumen"
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/VehiculoResumen"
+          },
+          "vehicleOrItem": {
+            "type": "string",
+            "title": "Vehicleoritem",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "status",
+          "estimatedAt",
+          "createdAt",
+          "updatedAt",
+          "client",
+          "vehicle",
+          "vehicleOrItem"
+        ],
+        "title": "OrdenSalida"
+      },
+      "Paginacion": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page",
+          "limit",
+          "total"
+        ],
+        "title": "Paginacion",
+        "description": "En que pagina va y cuantas cosas hay en total, para que el frontend arme el pie."
+      },
+      "RespuestaPaginada_ClienteSalida_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ClienteSalida"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Paginacion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "RespuestaPaginada[ClienteSalida]"
+      },
+      "RespuestaPaginada_OrdenSalida_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OrdenSalida"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Paginacion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "RespuestaPaginada[OrdenSalida]"
+      },
+      "RespuestaPaginada_VehiculoSalida_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/VehiculoSalida"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Paginacion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "RespuestaPaginada[VehiculoSalida]"
+      },
+      "Respuesta_AvisoSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AvisoSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[AvisoSalida]"
+      },
+      "Respuesta_CambioDeEstadoSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CambioDeEstadoSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[CambioDeEstadoSalida]"
+      },
+      "Respuesta_ClienteSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ClienteSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[ClienteSalida]"
+      },
+      "Respuesta_FichaDeTaller_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FichaDeTaller"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[FichaDeTaller]"
+      },
+      "Respuesta_LoginSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LoginSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[LoginSalida]"
+      },
+      "Respuesta_OrdenConUltimoAviso_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OrdenConUltimoAviso"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[OrdenConUltimoAviso]"
+      },
+      "Respuesta_OrdenDeSoporte_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OrdenDeSoporte"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[OrdenDeSoporte]"
+      },
+      "Respuesta_OrdenSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OrdenSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[OrdenSalida]"
+      },
+      "Respuesta_Salud_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Salud"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[Salud]"
+      },
+      "Respuesta_SesionSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SesionSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[SesionSalida]"
+      },
+      "Respuesta_TallerConDueno_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TallerConDueno"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[TallerConDueno]"
+      },
+      "Respuesta_UsuarioAdminSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UsuarioAdminSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[UsuarioAdminSalida]"
+      },
+      "Respuesta_UsuarioSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UsuarioSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[UsuarioSalida]"
+      },
+      "Respuesta_VehiculoSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/VehiculoSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[VehiculoSalida]"
+      },
+      "Respuesta_WorkshopSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/WorkshopSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[WorkshopSalida]"
+      },
+      "Respuesta_list_EstadoDeOrdenSalida__": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/EstadoDeOrdenSalida"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[list[EstadoDeOrdenSalida]]"
+      },
+      "Respuesta_list_TallerEnLista__": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TallerEnLista"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[list[TallerEnLista]]"
+      },
+      "Respuesta_list_UsuarioAdminSalida__": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/UsuarioAdminSalida"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[list[UsuarioAdminSalida]]"
+      },
+      "Respuesta_list_UsuarioSalida__": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/UsuarioSalida"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[list[UsuarioSalida]]"
+      },
+      "Salud": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "Salud",
+        "description": "Lo que responde /health: alcanza para que Railway sepa que la app esta viva."
+      },
+      "SenalesDelTaller": {
+        "properties": {
+          "ordersTotal": {
+            "type": "integer",
+            "title": "Orderstotal"
+          },
+          "ordersOpen": {
+            "type": "integer",
+            "title": "Ordersopen"
+          },
+          "lastActivityAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastactivityat"
+          },
+          "noticesPending": {
+            "type": "integer",
+            "title": "Noticespending"
+          },
+          "usersActive": {
+            "type": "integer",
+            "title": "Usersactive"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ordersTotal",
+          "ordersOpen",
+          "lastActivityAt",
+          "noticesPending",
+          "usersActive"
+        ],
+        "title": "SenalesDelTaller",
+        "description": "Como le esta yendo al taller, en cinco numeros.\n\nEs lo que se mira antes de entrar a revisar orden por orden. `notices_pending` es la\nsenal mas util de todas: un taller que mueve ordenes y deja los avisos sin enviar no\nesta usando el producto, esta peleando con el."
+      },
+      "SesionSalida": {
+        "properties": {
+          "workshop": {
+            "$ref": "#/components/schemas/WorkshopSalida"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "workshop",
+          "user"
+        ],
+        "title": "SesionSalida"
+      },
+      "TallerConDueno": {
+        "properties": {
+          "workshop": {
+            "$ref": "#/components/schemas/WorkshopSalida"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/UserSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "workshop",
+          "owner"
+        ],
+        "title": "TallerConDueno",
+        "description": "Lo que deja un alta: el taller y la cuenta con la que se entra a el."
+      },
+      "TallerEdicion": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20,
+                "minLength": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan"
+          },
+          "suspendedUntil": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suspendeduntil"
+          }
+        },
+        "type": "object",
+        "title": "TallerEdicion",
+        "description": "Solo lo que se corrige a mano. El nombre sale en el WhatsApp que lee el cliente.\n\n`active` en falso suspende el taller: nadie de ahi entra, y sus datos quedan enteros.\nCon `suspended_until` al lado, la suspension se termina sola ese dia."
+      },
+      "TallerEnLista": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "whatsappMode": {
+            "type": "string",
+            "title": "Whatsappmode"
+          },
+          "plan": {
+            "type": "string",
+            "title": "Plan"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "suspendedUntil": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suspendeduntil"
+          },
+          "suspendIndefinite": {
+            "type": "boolean",
+            "title": "Suspendindefinite"
+          },
+          "ownerEmail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owneremail"
+          },
+          "ordersCount": {
+            "type": "integer",
+            "title": "Orderscount",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "whatsappMode",
+          "plan",
+          "active",
+          "status",
+          "suspendedUntil",
+          "suspendIndefinite"
+        ],
+        "title": "TallerEnLista",
+        "description": "El taller en la lista del panel.\n\nTrae el correo del dueno y cuantas ordenes lleva porque la lista existe para una sola\npregunta: quien esta usando esto de verdad."
+      },
+      "UserSalida": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role"
+        ],
+        "title": "UserSalida",
+        "description": "Sin password_hash a proposito: lo que no se expone no se puede filtrar."
+      },
+      "UsuarioAdminSalida": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "active"
+        ],
+        "title": "UsuarioAdminSalida"
+      },
+      "UsuarioDeRespaldoEntrada": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "mechanic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "UsuarioDeRespaldoEntrada",
+        "description": "El alta que hace Solve. Aca si viaja el rol: es la unica puerta que puede\ndevolverle un dueno al taller que perdio al suyo."
+      },
+      "UsuarioEdicion": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          }
+        },
+        "type": "object",
+        "title": "UsuarioEdicion",
+        "description": "`active` en falso apaga a la persona sin borrarla: su nombre sigue colgando del\nhistorial de cada orden que movio."
+      },
+      "UsuarioEntrada": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "UsuarioEntrada",
+        "description": "Alta de una persona del taller. El rol no viaja en el cuerpo: lo pone la ruta."
+      },
+      "UsuarioSalida": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "active",
+          "createdAt"
+        ],
+        "title": "UsuarioSalida",
+        "description": "Sin `password_hash`, por lo mismo de siempre: lo que no se expone no se filtra."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VehiculoEdicion": {
+        "properties": {
+          "plate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plate"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "title": "VehiculoEdicion",
+        "description": "Todo opcional: llega solo lo que se corrigio de la ficha."
+      },
+      "VehiculoEntrada": {
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "title": "Clientid"
+          },
+          "plate": {
+            "type": "string",
+            "title": "Plate"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clientId",
+          "plate"
+        ],
+        "title": "VehiculoEntrada"
+      },
+      "VehiculoResumen": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "plate": {
+            "type": "string",
+            "title": "Plate"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "plate",
+          "brand",
+          "model"
+        ],
+        "title": "VehiculoResumen"
+      },
+      "VehiculoSalida": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "clientId": {
+            "type": "string",
+            "title": "Clientid"
+          },
+          "plate": {
+            "type": "string",
+            "title": "Plate"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          },
+          "vehicleOrItem": {
+            "type": "string",
+            "title": "Vehicleoritem",
+            "description": "El auto ya escrito para mostrar, armado aca y no en el frontend.\n\nAsi el texto que ve el cliente en el aviso de WhatsApp y el que ve el mecanico\nen pantalla salen del mismo lugar y no se van separando con el tiempo.",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "clientId",
+          "plate",
+          "brand",
+          "model",
+          "createdAt",
+          "vehicleOrItem"
+        ],
+        "title": "VehiculoSalida"
+      },
+      "WorkshopSalida": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "whatsappMode": {
+            "type": "string",
+            "title": "Whatsappmode"
+          },
+          "plan": {
+            "type": "string",
+            "title": "Plan"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "suspendedUntil": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suspendeduntil"
+          },
+          "suspendIndefinite": {
+            "type": "boolean",
+            "title": "Suspendindefinite"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "whatsappMode",
+          "plan",
+          "active",
+          "status",
+          "suspendedUntil",
+          "suspendIndefinite"
+        ],
+        "title": "WorkshopSalida",
+        "description": "El taller como lo lee cualquiera que tenga sesion.\n\n`active` responde \"puede entrar hoy\" y no \"que dice la columna\": desde que la\nsuspension puede tener fecha de termino, las dos cosas dejaron de ser lo mismo, y la\nque le sirve a quien lee es la primera. Un campo, un significado."
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import { apiDownload, apiFetch } from "@/lib/api";
 import { formatDateCl } from "@/lib/date";
 import { getWorkshopPlan } from "@/lib/mechanics";
-import { statusLabel } from "@/lib/types";
+import { statusLabel } from "@/lib/statuses";
 
 export function isPlusPlan() {
   return getWorkshopPlan() === "plus";
