@@ -143,9 +143,9 @@ export default function HomePage() {
               Motor Ping
             </p>
             <h1 className="animate-rise-delay font-[family-name:var(--font-display)] text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl">
-              El cliente sabe en qué va.
+              Menos llamadas.
               <span className="block text-white/90">
-                Sin llamarte veinte veces.
+                Más control del taller
               </span>
             </h1>
             <p className="animate-fade mt-5 max-w-lg text-base leading-relaxed text-white/78 md:text-lg">
