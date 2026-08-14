@@ -8,10 +8,10 @@ import { PanelShell } from "@/components/panel-shell";
 import { errorMessage } from "@/lib/errors";
 import { fieldClass } from "@/lib/form-styles";
 import {
-  activeMechanicCount,
   canAddMechanic,
   createMechanic,
   getWorkshopPlan,
+  mechanicProfileCount,
   listMechanics,
   type Mechanic,
 } from "@/lib/mechanics";
@@ -81,15 +81,15 @@ function MecanicosContent() {
     }
   }
 
-  const activeCount = activeMechanicCount(mechanics);
+  const profileCount = mechanicProfileCount(mechanics);
 
   return (
     <PanelShell
       title="Mecánicos"
       subtitle={
         limit
-          ? `Plan ${planLabel(plan)} · hasta ${limit} mecánicos. El dueño no ocupa cupo. Si quitas uno, liberas el puesto.`
-          : `Plan ${planLabel(plan)} · mecánicos sin tope`
+          ? `Plan ${planLabel(plan)} · hasta ${limit} perfiles de mecánico. El dueño no cuenta.`
+          : `Plan ${planLabel(plan)} · perfiles de mecánico sin tope`
       }
     >
       {flash && (
@@ -105,7 +105,7 @@ function MecanicosContent() {
         <p className="text-sm text-muted">
           {loading
             ? "Cargando…"
-            : `${activeCount}${limit ? ` de ${limit}` : ""} en el equipo`}
+            : `${profileCount}${limit ? ` de ${limit}` : ""} mecánicos`}
         </p>
         <button
           type="button"
@@ -155,18 +155,8 @@ function MecanicosContent() {
                   <p className="font-semibold text-ink">{m.name}</p>
                   <p className="mt-0.5 truncate text-sm text-muted">{m.email}</p>
                 </div>
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                    m.active
-                      ? "bg-emerald-100 text-emerald-900"
-                      : "bg-stone-200 text-stone-700"
-                  }`}
-                >
-                  {m.role === "owner"
-                    ? "Dueño"
-                    : m.active
-                      ? "En el equipo"
-                      : "Fuera del cupo"}
+                <span className="rounded-full bg-chip px-2.5 py-1 text-xs font-medium text-muted">
+                  {m.role === "owner" ? "Dueño" : "Mecánico"}
                 </span>
               </div>
             </Link>

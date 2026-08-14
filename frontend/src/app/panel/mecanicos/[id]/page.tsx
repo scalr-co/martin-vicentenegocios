@@ -2,17 +2,16 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { OwnerGuard } from "@/components/owner-guard";
 import { PanelShell } from "@/components/panel-shell";
 import { errorMessage } from "@/lib/errors";
 import { fieldClass } from "@/lib/form-styles";
 import {
-  canAddMechanic,
-  getWorkshopPlan,
   isMechanicRole,
   listMechanics,
+  removeMechanic,
   setMechanicPassword,
   updateMechanic,
   type Mechanic,
@@ -30,12 +29,12 @@ export default function MecanicoDetailPage() {
 
 function MecanicoDetailContent() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
-  const [team, setTeam] = useState<Mechanic[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [toggleOpen, setToggleOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +44,6 @@ function MecanicoDetailContent() {
     setLoading(true);
     try {
       const list = await listMechanics();
-      setTeam(list);
       setMechanic(list.find((m) => m.id === params.id) ?? null);
       setLoadError(null);
     } catch (err) {
@@ -108,37 +106,16 @@ function MecanicoDetailContent() {
     }
   }
 
-  async function onToggleActive() {
+  async function onDelete() {
     if (!mechanic || !isMechanic) return;
-    if (!mechanic.active) {
-      const gate = canAddMechanic(getWorkshopPlan(), team);
-      if (!gate.ok) {
-        setError(gate.reason);
-        setToggleOpen(false);
-        return;
-      }
-    }
     setError(null);
     setSaving(true);
     try {
-      const updated = await updateMechanic(mechanic.id, {
-        active: !mechanic.active,
-      });
-      setMechanic(updated);
-      setTeam((prev) =>
-        prev.map((m) => (m.id === updated.id ? updated : m)),
-      );
-      setToggleOpen(false);
-      setFlash(
-        updated.active
-          ? "Volvió al equipo."
-          : "Quitado del equipo. Ya puedes dar de alta a otra persona.",
-      );
-      window.setTimeout(() => setFlash(null), 2800);
+      await removeMechanic(mechanic.id);
+      router.replace("/panel/mecanicos");
     } catch (err) {
-      setError(errorMessage(err, "No se pudo cambiar el estado"));
-      setToggleOpen(false);
-    } finally {
+      setError(errorMessage(err, "No se pudo eliminar"));
+      setDeleteOpen(false);
       setSaving(false);
     }
   }
@@ -194,22 +171,11 @@ function MecanicoDetailContent() {
         className="rounded-lg border border-line bg-surface p-5"
         onSubmit={onSave}
       >
-        <div className="mb-4 flex flex-wrap gap-2">
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-              mechanic.active
-                ? "bg-emerald-100 text-emerald-900"
-                : "bg-stone-200 text-stone-700"
-            }`}
-          >
-            {mechanic.active ? "En el equipo" : "Fuera del cupo"}
-          </span>
-          <span className="rounded-full bg-chip px-2.5 py-1 text-xs font-medium text-muted">
-            {mechanic.role === "owner" ? "Dueño" : "Mecánico"}
-          </span>
-        </div>
+        <span className="rounded-full bg-chip px-2.5 py-1 text-xs font-medium text-muted">
+          {mechanic.role === "owner" ? "Dueño" : "Mecánico"}
+        </span>
 
-        <label className="block" htmlFor="name">
+        <label className="mt-4 block" htmlFor="name">
           <span className="text-sm font-medium">Nombre</span>
           <input
             id="name"
@@ -276,20 +242,16 @@ function MecanicoDetailContent() {
           {isMechanic && (
             <button
               type="button"
-              onClick={() => setToggleOpen(true)}
-              className={`tap-target rounded-md px-4 py-2.5 text-sm font-semibold text-white ${
-                mechanic.active
-                  ? "bg-red-700 hover:bg-red-800"
-                  : "bg-emerald-700 hover:bg-emerald-800"
-              }`}
+              onClick={() => setDeleteOpen(true)}
+              className="tap-target rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800"
             >
-              {mechanic.active ? "Quitar del equipo" : "Volver a dar de alta"}
+              Eliminar
             </button>
           )}
         </div>
       </form>
 
-      {toggleOpen && (
+      {deleteOpen && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
           role="dialog"
@@ -297,29 +259,24 @@ function MecanicoDetailContent() {
         >
           <div className="w-full max-w-md rounded-lg border border-line bg-surface p-5 shadow-xl">
             <h2 className="font-[family-name:var(--font-display)] text-lg font-bold text-ink">
-              {mechanic.active
-                ? "¿Quitar del equipo?"
-                : "¿Volver a dar de alta?"}
+              ¿Eliminar este perfil?
             </h2>
             <p className="mt-2 text-sm text-muted">
-              {mechanic.active
-                ? `“${mechanic.name}” deja de ocupar un cupo y no podrá entrar. Su nombre sigue en las órdenes que ya movió. En Básico puedes dar de alta a otra persona en su lugar (máximo 3).`
-                : `“${mechanic.name}” vuelve a ocupar un cupo y podrá entrar al taller.`}
+              “{mechanic.name}” deja de entrar al panel. En Básico queda un
+              cupo libre para crear otro mecánico (máximo 3).
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
               <button
                 type="button"
                 disabled={saving}
-                onClick={() => void onToggleActive()}
-                className={`tap-target rounded-md px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 ${
-                  mechanic.active ? "bg-red-700" : "bg-emerald-700"
-                }`}
+                onClick={() => void onDelete()}
+                className="tap-target rounded-md bg-red-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
               >
-                {mechanic.active ? "Quitar" : "Dar de alta"}
+                {saving ? "Eliminando…" : "Eliminar"}
               </button>
               <button
                 type="button"
-                onClick={() => setToggleOpen(false)}
+                onClick={() => setDeleteOpen(false)}
                 className="tap-target rounded-md border border-line px-4 py-2.5 text-sm font-semibold text-ink"
               >
                 Cancelar
