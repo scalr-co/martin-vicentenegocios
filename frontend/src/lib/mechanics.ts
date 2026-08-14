@@ -18,18 +18,25 @@ export function getWorkshopPlan(): WorkshopPlan {
   return plan === "plus" ? "plus" : "basico";
 }
 
+export function isMechanicRole(role?: string | null) {
+  return (role || "").trim().toLowerCase() === "mechanic";
+}
+
+/** El dueño no ocupa cupo. Solo cuentan mecánicos activos. */
+export function activeMechanicCount(mechanics: Mechanic[]) {
+  return mechanics.filter((m) => isMechanicRole(m.role) && m.active).length;
+}
+
 /** Aviso previo en UI. La barrera real es el 409 del servidor. */
 export function canAddMechanic(
   plan: WorkshopPlan,
   mechanics: Mechanic[],
 ): { ok: boolean; reason?: string } {
-  const activeMechanics = mechanics.filter(
-    (m) => m.role === "mechanic" && m.active,
-  ).length;
+  const activeMechanics = activeMechanicCount(mechanics);
   if (plan === "basico" && activeMechanics >= MAX_MECHANICS_BASIC) {
     return {
       ok: false,
-      reason: `El plan Básico permite hasta ${MAX_MECHANICS_BASIC} mecánicos activos. Pasa a Plus para agregar más.`,
+      reason: `El plan Básico permite ${MAX_MECHANICS_BASIC} mecánicos. Quita uno del equipo para dar de alta a otra persona, o pasa a Plus para no tener tope.`,
     };
   }
   return { ok: true };

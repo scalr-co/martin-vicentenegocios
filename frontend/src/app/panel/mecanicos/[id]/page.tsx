@@ -9,6 +9,9 @@ import { PanelShell } from "@/components/panel-shell";
 import { errorMessage } from "@/lib/errors";
 import { fieldClass } from "@/lib/form-styles";
 import {
+  canAddMechanic,
+  getWorkshopPlan,
+  isMechanicRole,
   listMechanics,
   setMechanicPassword,
   updateMechanic,
@@ -28,6 +31,7 @@ export default function MecanicoDetailPage() {
 function MecanicoDetailContent() {
   const params = useParams<{ id: string }>();
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
+  const [team, setTeam] = useState<Mechanic[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -41,6 +45,7 @@ function MecanicoDetailContent() {
     setLoading(true);
     try {
       const list = await listMechanics();
+      setTeam(list);
       setMechanic(list.find((m) => m.id === params.id) ?? null);
       setLoadError(null);
     } catch (err) {
@@ -80,7 +85,7 @@ function MecanicoDetailContent() {
     );
   }
 
-  const isMechanic = mechanic.role === "mechanic";
+  const isMechanic = isMechanicRole(mechanic.role);
 
   async function onSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -105,6 +110,14 @@ function MecanicoDetailContent() {
 
   async function onToggleActive() {
     if (!mechanic || !isMechanic) return;
+    if (!mechanic.active) {
+      const gate = canAddMechanic(getWorkshopPlan(), team);
+      if (!gate.ok) {
+        setError(gate.reason);
+        setToggleOpen(false);
+        return;
+      }
+    }
     setError(null);
     setSaving(true);
     try {
@@ -112,8 +125,15 @@ function MecanicoDetailContent() {
         active: !mechanic.active,
       });
       setMechanic(updated);
+      setTeam((prev) =>
+        prev.map((m) => (m.id === updated.id ? updated : m)),
+      );
       setToggleOpen(false);
-      setFlash(updated.active ? "Cuenta reactivada." : "Cuenta apagada.");
+      setFlash(
+        updated.active
+          ? "Volvió al equipo."
+          : "Quitado del equipo. Ya puedes dar de alta a otra persona.",
+      );
       window.setTimeout(() => setFlash(null), 2800);
     } catch (err) {
       setError(errorMessage(err, "No se pudo cambiar el estado"));
@@ -182,7 +202,7 @@ function MecanicoDetailContent() {
                 : "bg-stone-200 text-stone-700"
             }`}
           >
-            {mechanic.active ? "Activo" : "Apagado"}
+            {mechanic.active ? "En el equipo" : "Fuera del cupo"}
           </span>
           <span className="rounded-full bg-chip px-2.5 py-1 text-xs font-medium text-muted">
             {mechanic.role === "owner" ? "Dueño" : "Mecánico"}
@@ -263,7 +283,7 @@ function MecanicoDetailContent() {
                   : "bg-emerald-700 hover:bg-emerald-800"
               }`}
             >
-              {mechanic.active ? "Apagar cuenta" : "Reactivar cuenta"}
+              {mechanic.active ? "Quitar del equipo" : "Volver a dar de alta"}
             </button>
           )}
         </div>
@@ -277,12 +297,14 @@ function MecanicoDetailContent() {
         >
           <div className="w-full max-w-md rounded-lg border border-line bg-surface p-5 shadow-xl">
             <h2 className="font-[family-name:var(--font-display)] text-lg font-bold text-ink">
-              {mechanic.active ? "¿Apagar cuenta?" : "¿Reactivar cuenta?"}
+              {mechanic.active
+                ? "¿Quitar del equipo?"
+                : "¿Volver a dar de alta?"}
             </h2>
             <p className="mt-2 text-sm text-muted">
               {mechanic.active
-                ? `“${mechanic.name}” no podrá entrar. Su nombre sigue en el historial de las órdenes que movió.`
-                : `“${mechanic.name}” podrá volver a entrar al taller.`}
+                ? `“${mechanic.name}” deja de ocupar un cupo y no podrá entrar. Su nombre sigue en las órdenes que ya movió. En Básico puedes dar de alta a otra persona en su lugar (máximo 3).`
+                : `“${mechanic.name}” vuelve a ocupar un cupo y podrá entrar al taller.`}
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
               <button
@@ -293,7 +315,7 @@ function MecanicoDetailContent() {
                   mechanic.active ? "bg-red-700" : "bg-emerald-700"
                 }`}
               >
-                {mechanic.active ? "Apagar" : "Reactivar"}
+                {mechanic.active ? "Quitar" : "Dar de alta"}
               </button>
               <button
                 type="button"

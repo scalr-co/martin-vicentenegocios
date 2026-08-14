@@ -8,6 +8,7 @@ import { PanelShell } from "@/components/panel-shell";
 import { errorMessage } from "@/lib/errors";
 import { fieldClass } from "@/lib/form-styles";
 import {
+  activeMechanicCount,
   canAddMechanic,
   createMechanic,
   getWorkshopPlan,
@@ -80,16 +81,16 @@ function MecanicosContent() {
     }
   }
 
-  const activeCount = mechanics.filter(
-    (m) => m.role === "mechanic" && m.active,
-  ).length;
+  const activeCount = activeMechanicCount(mechanics);
 
   return (
     <PanelShell
       title="Mecánicos"
-      subtitle={`Plan ${planLabel(plan)}${
-        limit ? ` · hasta ${limit} activos` : " · sin tope de mecánicos"
-      }`}
+      subtitle={
+        limit
+          ? `Plan ${planLabel(plan)} · hasta ${limit} mecánicos. El dueño no ocupa cupo. Si quitas uno, liberas el puesto.`
+          : `Plan ${planLabel(plan)} · mecánicos sin tope`
+      }
     >
       {flash && (
         <p
@@ -104,17 +105,17 @@ function MecanicosContent() {
         <p className="text-sm text-muted">
           {loading
             ? "Cargando…"
-            : `${activeCount} activo${activeCount === 1 ? "" : "s"}${
-                limit ? ` de ${limit}` : ""
-              } · ${mechanics.length} en total`}
+            : `${activeCount}${limit ? ` de ${limit}` : ""} en el equipo`}
         </p>
         <button
           type="button"
+          disabled={!gate.ok}
           onClick={() => {
+            if (!gate.ok) return;
             setError(null);
             setCreateOpen(true);
           }}
-          className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold"
+          className="btn-brand tap-target rounded-md px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
         >
           Crear mecánico
         </button>
@@ -164,8 +165,8 @@ function MecanicosContent() {
                   {m.role === "owner"
                     ? "Dueño"
                     : m.active
-                      ? "Activo"
-                      : "Apagado"}
+                      ? "En el equipo"
+                      : "Fuera del cupo"}
                 </span>
               </div>
             </Link>
