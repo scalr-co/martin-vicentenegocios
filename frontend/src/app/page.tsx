@@ -114,7 +114,7 @@ export default function HomePage() {
 
         <header className="absolute inset-x-0 top-0 z-20">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8">
-            <BrandMark light className="text-xl md:text-2xl" />
+            <BrandMark light size="lg" className="text-lg md:text-xl" />
             <nav className="flex items-center gap-2 sm:gap-3">
               <a
                 href="#precios"
@@ -136,12 +136,9 @@ export default function HomePage() {
 
         <div className="relative z-10 mx-auto flex min-h-svh max-w-6xl flex-col justify-end px-5 pb-16 pt-28 md:justify-center md:px-8 md:pb-24">
           <div className="max-w-2xl">
-            <p
-              className="animate-rise mb-4 font-[family-name:var(--font-display)] text-sm font-semibold uppercase tracking-[0.22em]"
-              style={{ color: ACCENT_SOFT }}
-            >
-              Motor Ping
-            </p>
+            <div className="animate-rise mb-5">
+              <BrandMark light size="xl" className="text-base md:text-lg" />
+            </div>
             <h1 className="animate-rise-delay font-[family-name:var(--font-display)] text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl">
               Menos llamadas.
               <span className="block text-white/90">
@@ -404,7 +401,7 @@ export default function HomePage() {
       >
         <div className="mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <BrandMark light />
+            <BrandMark light size="md" className="text-base" />
             <p className="mt-2 text-sm text-white/60">
               Chillán · Temuco · Hecho para talleres locales
             </p>

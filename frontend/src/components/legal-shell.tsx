@@ -25,13 +25,8 @@ export function LegalShell({
       </header>
 
       <main className="mx-auto max-w-3xl px-5 py-10 md:px-8 md:py-14">
-        <p
-          className="text-xs font-semibold uppercase tracking-[0.18em]"
-          style={{ color: "#e0a45a" }}
-        >
-          Motor Ping
-        </p>
-        <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight md:text-4xl">
+        <BrandMark light size="sm" className="text-sm" />
+        <h1 className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight md:text-4xl">
           {title}
         </h1>
         <p className="mt-2 text-sm text-white/55">Última actualización: {updated}</p>

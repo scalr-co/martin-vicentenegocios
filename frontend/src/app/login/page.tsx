@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { BrandMark } from "@/components/ui";
 import { apiFetch, extractToken } from "@/lib/api";
 import {
   extractSessionFromLogin,
@@ -104,12 +105,8 @@ function LoginForm() {
 
   return (
     <LoginShell>
-      <p
-        className="mt-1 font-[family-name:var(--font-display)] text-xs font-semibold uppercase tracking-[0.2em] text-brand"
-      >
-        Motor Ping
-      </p>
-      <h1 className="mt-3 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
+      <BrandMark size="md" className="mt-1 text-sm text-ink" />
+      <h1 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
         Ingresar
       </h1>
       <p className="mt-2 text-sm text-muted">

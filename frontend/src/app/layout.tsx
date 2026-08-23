@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   title: "Motor Ping — Órdenes de trabajo para talleres",
   description:
     "Registra cada trabajo, sigue el estado y avisa al cliente por WhatsApp. Hecho para talleres de Chile.",
+  applicationName: "Motor Ping",
+  icons: {
+    icon: [{ url: "/brand/mark.png", type: "image/png" }],
+    apple: [{ url: "/brand/mark.png", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {

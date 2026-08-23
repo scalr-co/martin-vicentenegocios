@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { getStatuses, statusLabel, subscribeStatuses } from "@/lib/statuses";
@@ -17,21 +18,60 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
+const MARK_SIZES = {
+  sm: 22,
+  md: 28,
+  lg: 36,
+  xl: 48,
+} as const;
+
 export function BrandMark({
   className = "",
   light = false,
+  size = "md",
+  href = "/",
 }: {
   className?: string;
   light?: boolean;
+  size?: keyof typeof MARK_SIZES;
+  href?: string;
 }) {
+  const px = MARK_SIZES[size];
   return (
     <Link
-      href="/"
-      className={`font-[family-name:var(--font-display)] font-bold tracking-tight ${
+      href={href}
+      className={`inline-flex items-center gap-2 font-[family-name:var(--font-display)] font-bold tracking-tight ${
         light ? "text-white" : "text-ink"
       } ${className}`}
     >
-      Motor Ping
+      <Image
+        src="/brand/mark.png"
+        alt=""
+        width={px}
+        height={px}
+        className="shrink-0 rounded-md"
+        priority
+      />
+      <span>Motor Ping</span>
     </Link>
+  );
+}
+
+/** Solo el isotipo (pestaña / lugares muy chicos). */
+export function BrandMarkIcon({
+  className = "",
+  size = 28,
+}: {
+  className?: string;
+  size?: number;
+}) {
+  return (
+    <Image
+      src="/brand/mark.png"
+      alt="Motor Ping"
+      width={size}
+      height={size}
+      className={`rounded-md ${className}`}
+    />
   );
 }
