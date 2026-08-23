@@ -11,7 +11,6 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
-import { BrandMarkIcon } from "@/components/ui";
 import { clearSession, getWorkshopName, isAdmin, isOwner } from "@/lib/auth";
 import { loadStatuses } from "@/lib/statuses";
 
@@ -182,14 +181,13 @@ export function PanelShell({
                   requestNavigate(admin ? "/panel/admin" : "/panel", e)
                 }
               >
-                  <span className="flex min-w-0 items-center gap-2">
-                  <BrandMarkIcon size={28} className="shrink-0" />
-                  <span className="block min-w-0 truncate font-[family-name:var(--font-display)] text-base font-bold tracking-tight text-ink sm:text-lg">
-                    {admin ? "Admin" : workshop}
-                  </span>
+                  <span className="block truncate font-[family-name:var(--font-display)] text-base font-bold tracking-tight text-ink sm:text-lg">
+                  {admin ? "Motor Ping Admin" : workshop}
                 </span>
                 {!admin && (
-                  <span className="sr-only">Motor Ping</span>
+                  <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-muted">
+                    Motor Ping
+                  </span>
                 )}
               </Link>
               <nav className="hidden items-center gap-1 sm:flex">

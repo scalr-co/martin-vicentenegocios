@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { getStatuses, statusLabel, subscribeStatuses } from "@/lib/statuses";
@@ -18,59 +17,21 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
-/** Logo oficial MOTOR / PING (cuadrado). */
-const LOGO_SIZES = {
-  sm: 36,
-  md: 44,
-  lg: 56,
-  xl: 72,
-} as const;
-
 export function BrandMark({
   className = "",
-  size = "md",
-  href = "/",
+  light = false,
 }: {
   className?: string;
-  /** Se mantiene por compatibilidad; el logo ya trae su propio contraste. */
   light?: boolean;
-  size?: keyof typeof LOGO_SIZES;
-  href?: string;
 }) {
-  const px = LOGO_SIZES[size];
   return (
     <Link
-      href={href}
-      className={`inline-flex items-center ${className}`}
-      aria-label="Motor Ping"
+      href="/"
+      className={`font-[family-name:var(--font-display)] font-bold tracking-tight ${
+        light ? "text-white" : "text-ink"
+      } ${className}`}
     >
-      <Image
-        src="/brand/logo.png"
-        alt="Motor Ping"
-        width={px}
-        height={px}
-        className="h-auto w-auto shrink-0 rounded-md"
-        style={{ width: px, height: px }}
-        priority
-      />
+      Motor Ping
     </Link>
-  );
-}
-
-export function BrandMarkIcon({
-  className = "",
-  size = 32,
-}: {
-  className?: string;
-  size?: number;
-}) {
-  return (
-    <Image
-      src="/brand/logo.png"
-      alt="Motor Ping"
-      width={size}
-      height={size}
-      className={`rounded-md ${className}`}
-    />
   );
 }
