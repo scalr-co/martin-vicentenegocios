@@ -14,7 +14,7 @@ export function LegalShell({
     <div className="min-h-dvh bg-[#1c1917] text-white">
       <header className="border-b border-white/10">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-5 py-4 md:px-8">
-          <BrandMark light className="text-lg" />
+          <BrandMark light size="md" className="" />
           <Link
             href="/"
             className="tap-target inline-flex items-center text-sm text-white/70 hover:text-white"
@@ -25,7 +25,7 @@ export function LegalShell({
       </header>
 
       <main className="mx-auto max-w-3xl px-5 py-10 md:px-8 md:py-14">
-        <BrandMark light size="sm" className="text-sm" />
+        <BrandMark light size="sm" className="" />
         <h1 className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight md:text-4xl">
           {title}
         </h1>

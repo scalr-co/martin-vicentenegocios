@@ -18,56 +18,55 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
-const MARK_SIZES = {
-  sm: 22,
-  md: 28,
-  lg: 36,
-  xl: 48,
+/** Logo oficial MOTOR / PING (cuadrado). */
+const LOGO_SIZES = {
+  sm: 36,
+  md: 44,
+  lg: 56,
+  xl: 72,
 } as const;
 
 export function BrandMark({
   className = "",
-  light = false,
   size = "md",
   href = "/",
 }: {
   className?: string;
+  /** Se mantiene por compatibilidad; el logo ya trae su propio contraste. */
   light?: boolean;
-  size?: keyof typeof MARK_SIZES;
+  size?: keyof typeof LOGO_SIZES;
   href?: string;
 }) {
-  const px = MARK_SIZES[size];
+  const px = LOGO_SIZES[size];
   return (
     <Link
       href={href}
-      className={`inline-flex items-center gap-2 font-[family-name:var(--font-display)] font-bold tracking-tight ${
-        light ? "text-white" : "text-ink"
-      } ${className}`}
+      className={`inline-flex items-center ${className}`}
+      aria-label="Motor Ping"
     >
       <Image
-        src="/brand/mark.png"
-        alt=""
+        src="/brand/logo.png"
+        alt="Motor Ping"
         width={px}
         height={px}
-        className="shrink-0 rounded-md"
+        className="h-auto w-auto shrink-0 rounded-md"
+        style={{ width: px, height: px }}
         priority
       />
-      <span>Motor Ping</span>
     </Link>
   );
 }
 
-/** Solo el isotipo (pestaña / lugares muy chicos). */
 export function BrandMarkIcon({
   className = "",
-  size = 28,
+  size = 32,
 }: {
   className?: string;
   size?: number;
 }) {
   return (
     <Image
-      src="/brand/mark.png"
+      src="/brand/logo.png"
       alt="Motor Ping"
       width={size}
       height={size}

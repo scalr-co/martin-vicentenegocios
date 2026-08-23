@@ -19,8 +19,12 @@ export const metadata: Metadata = {
     "Registra cada trabajo, sigue el estado y avisa al cliente por WhatsApp. Hecho para talleres de Chile.",
   applicationName: "Motor Ping",
   icons: {
-    icon: [{ url: "/brand/mark.png", type: "image/png" }],
-    apple: [{ url: "/brand/mark.png", type: "image/png" }],
+    icon: [
+      { url: "/icon.png?v=3", type: "image/png", sizes: "any" },
+      { url: "/brand/logo.png?v=3", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/apple-icon.png?v=3", type: "image/png" }],
+    shortcut: ["/icon.png?v=3"],
   },
 };
 

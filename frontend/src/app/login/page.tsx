@@ -105,7 +105,7 @@ function LoginForm() {
 
   return (
     <LoginShell>
-      <BrandMark size="md" className="mt-1 text-sm text-ink" />
+      <BrandMark size="lg" className="mt-1" />
       <h1 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold text-ink">
         Ingresar
       </h1>

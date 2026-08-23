@@ -182,16 +182,14 @@ export function PanelShell({
                   requestNavigate(admin ? "/panel/admin" : "/panel", e)
                 }
               >
-                <span className="flex min-w-0 items-center gap-2">
-                  <BrandMarkIcon size={22} className="shrink-0" />
+                  <span className="flex min-w-0 items-center gap-2">
+                  <BrandMarkIcon size={28} className="shrink-0" />
                   <span className="block min-w-0 truncate font-[family-name:var(--font-display)] text-base font-bold tracking-tight text-ink sm:text-lg">
-                    {admin ? "Motor Ping Admin" : workshop}
+                    {admin ? "Admin" : workshop}
                   </span>
                 </span>
                 {!admin && (
-                  <span className="mt-0.5 block pl-7 text-[10px] font-medium uppercase tracking-[0.14em] text-muted">
-                    Motor Ping
-                  </span>
+                  <span className="sr-only">Motor Ping</span>
                 )}
               </Link>
               <nav className="hidden items-center gap-1 sm:flex">
