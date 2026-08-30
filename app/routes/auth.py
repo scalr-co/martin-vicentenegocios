@@ -1,10 +1,13 @@
+import hashlib
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
-from app.models import User
+from app.models import ROL_MECANICO, User, Workshop, WorkshopInvitation
 from app.models.base import ahora
+from app.models.workshop import con_huso
 from app.schemas.auth import (
     AltaTallerEntrada,
     LoginEntrada,
@@ -14,12 +17,14 @@ from app.schemas.auth import (
     WorkshopSalida,
 )
 from app.schemas.base import Respuesta
+from app.schemas.user import AceptarInvitacionTallerEntrada
 from app.security.admin import exigir_clave_de_administracion
 from app.security.dependencias import usuario_actual
 from app.security.intentos import demasiados_intentos, olvidar, registrar_fallo
 from app.security.passwords import verificar
 from app.security.tokens import crear_token
 from app.services.altas import crear_taller_con_dueno
+from app.services.planes import verificar_cupo
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -104,6 +109,57 @@ def register(
         ),
         workshop=WorkshopSalida.desde(taller),
         user=UserSalida.model_validate(dueno),
+    )
+    return {"data": salida.model_dump(by_alias=True)}
+
+
+@router.post("/accept-workshop-invitation", response_model=Respuesta[LoginSalida])
+def aceptar_invitacion_de_taller(
+    datos: AceptarInvitacionTallerEntrada,
+    usuario: User = Depends(usuario_actual),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Traslada una cuenta solo cuando su dueno real acepta la invitacion privada."""
+    token_hash = hashlib.sha256(datos.token.encode()).hexdigest()
+    invitacion = sesion.scalar(
+        select(WorkshopInvitation).where(WorkshopInvitation.token_hash == token_hash)
+    )
+    if (
+        invitacion is None
+        or invitacion.accepted_at is not None
+        or con_huso(invitacion.expires_at) <= ahora()
+        or invitacion.email != usuario.email
+        or usuario.role != ROL_MECANICO
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La invitacion no es valida para esta cuenta",
+        )
+
+    taller_nuevo = sesion.get(Workshop, invitacion.workshop_id)
+    if taller_nuevo is None or not taller_nuevo.puede_entrar(ahora()):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El taller que envio la invitacion no esta disponible",
+        )
+    verificar_cupo(sesion, taller_nuevo)
+
+    usuario.workshop_id = taller_nuevo.id
+    usuario.active = True
+    usuario.token_version += 1
+    invitacion.accepted_at = ahora()
+    sesion.commit()
+    sesion.refresh(usuario)
+
+    salida = LoginSalida(
+        token=crear_token(
+            user_id=usuario.id,
+            workshop_id=taller_nuevo.id,
+            role=usuario.role,
+            token_version=usuario.token_version,
+        ),
+        workshop=WorkshopSalida.desde(taller_nuevo),
+        user=UserSalida.model_validate(usuario),
     )
     return {"data": salida.model_dump(by_alias=True)}
 

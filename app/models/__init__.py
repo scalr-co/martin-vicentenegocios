@@ -33,6 +33,7 @@ from app.models.order import (
 from app.models.order_event import TIPO_CAMBIO_DE_ESTADO, OrderEvent
 from app.models.user import ROL_ADMIN_PLATAFORMA, ROL_DUENO, ROL_MECANICO, User
 from app.models.vehicle import Vehicle
+from app.models.workshop_invitation import WorkshopInvitation
 from app.models.workshop import (
     MAX_MECANICOS_BASICO,
     MODO_API,
@@ -81,5 +82,6 @@ __all__ = [
     "User",
     "Vehicle",
     "Workshop",
+    "WorkshopInvitation",
     "es_retroceso",
 ]

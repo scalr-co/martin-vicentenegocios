@@ -56,6 +56,59 @@ def test_no_se_repite_un_correo_de_otro_taller(cliente, sesion, dueno, dueno_vec
     assert creado.json()["error"]["code"] == "CONFLICT"
 
 
+def test_un_mecanico_se_traslada_a_otro_taller_con_invitacion_privada(
+    cliente, sesion, dueno, dueno_vecino, mecanico
+):
+    """El nuevo dueno no puede tomar la cuenta: el mecanico debe aceptarla el mismo."""
+    token_dueno_nuevo = entrar(cliente, dueno_vecino.email)
+    token_mecanico_viejo = entrar(cliente, mecanico.email)
+
+    invitacion = cliente.post(
+        "/users/invitations",
+        json={"email": mecanico.email},
+        headers=con_token(token_dueno_nuevo),
+    )
+    assert invitacion.status_code == 201, invitacion.text
+
+    aceptada = cliente.post(
+        "/auth/accept-workshop-invitation",
+        json={"token": invitacion.json()["data"]["token"]},
+        headers=con_token(token_mecanico_viejo),
+    )
+    assert aceptada.status_code == 200, aceptada.text
+    datos = aceptada.json()["data"]
+    assert datos["workshop"]["id"] == dueno_vecino.workshop_id
+    assert datos["user"]["email"] == mecanico.email
+
+    # El token del taller anterior no conserva acceso despues del traslado.
+    assert cliente.get("/clients", headers=con_token(token_mecanico_viejo)).status_code == 401
+
+    equipo_anterior = cliente.get("/users", headers=con_token(entrar(cliente, dueno.email)))
+    assert mecanico.email not in {u["email"] for u in equipo_anterior.json()["data"]}
+
+    equipo_nuevo = cliente.get("/users", headers=con_token(token_dueno_nuevo))
+    assert mecanico.email in {u["email"] for u in equipo_nuevo.json()["data"]}
+
+
+def test_una_invitacion_no_la_puede_aceptar_otra_cuenta(
+    cliente, sesion, dueno, dueno_vecino, mecanico
+):
+    invitacion = cliente.post(
+        "/users/invitations",
+        json={"email": mecanico.email},
+        headers=con_token(entrar(cliente, dueno_vecino.email)),
+    )
+    assert invitacion.status_code == 201
+
+    respuesta = cliente.post(
+        "/auth/accept-workshop-invitation",
+        json={"token": invitacion.json()["data"]["token"]},
+        headers=con_token(entrar(cliente, dueno.email)),
+    )
+    assert respuesta.status_code == 400
+    assert mecanico.workshop_id == dueno.workshop_id
+
+
 def test_el_dueno_ve_a_su_equipo_entero(cliente, sesion, dueno, mecanico):
     token = entrar(cliente, dueno.email)
 

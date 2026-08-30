@@ -106,6 +106,48 @@
         }
       }
     },
+    "/auth/accept-workshop-invitation": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Aceptar Invitacion De Taller",
+        "description": "Traslada una cuenta solo cuando su dueno real acepta la invitacion privada.",
+        "operationId": "aceptar_invitacion_de_taller_auth_accept_workshop_invitation_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AceptarInvitacionTallerEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_LoginSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/logout-all": {
       "post": {
         "tags": [
@@ -1197,6 +1239,48 @@
         }
       }
     },
+    "/users/invitations": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Crear Invitacion",
+        "description": "Prepara un traslado, sin mover ni tocar la clave de nadie todavia.\n\nEl token es privado y solo sirve para la cuenta cuyo correo se invito. El dueno lo\ncomparte por el canal que prefiera; la persona lo acepta estando identificada.",
+        "operationId": "crear_invitacion_users_invitations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitacionTallerEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_InvitacionTallerSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/users/{usuario_id}": {
       "patch": {
         "tags": [
@@ -2001,6 +2085,21 @@
   },
   "components": {
     "schemas": {
+      "AceptarInvitacionTallerEntrada": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 32,
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "AceptarInvitacionTallerEntrada"
+      },
       "AltaTallerEntrada": {
         "properties": {
           "workshopName": {
@@ -2603,6 +2702,41 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "InvitacionTallerEntrada": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "InvitacionTallerEntrada",
+        "description": "El correo de una cuenta existente que un taller quiere contratar."
+      },
+      "InvitacionTallerSalida": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expiresat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "expiresAt"
+        ],
+        "title": "InvitacionTallerSalida",
+        "description": "El enlace solo se muestra al dueno que la acaba de crear."
+      },
       "LoginEntrada": {
         "properties": {
           "email": {
@@ -3144,6 +3278,18 @@
           "data"
         ],
         "title": "Respuesta[FichaDeTaller]"
+      },
+      "Respuesta_InvitacionTallerSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/InvitacionTallerSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[InvitacionTallerSalida]"
       },
       "Respuesta_LoginSalida_": {
         "properties": {

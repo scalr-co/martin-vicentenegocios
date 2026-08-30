@@ -5,15 +5,26 @@ contesten. Para cuando el dueno se pierde existe la puerta de respaldo en
 /admin/workshops/{id}/users, que si es de Solve y queda anotada.
 """
 
+import hashlib
+import secrets
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
-from app.models import ROL_MECANICO, User
+from app.models import ROL_MECANICO, User, WorkshopInvitation
+from app.models.base import ahora
 from app.schemas.admin import ClaveNueva
 from app.schemas.base import Respuesta
-from app.schemas.user import UsuarioEdicion, UsuarioEntrada, UsuarioSalida
+from app.schemas.user import (
+    InvitacionTallerEntrada,
+    InvitacionTallerSalida,
+    UsuarioEdicion,
+    UsuarioEntrada,
+    UsuarioSalida,
+)
 from app.security.dependencias import solo_dueno
 from app.security.passwords import hashear
 from app.services.altas import correo_libre
@@ -68,6 +79,48 @@ def crear(
     sesion.commit()
 
     return {"data": _salida(usuario)}
+
+
+@router.post(
+    "/invitations",
+    status_code=status.HTTP_201_CREATED,
+    response_model=Respuesta[InvitacionTallerSalida],
+)
+def crear_invitacion(
+    datos: InvitacionTallerEntrada,
+    dueno: User = Depends(solo_dueno),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Prepara un traslado, sin mover ni tocar la clave de nadie todavia.
+
+    El token es privado y solo sirve para la cuenta cuyo correo se invito. El dueno lo
+    comparte por el canal que prefiera; la persona lo acepta estando identificada.
+    """
+    email = str(datos.email).strip().lower()
+    existente = sesion.scalar(select(User).where(User.email == email))
+    if existente is None or existente.role != ROL_MECANICO:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No existe un mecanico con ese correo",
+        )
+    if existente.workshop_id == dueno.workshop_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ese mecanico ya pertenece a este taller",
+        )
+
+    token = secrets.token_urlsafe(32)
+    invitacion = WorkshopInvitation(
+        workshop_id=dueno.workshop_id,
+        created_by_user_id=dueno.id,
+        email=email,
+        token_hash=hashlib.sha256(token.encode()).hexdigest(),
+        expires_at=ahora() + timedelta(days=7),
+    )
+    sesion.add(invitacion)
+    sesion.commit()
+
+    return {"data": {"token": token, "expires_at": invitacion.expires_at}}
 
 
 @router.get("", response_model=Respuesta[list[UsuarioSalida]])

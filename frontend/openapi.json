@@ -106,6 +106,48 @@
         }
       }
     },
+    "/auth/accept-workshop-invitation": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Aceptar Invitacion De Taller",
+        "description": "Traslada una cuenta solo cuando su dueno real acepta la invitacion privada.",
+        "operationId": "aceptar_invitacion_de_taller_auth_accept_workshop_invitation_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AceptarInvitacionTallerEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_LoginSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/logout-all": {
       "post": {
         "tags": [
@@ -1067,6 +1109,74 @@
         }
       }
     },
+    "/reports/weekly": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Semanal",
+        "description": "Como le fue al taller en los ultimos siete dias.\n\nLas fechas se comparan **en Python y no en el WHERE**: SQLite devuelve las fechas sin\nhuso aunque la columna sea DateTime(timezone=True), asi que una ventana escrita como\ncondicion SQL funciona en produccion (Postgres) y miente en desarrollo. Es el mismo\nmotivo por el que la ventana del panel de soporte tampoco esta en la consulta.",
+        "operationId": "semanal_reports_weekly_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_ResumenSemanal_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exports/clients": {
+      "get": {
+        "tags": [
+          "exports"
+        ],
+        "summary": "Clientes",
+        "description": "La libreta de clientes del taller.\n\nLos archivados no van: quien exporta quiere su lista de hoy, no las fichas que borro.",
+        "operationId": "clientes_exports_clients_get",
+        "responses": {
+          "200": {
+            "description": "El archivo, listo para abrir en Excel",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exports/history": {
+      "get": {
+        "tags": [
+          "exports"
+        ],
+        "summary": "Historial",
+        "description": "Todo lo que paso por el taller, una fila por orden.\n\nVa con la patente adelante porque es como se busca un auto: si el dueno abre esto en\nExcel, lo primero que hace es filtrar por una patente.",
+        "operationId": "historial_exports_history_get",
+        "responses": {
+          "200": {
+            "description": "El archivo, listo para abrir en Excel",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/users": {
       "get": {
         "tags": [
@@ -1112,6 +1222,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Respuesta_UsuarioSalida_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/invitations": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Crear Invitacion",
+        "description": "Prepara un traslado, sin mover ni tocar la clave de nadie todavia.\n\nEl token es privado y solo sirve para la cuenta cuyo correo se invito. El dueno lo\ncomparte por el canal que prefiera; la persona lo acepta estando identificada.",
+        "operationId": "crear_invitacion_users_invitations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitacionTallerEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Respuesta_InvitacionTallerSalida_"
                 }
               }
             }
@@ -1933,6 +2085,21 @@
   },
   "components": {
     "schemas": {
+      "AceptarInvitacionTallerEntrada": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 32,
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "AceptarInvitacionTallerEntrada"
+      },
       "AltaTallerEntrada": {
         "properties": {
           "workshopName": {
@@ -2279,6 +2446,24 @@
         ],
         "title": "ClienteSalida"
       },
+      "ConteoPorEstado": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "count"
+        ],
+        "title": "ConteoPorEstado"
+      },
       "CuentaAdminEdicion": {
         "properties": {
           "name": {
@@ -2516,6 +2701,41 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "InvitacionTallerEntrada": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "InvitacionTallerEntrada",
+        "description": "El correo de una cuenta existente que un taller quiere contratar."
+      },
+      "InvitacionTallerSalida": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expiresat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "expiresAt"
+        ],
+        "title": "InvitacionTallerSalida",
+        "description": "El enlace solo se muestra al dueno que la acaba de crear."
       },
       "LoginEntrada": {
         "properties": {
@@ -2771,6 +2991,30 @@
         "type": "object",
         "title": "OrdenEdicion",
         "description": "Sin `status` a proposito: el estado se mueve por su propio endpoint.\n\nCambiar de estado le escribe al cliente. Si se pudiera hacer desde aca, corregir una\npalabra del titulo podria terminar mandando un WhatsApp sin que nadie lo pidiera."
+      },
+      "OrdenEnResumen": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status"
+        ],
+        "title": "OrdenEnResumen",
+        "description": "Lo minimo para reconocer una orden en una lista. El detalle se pide aparte."
       },
       "OrdenEntrada": {
         "properties": {
@@ -3035,6 +3279,18 @@
         ],
         "title": "Respuesta[FichaDeTaller]"
       },
+      "Respuesta_InvitacionTallerSalida_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/InvitacionTallerSalida"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[InvitacionTallerSalida]"
+      },
       "Respuesta_LoginSalida_": {
         "properties": {
           "data": {
@@ -3082,6 +3338,18 @@
           "data"
         ],
         "title": "Respuesta[OrdenSalida]"
+      },
+      "Respuesta_ResumenSemanal_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ResumenSemanal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "Respuesta[ResumenSemanal]"
       },
       "Respuesta_Salud_": {
         "properties": {
@@ -3230,6 +3498,71 @@
           "data"
         ],
         "title": "Respuesta[list[UsuarioSalida]]"
+      },
+      "ResumenSemanal": {
+        "properties": {
+          "workshopName": {
+            "type": "string",
+            "title": "Workshopname"
+          },
+          "from": {
+            "type": "string",
+            "title": "From"
+          },
+          "to": {
+            "type": "string",
+            "title": "To"
+          },
+          "ordersOpen": {
+            "type": "integer",
+            "title": "Ordersopen"
+          },
+          "ordersWaiting": {
+            "type": "integer",
+            "title": "Orderswaiting"
+          },
+          "ordersReady": {
+            "type": "integer",
+            "title": "Ordersready"
+          },
+          "ordersCreated": {
+            "type": "integer",
+            "title": "Orderscreated"
+          },
+          "ordersDelivered": {
+            "type": "integer",
+            "title": "Ordersdelivered"
+          },
+          "byStatus": {
+            "items": {
+              "$ref": "#/components/schemas/ConteoPorEstado"
+            },
+            "type": "array",
+            "title": "Bystatus"
+          },
+          "openOrders": {
+            "items": {
+              "$ref": "#/components/schemas/OrdenEnResumen"
+            },
+            "type": "array",
+            "title": "Openorders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "workshopName",
+          "from",
+          "to",
+          "ordersOpen",
+          "ordersWaiting",
+          "ordersReady",
+          "ordersCreated",
+          "ordersDelivered",
+          "byStatus",
+          "openOrders"
+        ],
+        "title": "ResumenSemanal",
+        "description": "Como le fue al taller esta semana, en los numeros que un dueno mira.\n\n`orders_waiting` junta los dos estados en que el taller esta detenido esperando a\nalguien -que el cliente apruebe, o que llegue el repuesto-, que es justo lo que se le\nescapa al dueno: no son autos en los que se este trabajando, son autos parados."
       },
       "Salud": {
         "properties": {

@@ -120,6 +120,12 @@ El dueno del taller administra a su equipo en `/users`: da de alta mecanicos, lo
 los enciende, y les resetea la clave. Un `mechanic` recibe 403 en todo `/users`, y un
 dueno que pida por alguien de otro taller recibe 404.
 
+Si un mecanico se cambia de taller, el dueno nuevo no crea otra cuenta con su correo ni
+puede cambiarle la clave. Crea una invitacion privada con `POST /users/invitations` y
+comparte el `token` que recibe una sola vez. El mecanico entra con su cuenta actual y
+acepta con `POST /auth/accept-workshop-invitation`; recien ahi su acceso pasa al taller
+nuevo y sus sesiones del taller anterior quedan cerradas.
+
 Apagar a alguien **no lo borra**: sigue saliendo en `GET /users` con `active: false`,
 porque su nombre cuelga del historial de las ordenes que movio. Cambiarle la clave le
 cierra la sesion que tuviera abierta.

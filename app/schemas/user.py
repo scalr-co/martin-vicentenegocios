@@ -47,3 +47,20 @@ class UsuarioSalida(Esquema):
     role: str
     active: bool
     created_at: datetime
+
+
+class InvitacionTallerEntrada(Esquema):
+    """El correo de una cuenta existente que un taller quiere contratar."""
+
+    email: EmailStr
+
+
+class InvitacionTallerSalida(Esquema):
+    """El enlace solo se muestra al dueno que la acaba de crear."""
+
+    token: str
+    expires_at: datetime
+
+
+class AceptarInvitacionTallerEntrada(Esquema):
+    token: str = Field(min_length=32, max_length=200)
